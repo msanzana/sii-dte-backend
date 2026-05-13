@@ -4,5 +4,5 @@ use App\Models\Dte\Domain\Entities\Company;
 interface CompanyRepositoryInterface
 {
     public function findById(int $id): ?Company;
-    public function existActiveById(int $id): bool;
+    public function existsActiveById(int $id): bool;
 }

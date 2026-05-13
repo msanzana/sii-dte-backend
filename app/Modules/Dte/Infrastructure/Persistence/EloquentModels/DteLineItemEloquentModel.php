@@ -1,7 +1,9 @@
 <?php
 namespace App\Modules\Dte\Infrastructure\Persistence\EloquentModels;
 
-class DteLineItemEloquentModel
+use Illuminate\Database\Eloquent\Model;
+
+class DteLineItemEloquentModel extends Model
 {
     protected $table = 'dte_line_items';
     protected $fillable =[
