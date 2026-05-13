@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Dte\Presentation\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
-class PauserDteServiceRequest extends FormRequest
+class PauseDteServiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
