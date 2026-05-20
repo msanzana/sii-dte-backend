@@ -10,7 +10,7 @@ final class SiiCertificate
         private readonly string $pfxPasswordEncrypted,
         private readonly ?string $serialNumber = null,
         private readonly ?string $subjectName = null,
-        private readonly ?string $issueName = null,
+        private readonly ?string $issuerName = null,
         private readonly ?string $validFrom = null,
         private readonly ?string $validTo = null,
         private readonly bool $isDefault = false,
@@ -47,9 +47,9 @@ final class SiiCertificate
     {
         return $this->subjectName;
     }
-    public function issueName(): ?string
+    public function issuerName(): ?string
     {
-        return $this->issueName;
+        return $this->issuerName;
     }
     public function validFrom(): ?string
     {

@@ -10,7 +10,7 @@ final class SiiCaf
         private readonly int $folioEnd,
         private readonly ?int $lastAssignedFolio,
         private readonly string $cafXmlPath,
-        private readonly string $privaterKeyPemEncrypted,
+        private readonly string $privateKeyPemEncrypted,
         private readonly ?string $publicKeyPem = null,
         private readonly ?string $authorizedAt = null,
         private readonly bool $isActive = true,
@@ -46,9 +46,9 @@ final class SiiCaf
     {
         return $this->lastAssignedFolio;
     }
-    public function privaterKeyPemEncrypted(): string
+    public function privateKeyPemEncrypted(): string
     {
-        return $this->privaterKeyPemEncrypted;
+        return $this->privateKeyPemEncrypted;
     }
     public function getPublicKeyPem(): ?string
     {
@@ -61,5 +61,9 @@ final class SiiCaf
     public function isActive(): bool
     {
         return $this->isActive;
+    }
+    public function publicKeyPem(): ?string
+    {
+        return $this->publicKeyPem;
     }
 }

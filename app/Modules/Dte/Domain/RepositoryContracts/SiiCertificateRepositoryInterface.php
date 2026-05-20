@@ -8,5 +8,6 @@ interface SiiCertificateRepositoryInterface{
     public function findById(int $id) : ?SiiCertificate;
     public function findByCompany(int $companyId): array;
     public function findDefaultByCompanyId(int $companyId): ?SiiCertificate;
-    public function clearDefaultByCvompanyId(int $companyId): void;
+    public function hasDefaultForCompany(int $companyId): bool;
+    public function clearDefaultByCompanyId(int $companyId): void;
 }

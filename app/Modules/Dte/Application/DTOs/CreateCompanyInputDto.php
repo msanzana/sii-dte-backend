@@ -4,6 +4,8 @@ final class CreateCompanyInputDto
 {
     public function __construct(
         public readonly string $rut,
+        public readonly string $rutBody,
+        public readonly string $rutDv,
         public readonly string $legalName,
         public readonly ?string $tradeName,
         public readonly ?string $giro,

@@ -6,6 +6,7 @@ final class ImportCertificateResultDto
         public readonly int $id,
         public readonly int $companyId,
         public readonly string $alias,
+        public readonly string $pfxPath,
         public readonly ?string $serialNumber,
         public readonly ?string $subjectName,
         public readonly ?string $issuerName,

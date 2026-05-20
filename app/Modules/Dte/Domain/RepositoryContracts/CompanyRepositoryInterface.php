@@ -8,4 +8,5 @@ interface CompanyRepositoryInterface
     public function findById(int $id): ?Company;
     public function findByRut(string $rut): ?Company;
     public function existsActiveById(int $id): bool;
+    public function existsByRut(string $rut): bool;
 }

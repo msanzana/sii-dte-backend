@@ -3,7 +3,7 @@ namespace App\Models\Dte\Domain\Entities;
 final class Company
 {
     public function __construct(
-        private readonly int $id,
+        private readonly ?int $id,
         private readonly string $rut,
         private readonly string $rutBody,
         private readonly string $rutDv,
