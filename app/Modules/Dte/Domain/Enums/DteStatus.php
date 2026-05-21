@@ -4,8 +4,9 @@ enum DteStatus: string
 {
     case DRAFT = 'draft';
     case READY_FOR_XML = 'ready_for_xml';
+    case FOLIO_ASSIGNED = 'folio_assigned';
     case XML_BUILT = 'xml_built';
-    case TED_BUILD = 'ted_build';
+    case TED_BUILT = 'ted_built';
     case SIGNED = 'signed';
     case QUEUED = 'queued';
     case SENDING = 'sending';
@@ -15,6 +16,5 @@ enum DteStatus: string
     case REJECTED = 'rejected';
     case NEEDS_RESEND = 'needs_resend';
     case FAILED = 'failed';
-    case CANCELED = 'canceled';
-
+    case CANCELLED = 'cancelled';
 }

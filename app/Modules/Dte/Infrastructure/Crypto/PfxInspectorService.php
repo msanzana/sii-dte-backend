@@ -12,7 +12,7 @@ class PfxInspectorService
         if(!$ok)
         {
             throw invalidCertificateException::because(
-                'No fue posible analizar el certificado X509 dentro del PFX'
+                'No fue posible analizar el certificado X509.'
             );
         }
 
@@ -27,7 +27,7 @@ class PfxInspectorService
         if($parsed === false)
         {
             throw InvalidCertificateException::because(
-                'No fue posible analizar el certificado X509 dentro del PFX.'
+                'No fue posible analizar el certificado X509.'
             );
         }
 
