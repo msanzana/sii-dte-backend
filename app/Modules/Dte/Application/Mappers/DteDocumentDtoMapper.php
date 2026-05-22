@@ -46,7 +46,7 @@ final class DteDocumentDtoMapper
                 referencedDteType: $referenceDto->referenceDteType,
                 referencedFolio: $referenceDto->referencedFolio,
                 referencedIssueDate: $referenceDto->referencedIssueDate,
-                referencedCode: $referenceDto->referenceCode,
+                referenceCode: $referenceDto->referenceCode,
                 reason: $referenceDto->reason,
                 extraPayload: $referenceDto->extraPayload,
             );

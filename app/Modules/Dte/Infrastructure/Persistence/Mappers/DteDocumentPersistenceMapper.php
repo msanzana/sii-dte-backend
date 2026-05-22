@@ -52,7 +52,7 @@ final class DteDocumentPersistenceMapper
                     referencedDteType: $reference->referenced_dte_type,
                     referencedFolio: $reference->referenced_folio,
                     referencedIssueDate: $reference->referenced_issue_date?->format('Y-m-d'),
-                    referencedCode: $reference->reference_code,
+                    referenceCode: $reference->reference_code,
                     reason: $reference->reason,
                     extraPayload: $reference->extra_payload,
                 );

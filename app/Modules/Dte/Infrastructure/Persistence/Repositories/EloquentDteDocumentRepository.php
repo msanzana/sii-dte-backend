@@ -9,26 +9,25 @@ use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquen
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteReferenceEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper;
 
-
 final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterface
 {
     public function __construct(
-        private readonly DteDocumentPersistenceMapper $mapper
-    ) {}
-
-
+        private readonly DteDocumentPersistenceMapper $mapper,
+    ) {
+    }
 
     public function create(DteDocument $document): DteDocument
     {
         $model = new DteDocumentEloquentModel();
+
         $model->fill([
             'external_id' => $document->externalId(),
             'company_id' => $document->companyId(),
-            'dte_type' => $document->dteType(),
+            'dte_type' => $document->dteType()->value,
             'folio' => $document->folio(),
             'issue_date' => $document->issueDate(),
             'status' => $document->status(),
-            'sii_environment' => $document->siiEnvironment(),
+            'sii_environment' => $document->siiEnvironment() ?? config('dte.default_environment'),
             'receiver_document' => $document->receiver()->document(),
             'receiver_name' => $document->receiver()->name(),
             'receiver_giro' => $document->receiver()->giro(),
@@ -36,7 +35,7 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'receiver_city_id' => $document->receiver()->cityId(),
             'receiver_email' => $document->receiver()->email(),
             'net_amount' => $document->netAmount(),
-            'exempt_amount' => $document->netAmount(),
+            'exempt_amount' => $document->exemptAmount(),
             'tax_amount' => $document->taxAmount(),
             'total_amount' => $document->totalAmount(),
             'header_payload' => $document->headerPayload(),
@@ -47,61 +46,55 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'ted_xml' => $document->tedXml(),
             'last_error_code' => $document->lastErrorCode(),
             'last_error_message' => $document->lastErrorMessage(),
-
         ]);
 
         $model->save();
 
-        foreach($document->items() as $item)
-        {
+        foreach ($document->items() as $item) {
             DteLineItemEloquentModel::query()->create([
                 'dte_document_id' => $model->id,
                 'line_number' => $item->lineNumber(),
                 'item_code_type' => $item->itemCodeType(),
                 'item_code' => $item->itemCode(),
-                'name'  => $item->name(),
+                'name' => $item->name(),
                 'description' => $item->description(),
                 'quantity' => $item->quantity(),
                 'unit_price' => $item->unitPrice(),
                 'discount_percent' => $item->discountPercent(),
                 'discount_amount' => $item->discountAmount(),
                 'tax_exempt' => $item->taxExempt(),
-                'lineAmount' => $item->lineAmount(),
+                'line_amount' => $item->lineAmount(),
                 'extra_payload' => $item->extraPayload(),
             ]);
         }
-        foreach($document->references() as $reference)
-        {
+
+        foreach ($document->references() as $reference) {
             DteReferenceEloquentModel::query()->create([
                 'dte_document_id' => $model->id,
                 'line_number' => $reference->lineNumber(),
                 'referenced_dte_type' => $reference->referencedDteType(),
-                'referencedFolio' => $reference->referencedFolio(),
+                'referenced_folio' => $reference->referencedFolio(),
                 'referenced_issue_date' => $reference->referencedIssueDate(),
                 'reference_code' => $reference->referenceCode(),
                 'reason' => $reference->reason(),
                 'extra_payload' => $reference->extraPayload(),
             ]);
         }
+
         return $this->findById((int) $model->id);
     }
 
     public function update(DteDocument $document): DteDocument
     {
         $model = DteDocumentEloquentModel::query()->findOrFail($document->id());
+
         $model->fill([
             'folio' => $document->folio(),
-            'issue_date' => $document->issueDate(),
             'status' => $document->status(),
-            'sii_environment' => $document->siiEnvironment(),
-            'receiver_document' => $document->receiver()->document(),
-            'receiver_name' => $document->receiver()->name(),
-            'receiver_giro' => $document->receiver()->giro(),
-            'receiver_address' => $document->receiver()->address(),
+            'sii_environment' => $document->siiEnvironment() ?? config('dte.default_environment'),
             'receiver_city_id' => $document->receiver()->cityId(),
-            'receiver_email' => $document->receiver()->email(),
             'net_amount' => $document->netAmount(),
-            'exempt_amount' => $document->netAmount(),
+            'exempt_amount' => $document->exemptAmount(),
             'tax_amount' => $document->taxAmount(),
             'total_amount' => $document->totalAmount(),
             'header_payload' => $document->headerPayload(),
@@ -115,18 +108,35 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
         ]);
 
         $model->save();
-        return $this->findById((int) $model->id());
+
+        return $this->findById((int) $model->id);
     }
 
     public function findById(int $id): ?DteDocument
     {
         $model = DteDocumentEloquentModel::query()
-                ->with(['items','references'])
-                ->find($id);
-        if(!$model)
-        {
+            ->with(['items', 'references'])
+            ->find($id);
+
+        if (!$model) {
             return null;
         }
+
+        return $this->mapper->toDomain($model);
+    }
+
+    public function findByIdForUpdate(int $id): ?DteDocument
+    {
+        $model = DteDocumentEloquentModel::query()
+            ->with(['items', 'references'])
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$model) {
+            return null;
+        }
+
         return $this->mapper->toDomain($model);
     }
 
@@ -146,14 +156,13 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
 
     public function findPendingForDispatch(int $limit = 100): array
     {
-
         return DteDocumentEloquentModel::query()
-                 ->with(['items','references'])
-                 ->whereIn('status',['signed','queued'])
-                 ->orderBy('id')
-                 ->limit($limit)
-                 ->get()
-                 ->map(fn(DteDocumentEloquentModel $model) => $this->mapper->toDomain($model))
-                 ->all();
+            ->with(['items', 'references'])
+            ->whereIn('status', ['signed', 'queued'])
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (DteDocumentEloquentModel $model) => $this->mapper->toDomain($model))
+            ->all();
     }
 }

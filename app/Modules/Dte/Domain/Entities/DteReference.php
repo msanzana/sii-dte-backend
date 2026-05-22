@@ -7,7 +7,7 @@ final class DteReference
         private readonly ?int $referencedDteType,
         private readonly ?int $referencedFolio,
         private readonly ?string $referencedIssueDate,
-        private readonly ?int $referencedCode,
+        private readonly ?int $referenceCode,
         private readonly ?string $reason,
         private readonly ?array $extraPayload = null,
     )
@@ -28,9 +28,9 @@ final class DteReference
     {
         return $this->referencedIssueDate;
     }
-    public function referencedCode(): ?string
+    public function referenceCode(): ?string
     {
-        return $this->referencedCode;
+        return $this->referenceCode;
     }
 
     public function reason(): ?string

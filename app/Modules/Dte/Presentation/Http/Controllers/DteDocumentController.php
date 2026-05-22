@@ -45,7 +45,7 @@ class DteDocumentController extends Controller
                 referencedDteType: $reference['referenced_dte_type'] ?? null,
                 referencedFolio: $reference['referenced_folio'] ?? null,
                 referencedIssueDate: $reference['referenced_issue_date'] ?? null,
-                referencedCode: $reference['referenced_code'] ?? null,
+                referenceCode: $reference['reference_code'] ?? null,
                 reason: $reference['reason'] ?? null,
                 extraPayload: $reference['extra_payload'] ?? null,
             );
