@@ -6,12 +6,13 @@ use App\Modules\Dte\Presentation\Http\Controllers\CompanyController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
+use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('internal/dte')->group(function() {
     Route::get('/service',[DteServiceController::class, 'show']);
-    Route::port('/service/pause',[DteServiceController::class, 'pause']);
+    Route::post('/service/pause',[DteServiceController::class, 'pause']);
     Route::post('/service/resume', [DteServiceController::class, 'resume']);
 
     Route::post('/companies',[CompanyController::class,'store']);
@@ -20,4 +21,5 @@ Route::prefix('internal/dte')->group(function() {
 
     Route::post('/document',[DteDocumentController::class, 'store']);
     Route::post('/documents/{documentId}/prepare-for-xml', [DteDocumentPreparationController::class, 'prepareForXml']);
+    Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
 });
