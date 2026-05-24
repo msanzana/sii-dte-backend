@@ -124,4 +124,25 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
 
         throw NoAvailableCafException::forCompanyAndType($companyId, $dteType);
     }
+
+    public function findActiveContainingFolio(
+        int $companyId,
+        int $dteType,
+        int $folio
+    ): ?SiiCaf {
+        $model = SiiCafEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where('dte_type', $dteType)
+            ->where('is_active', true)
+            ->where('folio_start', '<=', $folio)
+            ->where('folio_end', '>=', $folio)
+            ->orderBy('folio_start')
+            ->first();
+
+        if (!$model) {
+            return null;
+        }
+
+        return $this->mapper->toDomain($model);
+    }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Modules\Dte\Domain\RepositoryContracts;
 
 use App\Modules\Dte\Domain\Entities\SiiCaf;
@@ -24,4 +25,9 @@ interface SiiCafRepositoryInterface
 
     public function reserveNextAvailableFolio(int $companyId, int $dteType): ReservedFolio;
 
+    public function findActiveContainingFolio(
+        int $companyId,
+        int $dteType,
+        int $folio
+    ): ?SiiCaf;
 }
