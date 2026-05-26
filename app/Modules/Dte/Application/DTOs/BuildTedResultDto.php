@@ -10,7 +10,7 @@ class BuildTedResultDto
         public readonly int $folio,
         public readonly int $cafId,
         public readonly string $status,
-        public readonly string $unsignedZmlPath,
+        public readonly string $unsignedXmlPath,
         public readonly string $tedXml,
     )
     {}

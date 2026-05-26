@@ -6,7 +6,7 @@ use App\Modules\Dte\Domain\Exceptions\InvalidTedDataException;
 
 class TedSignatureService
 {
-    public function singIdXml(string $ddXmlUtf8, string $privateKeyPem):string
+    public function singDdXml(string $ddXmlUtf8, string $privateKeyPem):string
     {
         $ddXmlLatin1 = iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $ddXmlUtf8);
 

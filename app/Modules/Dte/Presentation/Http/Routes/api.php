@@ -7,6 +7,7 @@ use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
+use App\Modules\Dte\Presentation\Http\Resources\DteTedBuildController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -22,4 +23,5 @@ Route::prefix('internal/dte')->group(function() {
     Route::post('/document',[DteDocumentController::class, 'store']);
     Route::post('/documents/{documentId}/prepare-for-xml', [DteDocumentPreparationController::class, 'prepareForXml']);
     Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
+    Route::post('/documents/{documentId}/build-ted', [DteTedBuildController::class, 'build']);
 });
