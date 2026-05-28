@@ -7,17 +7,17 @@ use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper;
 
-
 final class EloquentSiiCertificateRepository implements SiiCertificateRepositoryInterface
 {
-
     public function __construct(
-        private readonly SiiCertificatePersistenceMapper $mapper
-    )
-    {}
+        private readonly SiiCertificatePersistenceMapper $mapper,
+    ) {
+    }
+
     public function create(SiiCertificate $certificate): SiiCertificate
     {
         $model = new SiiCertificateEloquentModel();
+
         $model->fill([
             'company_id' => $certificate->companyId(),
             'alias' => $certificate->alias(),
@@ -40,46 +40,22 @@ final class EloquentSiiCertificateRepository implements SiiCertificateRepository
     public function findById(int $id): ?SiiCertificate
     {
         $model = SiiCertificateEloquentModel::query()->find($id);
-        if(!$model)
-        {
+
+        if (!$model) {
             return null;
         }
 
         return $this->mapper->toDomain($model);
     }
 
-    public function findByCompany(int $companyId): array
+    public function findByCompanyId(int $companyId): array
     {
         return SiiCertificateEloquentModel::query()
-               ->where('company_id', $companyId)
-               ->orderByDesc('id')
-               ->get()
-               ->map(fn (SiiCertificateEloquentModel $model) => $this->mapper->toDomain($model))
-               ->all();
-    }
-
-    public function findDefaultByCompanyId(int $companyId): ?SiiCertificate
-    {
-         $model = SiiCertificateEloquentModel::query()
             ->where('company_id', $companyId)
-            ->where('is_default', true)
-            ->first();
-            if(!$model)
-            {
-                return null;
-            }
-            return $this->mapper->toDomain($model);
-    }
-
-    public function clearDefaultByCompanyId(int $companyId): void
-    {
-        SiiCertificateEloquentModel::qhery()
-            ->where('company_id', $companyId)
-            ->where('is_default', true)
-            ->update([
-                'is_default' => false,
-                'updated_at' => now(),
-        ]);
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (SiiCertificateEloquentModel $model) => $this->mapper->toDomain($model))
+            ->all();
     }
 
     public function hasDefaultForCompany(int $companyId): bool
@@ -88,5 +64,30 @@ final class EloquentSiiCertificateRepository implements SiiCertificateRepository
             ->where('company_id', $companyId)
             ->where('is_default', true)
             ->exists();
+    }
+
+    public function findDefaultByCompanyId(int $companyId): ?SiiCertificate
+    {
+        $model = SiiCertificateEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where('is_default', true)
+            ->first();
+
+        if (!$model) {
+            return null;
+        }
+
+        return $this->mapper->toDomain($model);
+    }
+
+    public function clearDefaultByCompanyId(int $companyId): void
+    {
+        SiiCertificateEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where('is_default', true)
+            ->update([
+                'is_default' => false,
+                'updated_at' => now(),
+            ]);
     }
 }

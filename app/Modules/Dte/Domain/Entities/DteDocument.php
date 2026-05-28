@@ -251,4 +251,33 @@ final class DteDocument
             lastErrorMessage: $this->lastErrorMessage,
         );
     }
+
+    public function withSignedXml(string $signedXmlPath): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SIGNED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+        );
+    }
 }
