@@ -61,4 +61,35 @@ return [
         'max_detail_lines' => 60,
         'max_boletas_per_batch' => 500,
     ],
+    'sii' => [
+        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '60803000-K'),
+
+        'sender' => [
+            'rut_body' => env('DTE_SII_SENDER_RUT_BODY', ''),
+            'rut_dv' => env('DTE_SII_SENDER_RUT_DV', ''),
+        ],
+        'cert' => [
+            'soap' => [
+                'seed_url' => env('DTE_SII_CERT_SEED_URL', 'https://palena.sii.cl/DTEWS/CrSeed.jws'),
+                'token_url' => env('DTE_SII_CERT_TOKEN_URL', 'https://palena.sii.cl/DTEWS/GetTokenFromSeed.jws'),
+                'query_est_up_url' => env('DTE_SII_CERT_QUERY_EST_UP_URL', 'https://maullin.sii.cl/DTEWS/QueryEstUp.jws'),
+            ],
+            'upload' => [
+                'url' => env('DTE_SII_CERT_UPLOAD_URL', 'https://maullin.sii.cl/cgi_dte/UPL/DTEUpload'),
+                'referer' => env('DTE_SII_CERT_UPLOAD_REFERER', 'http://localhost'),
+            ],
+        ],
+
+        'prod' => [
+            'soap' => [
+                'seed_url' => env('DTE_SII_PROD_SEED_URL', ''),
+                'token_url' => env('DTE_SII_PROD_TOKEN_URL', ''),
+                'query_est_up_url' => env('DTE_SII_PROD_QUERY_EST_UP_URL', ''),
+            ],
+            'upload' => [
+                'url' => env('DTE_SII_PROD_UPLOAD_URL', ''),
+                'referer' => env('DTE_SII_PROD_UPLOAD_REFERER', 'http://localhost'),
+            ],
+        ],
+    ],
 ];
