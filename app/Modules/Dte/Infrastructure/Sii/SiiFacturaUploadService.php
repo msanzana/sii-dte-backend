@@ -14,7 +14,7 @@ class SiiFacturaUploadService
         string $companyRutBody,
         string $companyRutDv,
         string $filename,
-        string $zmlBody
+        string $xmlBody
     ):array
     {
         $rut= $this->resolveUploadUrl($environment);
@@ -28,7 +28,7 @@ class SiiFacturaUploadService
         ->attach('dvSender', $senderRutDv)
         ->attach('rutCompany', $companyRutBody)
         ->attach('dvCompany', $companyRutDv)
-        ->attach('archivo', $zmlBody, $filename, ['Content-Type' => 'text/xml'])
+        ->attach('archivo', $xmlBody, $filename, ['Content-Type' => 'text/xml'])
         ->post($rut);
 
         $httpStatus = $response->status();

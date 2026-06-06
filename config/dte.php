@@ -73,6 +73,7 @@ return [
                 'seed_url' => env('DTE_SII_CERT_SEED_URL', 'https://palena.sii.cl/DTEWS/CrSeed.jws'),
                 'token_url' => env('DTE_SII_CERT_TOKEN_URL', 'https://palena.sii.cl/DTEWS/GetTokenFromSeed.jws'),
                 'query_est_up_url' => env('DTE_SII_CERT_QUERY_EST_UP_URL', 'https://maullin.sii.cl/DTEWS/QueryEstUp.jws'),
+                'query_est_dte_url' => env('DTE_SII_CERT_QUERY_EST_DTE_URL', 'https://maullin.sii.cl/DTEWS/QueryEstDte.jws'),
             ],
             'upload' => [
                 'url' => env('DTE_SII_CERT_UPLOAD_URL', 'https://maullin.sii.cl/cgi_dte/UPL/DTEUpload'),
@@ -85,10 +86,30 @@ return [
                 'seed_url' => env('DTE_SII_PROD_SEED_URL', ''),
                 'token_url' => env('DTE_SII_PROD_TOKEN_URL', ''),
                 'query_est_up_url' => env('DTE_SII_PROD_QUERY_EST_UP_URL', ''),
+                'query_est_dte_url' => env('DTE_SII_PROD_QUERY_EST_DTE_URL', ''),
             ],
             'upload' => [
                 'url' => env('DTE_SII_PROD_UPLOAD_URL', ''),
                 'referer' => env('DTE_SII_PROD_UPLOAD_REFERER', 'http://localhost'),
+            ],
+        ],
+        'boleta' => [
+            'docs_url' => env('DTE_SII_BOLETA_DOCS_URL', 'https://www4c.sii.cl/bolcoreinternetui/api/'),
+
+            'cert' => [
+                'seed_url' => env('DTE_SII_BOLETA_CERT_SEED_URL', ''),
+                'token_url' => env('DTE_SII_BOLETA_CERT_TOKEN_URL', ''),
+                'document_status_url' => env('DTE_SII_BOLETA_CERT_DOCUMENT_STATUS_URL', ''),
+                'token_header_name' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_NAME', 'Authorization'),
+                'token_header_prefix' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_PREFIX', 'Bearer '),
+            ],
+
+            'prod' => [
+                'seed_url' => env('DTE_SII_BOLETA_PROD_SEED_URL', ''),
+                'token_url' => env('DTE_SII_BOLETA_PROD_TOKEN_URL', ''),
+                'document_status_url' => env('DTE_SII_BOLETA_PROD_DOCUMENT_STATUS_URL', ''),
+                'token_header_name' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_NAME', 'Authorization'),
+                'token_header_prefix' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_PREFIX', 'Bearer '),
             ],
         ],
     ],

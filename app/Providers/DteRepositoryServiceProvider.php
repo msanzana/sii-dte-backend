@@ -18,6 +18,8 @@ use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentLocationRepo
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCafRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiDispatchRepository;
 use Illuminate\Support\ServiceProvider;
 
 class DteRepositoryServiceProvider extends ServiceProvider
@@ -62,6 +64,10 @@ class DteRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             SystemSettingRepositoryInterface::class,
             EloquentSystemSettingRepository::class
+        );
+        $this->app->bind(
+            SiiDispatchRepositoryInterface::class,
+            EloquentSiiDispatchRepository::class
         );
     }
 

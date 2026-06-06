@@ -8,6 +8,7 @@ use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationControll
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
+use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
 use App\Modules\Dte\Presentation\Http\Resources\DteTedBuildController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +19,7 @@ Route::prefix('internal/dte')->group(function() {
     Route::post('/service/resume', [DteServiceController::class, 'resume']);
 
     Route::post('/companies',[CompanyController::class,'store']);
-    Route::post('/centificates',[CertificateController::class,'store']);
+    Route::post('/certificates',[CertificateController::class,'store']);
     Route::post('/cafs', [CafController::class, 'store']);
 
     Route::post('/document',[DteDocumentController::class, 'store']);
@@ -26,4 +27,7 @@ Route::prefix('internal/dte')->group(function() {
     Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
     Route::post('/documents/{documentId}/build-ted', [DteTedBuildController::class, 'build']);
     Route::post('/documents/{documentId}/sign-xml', [DteXmlSignController::class, 'sign']);
+    Route::post('/documents/{documentId}/send-to-sii', [SiiDispatchController::class, 'send']);
+
+    Route::post('/dispatches/{dispatchId}/poll-upload-status', [SiiDispatchController::class, 'poll']);
 });

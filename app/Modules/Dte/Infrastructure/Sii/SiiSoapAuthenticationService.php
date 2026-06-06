@@ -10,7 +10,7 @@ class SiiSoapAuthenticationService
         string $environment,
         string $privateKeyPem,
         string $certificateBase64,
-        string $modulosBase64,
+        string $modulusBase64,
     ):string
     {
         $seedUrl = $this->resolveSoapUrl($environment, 'seed_url');
@@ -23,7 +23,7 @@ class SiiSoapAuthenticationService
             $seed,
             $privateKeyPem,
             $certificateBase64,
-            $modulosBase64
+            $modulusBase64
         );
 
         return $this->requestToken($tokenUrl, $signedTokenRequestXml);
