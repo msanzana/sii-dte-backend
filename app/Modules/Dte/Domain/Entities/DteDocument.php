@@ -281,31 +281,121 @@ final class DteDocument
         );
     }
     public function withSentStatus(): self
-{
-    return new self(
-        id: $this->id,
-        externalId: $this->externalId,
-        companyId: $this->companyId,
-        dteType: $this->dteType,
-        issueDate: $this->issueDate,
-        status: DteStatus::SENT->value,
-        receiver: $this->receiver,
-        netAmount: $this->netAmount,
-        exemptAmount: $this->exemptAmount,
-        taxAmount: $this->taxAmount,
-        totalAmount: $this->totalAmount,
-        items: $this->items,
-        references: $this->references,
-        headerPayload: $this->headerPayload,
-        totalsPayload: $this->totalsPayload,
-        rawInput: $this->rawInput,
-        folio: $this->folio,
-        siiEnvironment: $this->siiEnvironment,
-        unsignedXmlPath: $this->unsignedXmlPath,
-        signedXmlPath: $this->signedXmlPath,
-        tedXml: $this->tedXml,
-        lastErrorCode: $this->lastErrorCode,
-        lastErrorMessage: $this->lastErrorMessage,
-    );
-}
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SENT->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+        );
+    }
+    public function withAcceptedStatus(): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::ACCEPTED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: null,
+            lastErrorMessage: null,
+        );
+    }
+
+    public function withAcceptedWithReparosStatus(
+        ?string $code = null,
+        ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::ACCEPTED_WITH_REPAROS->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+        );
+    }
+
+    public function withRejectedStatus(
+    ?string $code = null,
+    ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::REJECTED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+        );
+    }
 }
