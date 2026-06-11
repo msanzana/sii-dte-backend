@@ -95,22 +95,75 @@ return [
         ],
         'boleta' => [
             'docs_url' => env('DTE_SII_BOLETA_DOCS_URL', 'https://www4c.sii.cl/bolcoreinternetui/api/'),
+            'wrap_in_envio' => env('DTE_SII_BOLETA_WRAP_IN_ENVIO', true),
 
             'cert' => [
                 'seed_url' => env('DTE_SII_BOLETA_CERT_SEED_URL', ''),
                 'token_url' => env('DTE_SII_BOLETA_CERT_TOKEN_URL', ''),
+                'send_url' => env('DTE_SII_BOLETA_CERT_SEND_URL', ''),
+                'send_status_url' => env('DTE_SII_BOLETA_CERT_SEND_STATUS_URL', ''),
                 'document_status_url' => env('DTE_SII_BOLETA_CERT_DOCUMENT_STATUS_URL', ''),
                 'token_header_name' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_NAME', 'Authorization'),
                 'token_header_prefix' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_PREFIX', 'Bearer '),
+                'send_http_method' => env('DTE_SII_BOLETA_CERT_SEND_HTTP_METHOD', 'POST'),
+                'send_mode' => env('DTE_SII_BOLETA_CERT_SEND_MODE', 'raw_xml'),
+                'send_content_type' => env('DTE_SII_BOLETA_CERT_SEND_CONTENT_TYPE', 'application/xml; charset=UTF-8'),
+                'send_body_field' => env('DTE_SII_BOLETA_CERT_SEND_BODY_FIELD', 'xml'),
+                'status_http_method' => env('DTE_SII_BOLETA_CERT_STATUS_HTTP_METHOD', 'POST'),
+                'status_track_id_field' => env('DTE_SII_BOLETA_CERT_STATUS_TRACK_ID_FIELD', 'track_id'),
             ],
 
             'prod' => [
                 'seed_url' => env('DTE_SII_BOLETA_PROD_SEED_URL', ''),
                 'token_url' => env('DTE_SII_BOLETA_PROD_TOKEN_URL', ''),
+                'send_url' => env('DTE_SII_BOLETA_PROD_SEND_URL', ''),
+                'send_status_url' => env('DTE_SII_BOLETA_PROD_SEND_STATUS_URL', ''),
                 'document_status_url' => env('DTE_SII_BOLETA_PROD_DOCUMENT_STATUS_URL', ''),
                 'token_header_name' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_NAME', 'Authorization'),
                 'token_header_prefix' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_PREFIX', 'Bearer '),
+                'send_http_method' => env('DTE_SII_BOLETA_PROD_SEND_HTTP_METHOD', 'POST'),
+                'send_mode' => env('DTE_SII_BOLETA_PROD_SEND_MODE', 'raw_xml'),
+                'send_content_type' => env('DTE_SII_BOLETA_PROD_SEND_CONTENT_TYPE', 'application/xml; charset=UTF-8'),
+                'send_body_field' => env('DTE_SII_BOLETA_PROD_SEND_BODY_FIELD', 'xml'),
+                'status_http_method' => env('DTE_SII_BOLETA_PROD_STATUS_HTTP_METHOD', 'POST'),
+                'status_track_id_field' => env('DTE_SII_BOLETA_PROD_STATUS_TRACK_ID_FIELD', 'track_id'),
             ],
+        ],
+    ],
+
+    'automation' => [
+        'enabled' => env('DTE_AUTOMATION_ENABLED', true),
+
+        'queue_connection' => env('DTE_AUTOMATION_QUEUE_CONNECTION', env('QUEUE_CONNECTION', 'database')),
+
+        'queues' => [
+            'pipeline' => env('DTE_AUTOMATION_PIPELINE_QUEUE', 'dte-pipeline'),
+            'dispatch_polling' => env('DTE_AUTOMATION_DISPATCH_POLLING_QUEUE', 'dte-dispatch-polling'),
+            'document_status' => env('DTE_AUTOMATION_DOCUMENT_STATUS_QUEUE', 'dte-document-status'),
+        ],
+
+        'limits' => [
+            'documents_per_pump' => env('DTE_AUTOMATION_DOCUMENTS_PER_PUMP', 50),
+            'dispatches_per_pump' => env('DTE_AUTOMATION_DISPATCHES_PER_PUMP', 50),
+            'document_status_queries_per_pump' => env('DTE_AUTOMATION_DOCUMENT_STATUS_QUERIES_PER_PUMP', 50),
+        ],
+
+        'delays' => [
+            'immediate_requeue_seconds' => env('DTE_AUTOMATION_IMMEDIATE_REQUEUE_SECONDS', 1),
+            'dispatch_poll_seconds' => env('DTE_AUTOMATION_DISPATCH_POLL_SECONDS', 30),
+            'document_status_query_seconds' => env('DTE_AUTOMATION_DOCUMENT_STATUS_QUERY_SECONDS', 60),
+        ],
+
+        'tries' => [
+            'pipeline' => env('DTE_AUTOMATION_PIPELINE_TRIES', 5),
+            'dispatch_polling' => env('DTE_AUTOMATION_DISPATCH_POLLING_TRIES', 5),
+            'document_status' => env('DTE_AUTOMATION_DOCUMENT_STATUS_TRIES', 5),
+        ],
+
+        'backoff' => [
+            'pipeline' => [5, 15, 60],
+            'dispatch_polling' => [10, 30, 120],
+            'document_status' => [10, 60, 180],
         ],
     ],
 ];

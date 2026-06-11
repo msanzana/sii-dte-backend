@@ -9,4 +9,14 @@ interface SiiDispatchRepositoryInterface
     public function update(SiiDispatch $dispatch): SiiDispatch;
     public function findById(int $id): ?SiiDispatch;
     public function findLatestByDocumentId(int $documentId): ?SiiDispatch;
+        /**
+     * @param string[] $statuses
+     * @param string[] $transportTypes
+     * @return int[]
+     */
+    public function findIdsByStatusesAndTransportTypes(
+        array $statuses,
+        array $transportTypes = [],
+        int $limit = 100
+    ): array;
 }

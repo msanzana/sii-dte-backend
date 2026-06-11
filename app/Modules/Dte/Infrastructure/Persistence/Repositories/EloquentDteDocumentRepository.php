@@ -165,4 +165,15 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             ->map(fn (DteDocumentEloquentModel $model) => $this->mapper->toDomain($model))
             ->all();
     }
+
+    public function findIdsByStatuses(array $statuses, int $limit = 100): array
+    {
+        return DteDocumentEloquentModel::query()
+            ->whereIn('status', $statuses)
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
 }

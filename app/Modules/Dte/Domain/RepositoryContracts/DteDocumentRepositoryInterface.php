@@ -20,4 +20,10 @@ interface DteDocumentRepositoryInterface
      * @return DteDocument[]
      */
     public function findPendingForDispatch(int $limit = 100): array;
+
+        /**
+     * @param string[] $statuses
+     * @return int[]
+     */
+    public function findIdsByStatuses(array $statuses, int $limit = 100): array;
 }

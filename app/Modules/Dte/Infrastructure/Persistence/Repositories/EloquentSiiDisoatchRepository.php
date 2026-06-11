@@ -98,4 +98,21 @@ final class EloquentSiiDispatchRepository implements SiiDispatchRepositoryInterf
 
         return $this->mapper->toDomain($model);
     }
+    public function findIdsByStatusesAndTransportTypes(
+        array $statuses,
+        array $transportTypes = [],
+        int $limit = 100
+    ): array {
+        return SiiDispatchEloquentModel::query()
+            ->whereIn('status', $statuses)
+            ->when(
+                count($transportTypes) > 0,
+                fn ($query) => $query->whereIn('transport_type', $transportTypes)
+            )
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
 }

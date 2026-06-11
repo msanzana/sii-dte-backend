@@ -8,6 +8,7 @@ use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationControll
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
+use App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDocumentStatusController;
 use App\Modules\Dte\Presentation\Http\Resources\DteTedBuildController;
@@ -28,8 +29,12 @@ Route::prefix('internal/dte')->group(function() {
     Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
     Route::post('/documents/{documentId}/build-ted', [DteTedBuildController::class, 'build']);
     Route::post('/documents/{documentId}/sign-xml', [DteXmlSignController::class, 'sign']);
+
     Route::post('/documents/{documentId}/send-to-sii', [SiiDispatchController::class, 'send']);
+    Route::post('/documents/{documentId}/send-boleta-to-sii', [SiiBoletaDispatchController::class, 'send']);
+
     Route::post('/documents/{documentId}/query-sii-document-status', [SiiDocumentStatusController::class, 'query']);
 
     Route::post('/dispatches/{dispatchId}/poll-upload-status', [SiiDispatchController::class, 'poll']);
+    Route::post('/dispatches/{dispatchId}/poll-boleta-send-status', [SiiBoletaDispatchController::class, 'poll']);
 });
