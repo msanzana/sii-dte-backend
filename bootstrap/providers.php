@@ -6,4 +6,5 @@ return [
     //AppServiceProvider::class,
     App\Providers\AppServiceProvider::class,
     App\Providers\DteRepositoryServiceProvider::class,
+    App\Providers\AuthRepositoryServiceProvider::class,
 ];

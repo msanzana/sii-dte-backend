@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureJwtAccessToken;
+use App\Http\Middleware\EnsureJwtPermission;
+use App\Http\Middleware\EnsureJwtPreCompanyToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'jwt.precompany' => EnsureJwtPreCompanyToken::class,
+            'jwt.access' => EnsureJwtAccessToken::class,
+            'jwt.permission' => EnsureJwtPermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

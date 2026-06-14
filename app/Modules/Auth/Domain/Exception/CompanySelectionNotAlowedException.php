@@ -3,7 +3,7 @@ namespace App\Modules\Auth\Domain\Exception;
 
 use RuntimeException;
 
-class CompanySelectionNotAlowedException extends RuntimeException
+class CompanySelectionNotAllowedException extends RuntimeException
 {
     public static function forUserAndCompany(int $userId, int $companyId):self
     {

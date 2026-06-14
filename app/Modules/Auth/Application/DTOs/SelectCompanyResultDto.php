@@ -1,6 +1,8 @@
 <?php
 namespace App\Modules\Auth\Application\DTOs;
 
+use App\Modules\Auth\Application\DTOs\AccessProfileDto;
+
 final class SelectCompanyResultDto
 {
     public function __construct(
@@ -10,9 +12,10 @@ final class SelectCompanyResultDto
         public readonly int $companyId,
         public readonly string $companyRut,
         public readonly string $companyName,
-        public readonly string $token,
-        public readonly int $expiresInSeconds,
-        public readonly array $roles,
-        public readonly array $permissions,
+        public readonly string $accessToken,
+        public readonly int $accessExpiresInSeconds,
+        public readonly string $refreshToken,
+        public readonly int $refreshExpiresInSeconds,
+        public readonly AccessProfileDto $accessProfile,
     ){}
 }
