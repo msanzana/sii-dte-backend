@@ -50,7 +50,7 @@ final class PasswordLoginUseCase
             fullName: $user->fullName(),
             email: $user->email(),
             token: $token,
-            tokenStage: 'pre:company',
+            tokenStage: 'pre_company',
             expiresInSeconds: (int) config('platform_auth.jwt.ttl_seconds.pre_company'),
             companiesCount: count($companies),
         );

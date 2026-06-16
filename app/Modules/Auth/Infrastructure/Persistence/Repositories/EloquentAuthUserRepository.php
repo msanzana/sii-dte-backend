@@ -120,6 +120,17 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
 
     public function findByEmail(string $email): ?AuthUser
     {
-        // TODO: Implement findByEmail() method
+        $normalizedEmail = $this->normalizeEmail($email);
+
+        $model = AuthUserEloquentModel::query()
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->first();
+
+        return $model ? $this->toDomain($model) : null;
+    }
+
+        private function normalizeEmail(string $email): string
+    {
+        return mb_strtolower(trim($email));
     }
 }

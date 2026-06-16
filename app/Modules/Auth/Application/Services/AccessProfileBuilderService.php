@@ -5,7 +5,10 @@ use App\Modules\Auth\Application\DTOs\AccessProfileDto;
 
 final class AccessProfileBuilderService
 {
-    public function build(array $roles, array $permissions): AccessProfileDto
+    public function build(array $roles,
+                          array $permissions,
+                          array $permissionItems = []
+    ): AccessProfileDto
     {
         $hasAuth = $this->hasPermissionPrefix($permissions, 'auth.');
         $hasDte = $this->hasPermissionPrefix($permissions,'dte.');
@@ -57,6 +60,7 @@ final class AccessProfileBuilderService
         return new AccessProfileDto(
             roles: array_values($roles),
             permissions: array_values($permissions),
+            permissionItems: array_values($permissionItems),
             modules: $modules,
             menu: $menu,
             actions: $actions

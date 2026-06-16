@@ -22,11 +22,11 @@ use App\Modules\Auth\Domain\Exception\InvalidCredentialsException;
 use App\Modules\Auth\Domain\Exception\InvalidJwtTokenException;
 use App\Modules\Auth\Domain\Exceptions\InvalidRefreshTokenException;
 use App\Modules\Auth\Domain\Exceptions\PasswordResetException;
-use App\Modules\Auth\Infrastructure\Presentation\Http\Requests\PasswordLoginRequest;
-use App\Modules\Auth\Infrastructure\Presentation\Http\Requests\SelectCompanyRequest;
 use App\Modules\Auth\Presentation\Http\Requests\ForgotPasswordRequest;
+use App\Modules\Auth\Presentation\Http\Requests\PasswordLoginRequest;
 use App\Modules\Auth\Presentation\Http\Requests\RefreshTokenRequest;
 use App\Modules\Auth\Presentation\Http\Requests\ResetPasswordRequest;
+use App\Modules\Auth\Presentation\Http\Requests\SelectCompanyRequest;
 use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller

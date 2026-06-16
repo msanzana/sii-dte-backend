@@ -5,12 +5,13 @@ namespace App\Modules\Auth\Application\Services;
 use App\Modules\Auth\Application\DTOs\CreateAuthRoleInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateAuthRoleInputDto;
 use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
-use App\Modules\Auth\Domain\RepositoryContracts\AuthRoleRepositoryInterface;
+use App\Modules\Auth\Domain\RepositoryContracts\AuthRolesRepositoryInterface;
+
 
 final class ManageAuthRolesService
 {
     public function __construct(
-        private readonly AuthRoleRepositoryInterface $authRoleRepository,
+        private readonly AuthRolesRepositoryInterface $authRoleRepository,
     ) {
     }
 

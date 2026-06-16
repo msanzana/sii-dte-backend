@@ -71,7 +71,8 @@ final class GetCurrentSessionUseCase
             companyName: $company->legalName(),
             accessProfile: $this->accessProfileBuilderService->build(
                 $access->roleCodes(),
-                $access->permissionCodes()
+                $access->permissionCodes(),
+                $access->permissionItems()
             ),
         );
     }

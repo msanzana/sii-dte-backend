@@ -14,6 +14,7 @@ final class UserCompanyAccess
         private readonly bool $canSelectCompany,
         private readonly array $roleCodes = [],
         private readonly array $permissionCodes = [],
+        private readonly array $permissionItems = [],
     )
     {}
 
@@ -64,5 +65,9 @@ final class UserCompanyAccess
     public function permissionCodes():array
     {
         return $this->permissionCodes;
+    }
+    public function permissionItems():array
+    {
+        return $this->permissionItems;
     }
 }

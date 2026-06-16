@@ -61,7 +61,8 @@ final class SelectCompanyUseCase
 
             $accessProfile = $this->accessProfileBuilderService->build(
                 $access->roleCodes(),
-                $access->permissionCodes()
+                $access->permissionCodes(),
+                $access->permissionItems()
             );
 
             $accessToken = $this->jwtHs256Service->issue([

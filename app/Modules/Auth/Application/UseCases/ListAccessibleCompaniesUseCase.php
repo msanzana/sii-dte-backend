@@ -19,8 +19,8 @@ final class ListAccessibleCompaniesUseCase
     public function execute(
         ListAccessibleCompaniesInputDto $input
     ): ListAccessibleCompaniesResultDto {
-        $payload = $this->jwtHs256Service->parseAndValidate($input->bearerToken);
 
+        $payload = $this->jwtHs256Service->parseAndValidate($input->bearerToken);
         if (($payload['stage'] ?? null) !== 'pre_company') {
             throw InvalidJwtTokenException::because(
                 'El token no corresponde a la etapa pre_company.'
@@ -41,6 +41,7 @@ final class ListAccessibleCompaniesUseCase
                     'is_default' => $access->isDefault(),
                     'roles' => $access->roleCodes(),
                     'permissions' => $access->permissionCodes(),
+                    'permission_items' => $access->permissionItems(),
                 ],
                 $companies
             )

@@ -15,6 +15,7 @@ final class AuthRole
         private readonly bool $isSystem,
         private readonly bool $isActive,
         private readonly array $permissionCodes = [],
+        private readonly array $permissionIds = [],
     ) {
     }
 
@@ -54,5 +55,9 @@ final class AuthRole
     public function permissionCodes(): array
     {
         return $this->permissionCodes;
+    }
+    public function permissionIds(): array
+    {
+        return $this->permissionIds;
     }
 }

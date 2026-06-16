@@ -6,7 +6,7 @@ use App\Modules\Auth\Domain\Entities\AuthRole;
 
 
 
-interface AuthRoleRepositoryInterface
+interface AuthRolesRepositoryInterface
 {
     /**
      * @return AuthRole[]
@@ -35,5 +35,5 @@ interface AuthRoleRepositoryInterface
     /**
      * @param int[] $permissionIds
      */
-    public function syncPermissions(int $roleId, array $permissionIds): AuthRole;
+    public function syncPermissions(int $roleId, array $permissionIds): void;
 }

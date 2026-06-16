@@ -18,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'jwt.precompany' => EnsureJwtPreCompanyToken::class,
             'jwt.access' => EnsureJwtAccessToken::class,
-            'jwt.permission' => EnsureJwtPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

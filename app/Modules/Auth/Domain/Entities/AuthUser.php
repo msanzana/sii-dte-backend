@@ -8,7 +8,7 @@ final class AuthUser
         private readonly string $email,
         private readonly string $passwordHash,
         private readonly bool $isActive,
-        private readonly string $lastLoginAt,
+        private readonly ?string $lastLoginAt,
     ) {
     }
 
@@ -37,7 +37,7 @@ final class AuthUser
         return $this->isActive;
     }
 
-    public function lastLoginAt():string
+    public function lastLoginAt():?string
     {
         return $this->lastLoginAt;
     }

@@ -4,6 +4,10 @@ namespace App\Modules\Auth\Domain\RepositoryContracts;
 
 use App\Modules\Auth\Domain\Entities\AuthRefreshToken;
 
+
+
+
+
 interface AuthRefreshTokenRepositoryInterface
 {
     public function create(

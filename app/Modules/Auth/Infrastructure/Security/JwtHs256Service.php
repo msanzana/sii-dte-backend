@@ -41,11 +41,11 @@ final class JwtHs256Service
 
     public function parseAndValidate(string $jwt): array
     {
-        $parts = explode('.',$jwt);
+        $parts = explode('.',trim($jwt));
 
         if(count($parts) !== 3)
         {
-            throw InvalidJwtTokenException::because('Las firma del JWT no es válida.');
+            throw InvalidJwtTokenException::because('La firma del JWT no es válida.');
         }
 
         [$encodedHeader,$encodedPayload,$encodedSignature] = $parts;
@@ -65,7 +65,7 @@ final class JwtHs256Service
         $header = json_decode($headerJson,true,212,JSON_THROW_ON_ERROR);
         $payload = json_decode($payloadJson,true,512,JSON_THROW_ON_ERROR);
 
-        if(($header['alg]'] ?? null) !== 'HS256')
+        if(($header['alg'] ?? null) !== 'HS256')
         {
             throw InvalidJwtTokenException::because('El algoritmo del JWT no es válido');
         }
@@ -77,7 +77,7 @@ final class JwtHs256Service
             throw InvalidJwtTokenException::because('El JWT aun no esta habilitado.');
         }
 
-        if(!isset($payload['exp']) || $now < (int) $payload['exp'])
+        if(!isset($payload['exp']) || $now >= (int) $payload['exp'])
         {
             throw InvalidJwtTokenException::because('El JWT ha expirado.');
         }
@@ -97,8 +97,7 @@ final class JwtHs256Service
 
     private function secret(): string
     {
-        $secret = trim((string) config('platform_auth-jwt.secret'));
-
+        $secret = trim((string) config('platform_auth.jwt.secret'));
         if($secret === '')
         {
             throw InvalidJwtTokenException::because(

@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
 use App\Modules\Auth\Infrastructure\Security\JwtHs256Service;
 use Closure;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EnsureJwtPreCompanyToken
@@ -20,13 +19,11 @@ class EnsureJwtPreCompanyToken
     {
         try {
             $token = (string) $request->bearerToken();
-
             if (trim($token) === '') {
                 return response()->json([
                     'message' => 'No existe bearer token.',
                 ], 401);
             }
-
             $payload = $this->jwtHs256Service->parseAndValidate($token);
 
             if (($payload['stage'] ?? null) !== 'pre_company') {

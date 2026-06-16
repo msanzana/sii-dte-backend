@@ -7,6 +7,7 @@ final class AccessProfileDto
     public function __construct(
         public readonly array $roles,
         public readonly array $permissions,
+        public readonly array $permissionItems,
         public readonly array $modules,
         public readonly array $menu,
         public readonly array $actions,
@@ -17,6 +18,7 @@ final class AccessProfileDto
         return [
             'roles' => $this->roles,
             'permissions' => $this->permissions,
+            'permission_items' => $this->permissionItems,
             'modules' => $this->modules,
             'menu' => $this->menu,
             'actions' => $this->actions,

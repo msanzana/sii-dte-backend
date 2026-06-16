@@ -1,104 +1,100 @@
 <?php
 
-namespace App\Modules\Auth\Application\Services;
+namespace App\Modules\Auth\Infrastructure\Persistence\Repositories;
 
-use App\Modules\Auth\Application\DTOs\CreateAuthUserInputDto;
-use App\Modules\Auth\Application\DTOs\UpdateAuthUserInputDto;
-use App\Modules\Auth\Domain\Exceptions\AuthAdministrationException;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
-use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
-use Illuminate\Support\Facades\Hash;
+use App\Modules\Auth\Domain\Entities\AuthPermission;
+use App\Modules\Auth\Domain\RepositoryContracts\AuthPermissionRepositoryInterface;
+use App\Modules\Auth\Infrastructure\Persistence\EloquentModels\AuthPermissionEloquentModel;
 
-final class ManageAuthUsersService
+final class EloquentAuthPermissionRepository implements AuthPermissionRepositoryInterface
 {
-    public function __construct(
-        private readonly AuthUserRepositoryInterface $authUserRepository,
-    ) {
+    /**
+     * @return AuthPermission[]
+     */
+    public function findAll(?bool $isActive = null, int $limit = 100): array
+    {
+        return AuthPermissionEloquentModel::query()
+            ->when(
+                $isActive !== null,
+                fn ($query) => $query->where('is_active', $isActive)
+            )
+            ->orderBy('module')
+            ->orderBy('code')
+            ->limit($limit)
+            ->get()
+            ->map(fn (AuthPermissionEloquentModel $model) => $this->toDomain($model))
+            ->all();
     }
 
-    public function list(?bool $isActive = null, int $limit = 100): array
+    public function findById(int $permissionId): ?AuthPermission
     {
-        return array_map(
-            fn ($user) => [
-                'id' => $user->id(),
-                'full_name' => $user->fullName(),
-                'email' => $user->email(),
-                'is_active' => $user->isActive(),
-                'last_login_at' => $user->lastLoginAt(),
-            ],
-            $this->authUserRepository->findAll($isActive, $limit)
+        $model = AuthPermissionEloquentModel::query()->find($permissionId);
+
+        return $model ? $this->toDomain($model) : null;
+    }
+
+    public function create(
+        string $code,
+        string $name,
+        string $module,
+        ?string $description,
+        bool $isActive
+    ): AuthPermission {
+        $model = new AuthPermissionEloquentModel();
+
+        $model->fill([
+            'code' => trim($code),
+            'name' => trim($name),
+            'module' => trim($module),
+            'description' => $description !== null ? trim($description) : null,
+            'is_active' => $isActive,
+        ]);
+
+        $model->save();
+
+        return $this->toDomain($model);
+    }
+
+    public function update(
+        int $permissionId,
+        string $code,
+        string $name,
+        string $module,
+        ?string $description
+    ): AuthPermission {
+        $model = AuthPermissionEloquentModel::query()->findOrFail($permissionId);
+
+        $model->fill([
+            'code' => trim($code),
+            'name' => trim($name),
+            'module' => trim($module),
+            'description' => $description !== null ? trim($description) : null,
+        ]);
+
+        $model->save();
+
+        return $this->toDomain($model);
+    }
+
+    public function setActive(int $permissionId, bool $isActive): void
+    {
+        AuthPermissionEloquentModel::query()
+            ->where('id', $permissionId)
+            ->update([
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
+    }
+
+    private function toDomain(AuthPermissionEloquentModel $model): AuthPermission
+    {
+        return new AuthPermission(
+            id: (int) $model->id,
+            code: (string) $model->code,
+            name: (string) $model->name,
+            module: (string) $model->module,
+            description: $model->description,
+            isActive: (bool) $model->is_active,
         );
-    }
-
-    public function show(int $userId): array
-    {
-        $user = $this->authUserRepository->findById($userId);
-
-        if (!$user) {
-            throw AuthEntityNotFoundException::for('usuario', $userId);
-        }
-
-        return [
-            'id' => $user->id(),
-            'full_name' => $user->fullName(),
-            'email' => $user->email(),
-            'is_active' => $user->isActive(),
-            'last_login_at' => $user->lastLoginAt(),
-        ];
-    }
-
-    public function create(CreateAuthUserInputDto $input): array
-    {
-        if ($this->authUserRepository->findActiveByEmail($input->email)) {
-            throw AuthAdministrationException::because(
-                'Ya existe un usuario activo con ese email.'
-            );
-        }
-
-        $user = $this->authUserRepository->create(
-            fullName: $input->fullName,
-            email: $input->email,
-            passwordHash: Hash::make($input->password),
-            isActive: $input->isActive
-        );
-
-        return $this->show($user->id());
-    }
-
-    public function update(UpdateAuthUserInputDto $input): array
-    {
-        $existing = $this->authUserRepository->findById($input->userId);
-
-        if (!$existing) {
-            throw AuthEntityNotFoundException::for('usuario', $input->userId);
-        }
-
-        $user = $this->authUserRepository->update(
-            userId: $input->userId,
-            fullName: $input->fullName,
-            email: $input->email
-        );
-
-        if ($input->password !== null && trim($input->password) !== '') {
-            $this->authUserRepository->setPassword(
-                $input->userId,
-                Hash::make($input->password)
-            );
-        }
-
-        return $this->show($user->id());
-    }
-
-    public function setActive(int $userId, bool $isActive): array
-    {
-        $existing = $this->authUserRepository->findById($userId);
-
-        if (!$existing) {
-            throw AuthEntityNotFoundException::for('usuario', $userId);
-        }
-
-        $this->authUserRepository->setActive($userId, $isActive);
-
-        return $this->show($userId);
     }
 }

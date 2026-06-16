@@ -4,7 +4,7 @@ namespace App\Modules\Auth\Infrastructure\Persistence\EloquentModels;
 use Illuminate\Database\Eloquent\Model;
 class AuthUserEloquentModel extends Model
 {
-    protected $table ='auth_user';
+    protected $table ='auth_users';
 
     protected $fillable = [
         'full_name',
