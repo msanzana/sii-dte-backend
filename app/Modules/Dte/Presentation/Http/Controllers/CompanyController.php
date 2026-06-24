@@ -32,7 +32,7 @@ class CompanyController extends Controller
                     giro: $data['giro'] ?? null,
                     address: $data['address'],
                     cityId: (int) $data['city_id'],
-                    dteEmail: $data['dte:email'] ?? null,
+                    dteEmail: $data['dte_email'] ?? null,
                     resolutionNumber: $data['resolution_number'] ?? null,
                     resolutionDate: $data['resolution_date'] ?? null,
                     siiEnvironment: $data['sii_environment'],

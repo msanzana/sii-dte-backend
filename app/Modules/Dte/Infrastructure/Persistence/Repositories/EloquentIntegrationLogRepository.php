@@ -16,6 +16,7 @@ final class EloquentIntegrationLogRepository implements IntegrationLogRepository
         ?int $documentId = null,
         ?string $code = null
     ): void {
+        error_log($code);
         $this->write('info',$channel,$message,$context,$companyId,$documentId,$code);
     }
 
@@ -48,7 +49,7 @@ final class EloquentIntegrationLogRepository implements IntegrationLogRepository
         array $context,
         ?int $companyId,
         ?int $documentId,
-        ?int $code
+        ?string $code
     ): void {
         Log::channel('stack')->log($level, "[{$channel}] {$message}", $context);
         IntegrationLogEloquentModel::query()->create([

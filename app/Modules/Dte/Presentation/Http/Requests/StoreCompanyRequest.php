@@ -13,7 +13,7 @@ class StoreCompanyRequest extends FormRequest
     public function rules():array
     {
         return [
-            "tut"=> ['required','string','max:12'],
+            "rut"=> ['required','string','max:12'],
             'rut_body' => ['required','string','max:8'],
             'rut_dv' => ['required','string','max:1'],
             'legal_name' => ['required','string','max:120'],
@@ -23,7 +23,8 @@ class StoreCompanyRequest extends FormRequest
             'city_id' => ['required','integer','exists:cities,id'],
             'dte_email'=> ['required','string','max:150'],
             'resolution_number' => ['required','string','max:20'],
-            'resolution_date' => ['required',Rule::in(['cert', 'prod'])],
+            'resolution_date' => ['required','string'],
+            'sii_environment' => ['required',Rule::in(['cert', 'prod'])],
             'is_active' => ['nullable','boolean'],
         ];
     }

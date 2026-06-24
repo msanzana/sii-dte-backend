@@ -30,7 +30,9 @@ return [
         'signed' => storage_path('app/private/dte/signed'),
         'responses' => storage_path('app/private/dte/responses'),
     ],
-
+    
+    'openssl_binary' => env('OPENSSL_BINARY', 'openssl'),
+    'openssl_modules' => env('OPENSSL_MODULES'),
     /*
     |--------------------------------------------------------------------------
     | Claves de estado del servicio

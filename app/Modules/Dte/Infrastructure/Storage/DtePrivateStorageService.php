@@ -62,4 +62,26 @@ class DtePrivateStorageService
 
         return $normalizedAbsolute;
     }
+
+
+    public function storeContents(
+        string $contents,
+        string $targetDirectory,
+        string $targetFilename
+    ): string {
+        $targetDirectory = trim($targetDirectory, '/');
+        $relativePath = $targetDirectory . '/' . $targetFilename;
+
+        $stored = \Illuminate\Support\Facades\Storage::disk('local')->put(
+            $relativePath,
+            $contents
+        );
+
+        if (!$stored) {
+            throw new \RuntimeException('No fue posible guardar el archivo en el storage privado.');
+        }
+
+        return $relativePath;
+    }
 }
+

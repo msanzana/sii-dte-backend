@@ -7,6 +7,7 @@ final class ImportCertificateResultDto
         public readonly int $companyId,
         public readonly string $alias,
         public readonly string $pfxPath,
+        public readonly int $certificateId,
         public readonly ?string $serialNumber,
         public readonly ?string $subjectName,
         public readonly ?string $issuerName,
@@ -14,6 +15,8 @@ final class ImportCertificateResultDto
         public readonly ?string $validTo,
         public readonly bool $isDefault,
         public readonly bool $isActive,
+        public readonly ?string $currentValidityStatus = null,
+        public readonly bool $hasPrivateKey = true,
     )
     {}
 }

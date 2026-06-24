@@ -2,7 +2,8 @@
 
 namespace App\Modules\Dte\Infrastructure\Persistence\Repositories;
 
-use App\Models\Dte\Domain\Entities\Company;
+
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\CompanyPersistenceMapper;

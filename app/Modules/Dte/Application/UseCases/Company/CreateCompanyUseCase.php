@@ -1,9 +1,9 @@
 <?php
 namespace App\Modules\Dte\Application\UseCases\Company;
 
-use App\Models\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Application\DTOs\CreateCompanyInputDto;
 use App\Modules\Dte\Application\DTOs\CreateCompanyResultDto;
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Exceptions\CityNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException;
 use App\Modules\Dte\Domain\RepositoryContracts\CityRepositoryInterface;
@@ -27,7 +27,7 @@ final class CreateCompanyUseCase
             throw DuplicateCompanyRutException::withRut($input->rut);
         }
 
-        if($this->cityRepository->existsActiveById($input->cityId))
+        if(!$this->cityRepository->existsActiveById($input->cityId))
         {
             throw CityNotFoundException::withId($input->cityId);
         }
@@ -60,11 +60,15 @@ final class CreateCompanyUseCase
                 ],
                 companyId: $saved->id(),
                 code: 'COMPANY_CREATED'
-
             );
-
+            return new CreateCompanyResultDto(
+                id: $saved->id(),
+                rut: $company->rut(),
+                legalName: $company->legalName(),
+                cityId: $company->cityId(),
+                siiEnvironment: $company->siiEnvironment(),
+                isActive: $company->isActive(),
+            );
         });
-
-
     }
 }

@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Dte\Domain\Entities;
+namespace App\Modules\Dte\Domain\Entities;
 final class Company
 {
     public function __construct(

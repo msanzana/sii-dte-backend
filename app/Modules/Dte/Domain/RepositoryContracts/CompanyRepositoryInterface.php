@@ -1,6 +1,8 @@
 <?php
 namespace App\Modules\Dte\Domain\RepositoryContracts;
-use App\Models\Dte\Domain\Entities\Company;
+
+use App\Modules\Dte\Domain\Entities\Company;
+
 interface CompanyRepositoryInterface
 {
     public function create(Company $company): Company;

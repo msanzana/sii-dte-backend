@@ -6,7 +6,7 @@ use App\Modules\Auth\Application\DTOs\AssignUserCompanyInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateUserCompanyAssignmentInputDto;
 use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthCompanyStateRepositoryInterface;
-use App\Modules\Auth\Domain\RepositoryContracts\AuthRoleRepositoryInterface;
+use App\Modules\Auth\Domain\RepositoryContracts\AuthRolesRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\UserCompanyAccessRepositoryInterface;
 
@@ -15,7 +15,7 @@ final class ManageUserCompanyAssignmentsService
     public function __construct(
         private readonly AuthUserRepositoryInterface $authUserRepository,
         private readonly AuthCompanyStateRepositoryInterface $authCompanyStateRepository,
-        private readonly AuthRoleRepositoryInterface $authRoleRepository,
+        private readonly AuthRolesRepositoryInterface $authRoleRepository,
         private readonly UserCompanyAccessRepositoryInterface $userCompanyAccessRepository,
     ) {
     }

@@ -11,6 +11,8 @@ use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface
 use App\Modules\Dte\Infrastructure\Crypto\PfxInspectorService;
 use App\Modules\Dte\Infrastructure\Crypto\SecretEncryptionService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+use App\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter;
+use App\Modules\Dte\Domain\Exceptions\LegacyPfxUnsupportedException;
 use Illuminate\Support\Facades\DB;
 
 final class ImportCertificateUseCase
@@ -22,37 +24,71 @@ final class ImportCertificateUseCase
         private readonly DtePrivateStorageService $storageService,
         private readonly PfxInspectorService $pfxInspectorService,
         private readonly SecretEncryptionService $secretEncryptionService,
+        private readonly LegacyPfxConverter $legacyPfxConverter,
     )
     {}
-    public function execute(ImportCertificateInputDto $input):ImportCertificateResultDto
+    public function execute(ImportCertificateInputDto $input): ImportCertificateResultDto
     {
-        if(!$this->companyRepository->existsActiveById($input->companyId)){
+        if (!$this->companyRepository->existsActiveById($input->companyId)) {
             throw CompanyNotFoundException::withId($input->companyId);
         }
-        return DB::transaction(function () use ($input) {
+
+        $pfxContents = file_get_contents($input->tempFilepath);
+
+        if ($pfxContents === false || $pfxContents === '') {
+            throw new \RuntimeException('No fue posible leer el archivo temporal del certificado.');
+        }
+
+        $pfxToStore = $pfxContents;
+        $wasConverted = false;
+
+        try {
+            $metadata = $this->pfxInspectorService->inspect(
+                pfxContents: $pfxContents,
+                password: $input->pfxPassword
+            );
+        } catch (LegacyPfxUnsupportedException $e) {
+            logger()->warning('PFX legacy detectado. Intentando convertir a PFX moderno.', [
+                'company_id' => $input->companyId,
+                'original_filename' => $input->originalFilename,
+                'pfx_size_bytes' => strlen($pfxContents),
+                'pfx_sha256' => hash('sha256', $pfxContents),
+            ]);
+
+            $modernPfxContents = $this->legacyPfxConverter->convertToModernPfx(
+                legacyPfxContents: $pfxContents,
+                oldPassword: $input->pfxPassword,
+                newPassword: $input->pfxPassword
+            );
+
+            $metadata = $this->pfxInspectorService->inspect(
+                pfxContents: $modernPfxContents,
+                password: $input->pfxPassword
+            );
+
+            $pfxToStore = $modernPfxContents;
+            $wasConverted = true;
+
+            logger()->info('PFX legacy convertido correctamente a PFX moderno.', [
+                'company_id' => $input->companyId,
+                'original_filename' => $input->originalFilename,
+                'modern_pfx_size_bytes' => strlen($modernPfxContents),
+                'modern_pfx_sha256' => hash('sha256', $modernPfxContents),
+            ]);
+        }
+
+        return DB::transaction(function () use ($input, $metadata, $pfxToStore, $wasConverted) {
             $filename = sprintf(
-                'company_%d_%d_%d.pfx',
+                'company_%d_%s_%s.pfx',
                 $input->companyId,
                 date('Ymd_His'),
                 bin2hex(random_bytes(4))
             );
 
-            $relativePath = $this->storageService->storeFileFromPath(
-                sourcePath: $input->tempFilepath,
+            $relativePath = $this->storageService->storeContents(
+                contents: $pfxToStore,
                 targetDirectory: 'certificates',
                 targetFilename: $filename
-            );
-
-            $pfxContents = file_get_contents($input->tempFilepath);
-
-            if($pfxContents === false)
-            {
-                throw new \RuntimeException('No fue posible el archivo temporal del certificado.');
-            }
-
-            $metadata = $this->pfxInspectorService->inspect(
-                pfxContents: $pfxContents,
-                password: $input->pfxPassword
             );
 
             $encryptedPassword = $this->secretEncryptionService->encrypt($input->pfxPassword);
@@ -66,25 +102,25 @@ final class ImportCertificateUseCase
                 pfxPath: $relativePath,
                 pfxPasswordEncrypted: $encryptedPassword,
                 serialNumber: $metadata['serial_number'] ?? null,
-                subjectName: $metadata('subject_name') ?? null,
-                issuerName: $metadata('issuer_name') ?? null,
-                validFrom: $metadata('valid_from') ?? null,
-                validTo: $metadata('valid_to') ?? null,
+                subjectName: $metadata['subject_name'] ?? null,
+                issuerName: $metadata['issuer_name'] ?? null,
+                validFrom: $metadata['valid_from'] ?? null,
+                validTo: $metadata['valid_to'] ?? null,
                 isDefault: $isDefault,
-                isActive:true,
-
+                isActive: $input->isActive,
             );
 
             $saved = $this->certificateRepository->create($certificate);
 
             $this->logRepository->info(
                 channel: 'certificate',
-                message: 'Certificado importado correcxtamente',
+                message: 'Certificado importado correctamente',
                 context: [
                     'certificate_id' => $saved->id(),
                     'company_id' => $saved->companyId(),
                     'alias' => $saved->alias(),
                     'serial_number' => $saved->serialNumber(),
+                    'was_converted' => $wasConverted,
                 ],
                 companyId: $saved->companyId(),
                 code: 'CERTIFICATE_IMPORTED'
@@ -101,7 +137,7 @@ final class ImportCertificateUseCase
                 validFrom: $saved->validFrom(),
                 validTo: $saved->validTo(),
                 isDefault: $saved->isDefault(),
-                isActive:$saved->isActive(),
+                isActive: $saved->isActive(),
             );
         });
     }

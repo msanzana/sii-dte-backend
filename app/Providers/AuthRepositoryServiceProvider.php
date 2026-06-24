@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Modules\Auth\Domain\RepositoryContracts\AuthCompanyStateRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthPasswordResetTokenRepositoryInterface;
+use App\Modules\Auth\Domain\RepositoryContracts\AuthPermissionRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRefreshTokenRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRolesRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\UserCompanyAccessRepositoryInterface;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthCompanyStateRepository;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthPasswordResetTokenRepository;
+use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthPermissionRepository;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthRefreshTokenRepository;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthRolesRepository;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthUserRepository;
@@ -48,6 +50,10 @@ class AuthRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             AuthRolesRepositoryInterface::class,
             EloquentAuthRolesRepository::class
+        );
+        $this->app->bind(
+            AuthPermissionRepositoryInterface::class,
+            EloquentAuthPermissionRepository::class
         );
     }
 }

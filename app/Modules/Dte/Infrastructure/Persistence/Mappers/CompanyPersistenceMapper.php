@@ -1,7 +1,8 @@
 <?php
 namespace App\Modules\Dte\Infrastructure\Persistence\Mappers;
 
-use App\Models\Dte\Domain\Entities\Company;
+
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyEloquentModel;
 
 final class CompanyPersistenceMapper
