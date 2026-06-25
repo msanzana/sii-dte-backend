@@ -6,7 +6,7 @@ final class CreateManualCertificateNoticeInputDto
         public readonly int $companyId,
         public readonly int $userId,
         public readonly string $type,
-        public readonly string $tittle,
+        public readonly string $title,
         public readonly string $message,
     ) {
     }

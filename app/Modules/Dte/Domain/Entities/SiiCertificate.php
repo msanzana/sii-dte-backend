@@ -7,7 +7,7 @@ use Carbon\CarbonImmutable;
 final class SiiCertificate
 {
     public function __construct(
-        private readonly int $id,
+        private readonly ?int $id,
         private readonly int $companyId,
         private readonly string $alias,
         private readonly string $pfxPath,
@@ -28,7 +28,7 @@ final class SiiCertificate
     ) {
     }
 
-    public function id(): int
+    public function id(): ?int
     {
         return $this->id;
     }

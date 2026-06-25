@@ -3,6 +3,8 @@ namespace App\Modules\Dte\Application\UseCases\Certificate;
 
 use App\Modules\Dte\Application\DTOs\ImportCertificateInputDto;
 use App\Modules\Dte\Application\DTOs\ImportCertificateResultDto;
+use App\Modules\Dte\Application\Services\PreventDuplicateCertificateService;
+use App\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService;
 use App\Modules\Dte\Domain\Entities\SiiCertificate;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
@@ -25,8 +27,11 @@ final class ImportCertificateUseCase
         private readonly PfxInspectorService $pfxInspectorService,
         private readonly SecretEncryptionService $secretEncryptionService,
         private readonly LegacyPfxConverter $legacyPfxConverter,
+        private readonly PreventDuplicateCertificateService $preventDuplicateCertificateService,
+        private readonly SyncDefaultCertificateForCompanyService $syncDefaultCertificateForCompanyService,
     )
     {}
+
     public function execute(ImportCertificateInputDto $input): ImportCertificateResultDto
     {
         if (!$this->companyRepository->existsActiveById($input->companyId)) {
@@ -77,7 +82,25 @@ final class ImportCertificateUseCase
             ]);
         }
 
-        return DB::transaction(function () use ($input, $metadata, $pfxToStore, $wasConverted) {
+        $pfxSha256 = hash('sha256', $pfxToStore);
+
+        $metadataHash = hash('sha256', implode('|', [
+            $input->companyId,
+            $metadata['subject_name'] ?? '',
+            $metadata['issuer_name'] ?? '',
+            $metadata['serial_number'] ?? '',
+            $metadata['valid_from'] ?? '',
+            $metadata['valid_to'] ?? '',
+            (int) ($metadata['has_private_key'] ?? false),
+        ]));
+
+        $this->preventDuplicateCertificateService->execute(
+            $input->companyId,
+            $pfxSha256,
+            $metadataHash
+        );
+
+        return DB::transaction(function () use ($input, $metadata, $pfxToStore, $wasConverted, $pfxSha256, $metadataHash) {
             $filename = sprintf(
                 'company_%d_%s_%s.pfx',
                 $input->companyId,
@@ -93,8 +116,6 @@ final class ImportCertificateUseCase
 
             $encryptedPassword = $this->secretEncryptionService->encrypt($input->pfxPassword);
 
-            $isDefault = !$this->certificateRepository->hasDefaultForCompany($input->companyId);
-
             $certificate = new SiiCertificate(
                 id: null,
                 companyId: $input->companyId,
@@ -106,11 +127,24 @@ final class ImportCertificateUseCase
                 issuerName: $metadata['issuer_name'] ?? null,
                 validFrom: $metadata['valid_from'] ?? null,
                 validTo: $metadata['valid_to'] ?? null,
-                isDefault: $isDefault,
+                pfxSha256: $pfxSha256,
+                metadataHash: $metadataHash,
+                certificateFingerprintSha1: $metadata['certificate_fingerprint_sha1'] ?? null,
+                hasPrivateKey: (bool) ($metadata['has_private_key'] ?? true),
+                isDefault: false,
                 isActive: $input->isActive,
+                lastValidityCheckAt: now()->format('Y-m-d H:i:s'),
+                lastValidityStatus: null,
             );
 
             $saved = $this->certificateRepository->create($certificate);
+
+            $selectedDefault = $this->syncDefaultCertificateForCompanyService->execute(
+                $input->companyId,
+                $saved->id()
+            );
+
+            $saved = $this->certificateRepository->findById((int) $saved->id()) ?? $saved;
 
             $this->logRepository->info(
                 channel: 'certificate',
@@ -121,13 +155,17 @@ final class ImportCertificateUseCase
                     'alias' => $saved->alias(),
                     'serial_number' => $saved->serialNumber(),
                     'was_converted' => $wasConverted,
+                    'pfx_sha256' => $saved->pfxSha256(),
+                    'metadata_hash' => $saved->metadataHash(),
+                    'current_validity_status' => $saved->currentValidityStatus(),
+                    'selected_default_certificate_id' => $selectedDefault?->id(),
                 ],
                 companyId: $saved->companyId(),
                 code: 'CERTIFICATE_IMPORTED'
             );
 
             return new ImportCertificateResultDto(
-                id: $saved->id(),
+                id: (int) $saved->id(),
                 companyId: $saved->companyId(),
                 alias: $saved->alias(),
                 pfxPath: $saved->pfxPath(),
@@ -138,6 +176,8 @@ final class ImportCertificateUseCase
                 validTo: $saved->validTo(),
                 isDefault: $saved->isDefault(),
                 isActive: $saved->isActive(),
+                currentValidityStatus: $saved->currentValidityStatus(),
+                hasPrivateKey: $saved->hasPrivateKey(),
             );
         });
     }
