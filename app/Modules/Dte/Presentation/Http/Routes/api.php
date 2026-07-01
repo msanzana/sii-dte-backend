@@ -2,6 +2,7 @@
 
 use App\Modules\Dte\Presentation\Http\Controllers\CafController;
 use App\Modules\Dte\Presentation\Http\Controllers\CertificateController;
+use App\Modules\Dte\Presentation\Http\Controllers\CompanyCertificateNoticeController;
 use App\Modules\Dte\Presentation\Http\Controllers\CompanyController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationController;
@@ -23,6 +24,12 @@ use Illuminate\Support\Facades\Route;
     Route::post('/companies',[CompanyController::class,'create']);
     Route::post('/certificates',[CertificateController::class,'store']);
     Route::post('/cafs', [CafController::class, 'store']);
+
+    Route::get('/notices', [CompanyCertificateNoticeController::class, 'index']);
+    Route::post('/notices/manual', [CompanyCertificateNoticeController::class, 'storeManual']);
+    Route::put('/notices/{noticeId}', [CompanyCertificateNoticeController::class, 'updateManual']);
+    Route::post('/notices/{noticeId}/mark-read', [CompanyCertificateNoticeController::class, 'markRead']);
+    Route::delete('/notices/{noticeId}', [CompanyCertificateNoticeController::class, 'destroy']);
 
     Route::post('/document',[DteDocumentController::class, 'store']);
     Route::post('/documents/{documentId}/prepare-for-xml', [DteDocumentPreparationController::class, 'prepareForXml']);

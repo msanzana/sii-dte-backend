@@ -1,6 +1,8 @@
 <?php
 namespace App\Modules\Dte\Presentation\Http\Requests;
-class UpdateManualCertificateNoticeRequest
+
+use Illuminate\Foundation\Http\FormRequest;
+class UpdateManualCertificateNoticeRequest extends FormRequest
 {
     public function authorize():bool
     {

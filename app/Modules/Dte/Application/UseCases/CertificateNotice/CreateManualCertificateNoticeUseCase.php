@@ -2,27 +2,24 @@
 
 namespace App\Modules\Dte\Application\UseCases\CertificateNotice;
 
-use App\Modules\Dte\Application\DTOs\ListCompanyCertificateNoticesResultDto;
-use App\Modules\Dte\Application\Mappers\CompanyCertificateNoticeMapper;
-use App\Modules\Dte\Domain\RepositoryContracts\CompanyCertificateNoticeRepositoryInterface;
+use App\Modules\Dte\Application\DTOs\CreateManualCertificateNoticeInputDto;
+use App\Modules\Dte\Application\Services\EmitCertificateNoticeService;
 
-final class ListCompanyCertificateNoticesUseCase
+final class CreateManualCertificateNoticeUseCase
 {
     public function __construct(
-        private readonly CompanyCertificateNoticeRepositoryInterface $companyCertificateNoticeRepository,
-        private readonly CompanyCertificateNoticeMapper $companyCertificateNoticeMapper,
+        private readonly EmitCertificateNoticeService $emitCertificateNoticeService,
     ) {
     }
 
-    public function execute(int $companyId): ListCompanyCertificateNoticesResultDto
+    public function execute(CreateManualCertificateNoticeInputDto $input): void
     {
-        $items = $this->companyCertificateNoticeRepository->findByCompanyId($companyId, 200);
-
-        return new ListCompanyCertificateNoticesResultDto(
-            items: array_map(
-                fn ($item) => $this->companyCertificateNoticeMapper->toItemDto($item),
-                $items
-            )
+        $this->emitCertificateNoticeService->manual(
+            companyId: $input->companyId,
+            userId: $input->userId,
+            type: $input->type,
+            title: $input->title,
+            message: $input->message,
         );
     }
 }

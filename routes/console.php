@@ -40,3 +40,4 @@ Schedule::job(
     ->everyTenSeconds()
     ->withoutOverlapping(1)
     ->onOneServer();
+Schedule::command('dte:refresh-company-certificate-defaults')->hourly();
