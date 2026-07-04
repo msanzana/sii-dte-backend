@@ -83,5 +83,63 @@ class DtePrivateStorageService
 
         return $relativePath;
     }
+    public function getContents(string $relativePath): ?string
+    {
+        $fullPath = $this->resolveAbsolutePath($relativePath);
+
+        if (!is_file($fullPath)) {
+            return null;
+        }
+
+        $contents = file_get_contents($fullPath);
+
+        return $contents === false ? null : $contents;
+    }
+
+    public function resolveAbsolutePath(string $relativePath): string
+    {
+        $normalizedRelativePath = $this->normalizeRelativePath($relativePath);
+
+        return $this->baseStoragePath()
+            . DIRECTORY_SEPARATOR
+            . $normalizedRelativePath;
+    }
+
+    private function baseStoragePath(): string
+    {
+        /*
+         * IMPORTANTE:
+         * Si tu servicio actual guarda en otra raíz distinta,
+         * ajusta SOLO esta línea para que coincida con tu implementación real.
+         */
+        return storage_path('app/private/dte');
+    }
+
+    private function normalizeRelativePath(string $relativePath): string
+    {
+        $path = trim($relativePath);
+
+        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+
+        while (str_contains($path, DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR)) {
+            $path = str_replace(
+                DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR,
+                DIRECTORY_SEPARATOR,
+                $path
+            );
+        }
+
+        $path = ltrim($path, DIRECTORY_SEPARATOR);
+
+        if ($path === '') {
+            throw new \InvalidArgumentException('La ruta relativa no puede estar vacía.');
+        }
+
+        if (str_contains($path, '..')) {
+            throw new \InvalidArgumentException('La ruta relativa contiene segmentos no permitidos.');
+        }
+
+        return $path;
+    }
 }
 

@@ -3,21 +3,22 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 
 use App\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto;
 use App\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\SiiDispatch;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteBoletaSendDomainService;
-use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
+//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService;
-use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
+//use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -28,15 +29,16 @@ final class SendSignedBoletaToSiiUseCase
     public function __construct(
         private readonly DteDocumentRepositoryInterface $documentRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
-        private readonly SiiCertificateRepositoryInterface $certificateRepository,
         private readonly SiiDispatchRepositoryInterface $dispatchRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
         private readonly DteBoletaSendDomainService $boletaSendDomainService,
-        private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
         private readonly SiiBoletaApiAuthenticationService $siiBoletaApiAuthenticationService,
         private readonly EnvioBoletaEnvelopeBuilderService $envioBoletaEnvelopeBuilderService,
         private readonly SiiBoletaApiUploadService $siiBoletaApiUploadService,
         private readonly DtePrivateStorageService $storageService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
+        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     ){}
 
     public function execute(
@@ -60,24 +62,26 @@ final class SendSignedBoletaToSiiUseCase
                 throw CompanyNotFoundException::withId($document->companyId());
             }
 
-            $certificate = $this->certificateRepository->findDefaultByCompanyId($document->companyId());
+            // $certificate = $this->certificateRepository->findDefaultByCompanyId($document->companyId());
 
-            if(!$certificate)
-            {
-                throw CertificateNotFoundException::defaultFromCompany($document->companyId());
-            }
+            // if(!$certificate)
+            // {
+            //     throw CertificateNotFoundException::defaultFromCompany($document->companyId());
+            // }
 
-            $certificateMaterial = $this->certificateMaterialExtractorService->extract(
-                $certificate
+            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+            //     $certificate
+            // );
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute(
+                $document->companyId()
             );
-
             $environment = $document->siiEnvironment() ?? config('dte.default_environment');
 
             $token = $this->siiBoletaApiAuthenticationService->authenticate(
                 environment: $environment,
-                privateKeyPem: $certificateMaterial['private_key_pem'],
-                certificateBase64: $certificateMaterial['certificate_base64'],
-                modulusBase64: $certificateMaterial['modulusBase64']
+                privateKeyPem: $certificateContext->privateKeyPem,
+                certificateBase64: $certificateContext->certificateBase64,
+                modulusBase64: $certificateContext->modulusBase64,
             );
 
             $absoluteSignedPath = storage_path($document->signedXmlPath());

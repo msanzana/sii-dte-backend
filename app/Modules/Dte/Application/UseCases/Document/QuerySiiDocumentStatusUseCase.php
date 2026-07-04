@@ -3,6 +3,7 @@ namespace App\Modules\Dte\Application\UseCases\Document;
 
 use App\Modules\Dte\Application\DTOs\QuerySiiDocumentStatusInputDto;
 use App\Modules\Dte\Application\DTOs\QuerySiiDocumentStatusResultDto;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
@@ -24,14 +25,15 @@ final class QuerySiiDocumentStatusUseCase
     public function __construct(
         private readonly DteDocumentRepositoryInterface $documentRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
-        private readonly SiiCertificateRepositoryInterface $certificateRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
         private readonly DteSiiDocumentStatusDomainService $documentStatusDomainService,
-        private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
         private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
         private readonly SiiFacturaDocumentStatusService $siiFacturaDocumentStatusService,
         private readonly SiiBoletaApiAuthenticationService $siiBoletaApiAuthenticationService,
         private readonly SiiBoletaApiDocumentStatusService $siiBoletaApiDocumentStatusService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
+        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
     {}
 
@@ -39,7 +41,8 @@ final class QuerySiiDocumentStatusUseCase
         QuerySiiDocumentStatusInputDto $input
     ): QuerySiiDocumentStatusResultDto
     {
-        return DB::transaction(function () use($input) {
+        return DB::transaction(function () use($input)
+        {
             $document = $this->documentRepository->findByIdForUpdate($input->documentId);
             if (!$document)
             {
@@ -55,36 +58,39 @@ final class QuerySiiDocumentStatusUseCase
                 throw CompanyNotFoundException::withId($document->companyId());
             }
 
-            $certificate = $this->certificateRepository->findDefaultByCompanyId(
-                $document->companyId()
-            );
+            // $certificate = $this->certificateRepository->findDefaultByCompanyId(
+            //     $document->companyId()
+            // );
 
-            if(!$certificate)
-            {
-                throw CertificateNotFoundException::defaultFromCompany(
-                    $document->companyId()
-                );
-            }
+            // if(!$certificate)
+            // {
+            //     throw CertificateNotFoundException::defaultFromCompany(
+            //         $document->companyId()
+            //     );
+            // }
 
-            $certificateMaterial = $this->certificateMaterialExtractorService->extract(
-                $certificate
-            );
+            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+            //     $certificate
+            // );
+
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute( $document->companyId());
 
             if($document->dteType()->isFacturaFamily())
             {
                 return $this->queryFacturaFamily(
                     document: $document,
                     company: $company,
-                    certificateMaterial: $certificateMaterial
+                    certificateMaterial: (array) $certificateContext
                 );
             }
 
             return $this->queryBoletaFamily(
                 document: $document,
                 company: $company,
-                certificateMaterial: $certificateMaterial
+                certificateMaterial: (array) $certificateContext
             );
-        });
+            }
+        );
     }
 
     private function queryFacturaFamily(

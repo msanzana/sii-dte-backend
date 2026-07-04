@@ -3,13 +3,14 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 
 use App\Modules\Dte\Application\DTOs\PollSiiUploadStatusInputDto;
 use App\Modules\Dte\Application\DTOs\PollSiiUploadStatusResultDto;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Domain\Exceptions\DispatchNotFoundException;
-use App\Modules\Dte\Domain\Exceptions\SiiAuthenticationException;
+//use App\Modules\Dte\Domain\Exceptions\SiiAuthenticationException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
-use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
+//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
 use Illuminate\Support\Facades\DB;
@@ -17,14 +18,16 @@ use RuntimeException;
 
 final class PollSiiUploadStatusUseCase
 {
-    private function __construct(
+    public function __construct(
         private readonly SiiDispatchRepositoryInterface $dispatchRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
-        private readonly SiiCertificateRepositoryInterface $certificateRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
-        private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
         private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
-        private readonly SiiFacturaUploadStatusService $siiFacturaUploadStatusService
+        private readonly SiiFacturaUploadStatusService $siiFacturaUploadStatusService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+
+        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
+        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
     {}
 
@@ -54,22 +57,25 @@ final class PollSiiUploadStatusUseCase
                 );
             }
 
-            $certificate = $this->certificateRepository->findDefaultByCompanyId($dispatch->companyId());
+            // $certificate = $this->certificateRepository->findDefaultByCompanyId($dispatch->companyId());
 
-            if(!$certificate)
-            {
-                throw new SiiAuthenticationException(
-                    "No existe certificado por defecto para consultar el estado del dispatch {$dispatch->id()}."
-                );
-            }
+            // if(!$certificate)
+            // {
+            //     throw new SiiAuthenticationException(
+            //         "No existe certificado por defecto para consultar el estado del dispatch {$dispatch->id()}."
+            //     );
+            // }
 
-            $certificateMaterial = $this->certificateMaterialExtractorService->extract($certificate);
+            // $certificateMaterial = $this->certificateMaterialExtractorService->extract($certificate);
+
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute($dispatch->companyId());
 
             $token = $this->siiSoapAuthenticationService->authenticate(
                 environment: $dispatch->environment(),
-                privateKeyPem: $certificateMaterial['private_key_pem'],
-                certificateBase64: $certificateMaterial('certificate_base64'),
-                modulusBase64: $certificateMaterial('modulos_base64')
+                privateKeyPem: $certificateContext->privateKeyPem,
+                certificateBase64: $certificateContext->certificateBase64,
+                modulusBase64: $certificateContext->modulusBase64
+
             );
 
             [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());

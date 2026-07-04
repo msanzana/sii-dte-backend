@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\Dte\Application\UseCases\Document;
 
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Application\UseCases\Document\DteXmlSignDomainService;
 use App\Modules\Dte\Application\UseCases\Document\SignDteXmlInputDto;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
@@ -9,11 +10,11 @@ use App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
-use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
+//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService;
-use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
+//use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use App\Modules\Dte\Presentation\Http\Resources\SignDteXmlResultDto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -23,12 +24,13 @@ final class SignDteXmlUseCase
     public function __construct(
         private readonly DteDocumentRepositoryInterface $documentRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
-        private readonly SiiCertificateRepositoryInterface $certificateRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
-        private readonly DteXmlSignDomainService $xmlSignDomainService,
-        private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
         private readonly DteXmlSignatureService $dteXmlSignatureService,
         private readonly DtePrivateStorageService $storageService,
+        private readonly DteXmlSignDomainService $xmlSignDomainService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
+        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
     {}
 
@@ -51,19 +53,23 @@ final class SignDteXmlUseCase
                 throw CompanyNotFoundException::withId($document->companyId());
             }
 
-            $certificate = $this->certificateRepository->findDefaultByCompanyId(
+            // $certificate = $this->certificateRepository->findDefaultByCompanyId(
+            //     $document->companyId()
+            // );
+
+            // if(!$certificate)
+            // {
+            //     throw CertificateNotFoundException::defaultFromCompany(
+            //         $document->companyId()
+            //     );
+            // }
+
+            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+            //     $certificate
+            // );
+
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute(
                 $document->companyId()
-            );
-
-            if(!$certificate)
-            {
-                throw CertificateNotFoundException::defaultFromCompany(
-                    $document->companyId()
-                );
-            }
-
-            $certificateMaterial = $this->certificateMaterialExtractorService->extract(
-                $certificate
             );
 
             $absoluteUnsignedPath = storage_path($document->unsignedXmlPath());
@@ -86,10 +92,14 @@ final class SignDteXmlUseCase
 
             $signatureResult = $this->dteXmlSignatureService->signDte(
                 xmlWithTed: $unsignedXml,
-                privateKeyPem: $certificateMaterial['private_key_pem'],
-                certificateBase64: $certificateMaterial['certificate_base64'],
-                modulusBase64: $certificateMaterial['modulus_base64'],
-                exponentBase64: $certificateMaterial['exponent_base64'],
+                // privateKeyPem: $certificateMaterial['private_key_pem'],
+                // certificateBase64: $certificateMaterial['certificate_base64'],
+                // modulusBase64: $certificateMaterial['modulus_base64'],
+                // exponentBase64: $certificateMaterial['exponent_base64'],
+                privateKeyPem: $certificateContext->privateKeyPem,
+                certificateBase64: $certificateContext->certificateBase64,
+                modulusBase64: $certificateContext->modulusBase64,
+                exponentBase64: $certificateContext->exponentBase64,
             );
 
             $filename = sprintf(
@@ -119,7 +129,8 @@ final class SignDteXmlUseCase
                     'company_id' => $saved->companyId(),
                     'dte_type' => $saved->dteType()->value,
                     'folio' => $saved->folio(),
-                    'certificate_id' => $certificate->id(),
+                    //'certificate_id' => $certificate->id(),
+                    'certificate_id' => $certificateContext->certificateId,
                     'document_xml_id' => $signatureResult['document_xml_id'],
                     'tmst_firma' => $signatureResult['tmst_firma'],
                     'signed_xml_path' => $relativePath,
@@ -135,7 +146,8 @@ final class SignDteXmlUseCase
                 companyId: $saved->companyId(),
                 dteType: $saved->dteType()->value,
                 folio: (int) $saved->folio(),
-                certificateId: (int) $certificate->id(),
+                //certificateId: (int) $certificate->id(),
+                certificateId: (int) $certificateContext->certificateId,
                 documentXmlId: $signatureResult['document_xml_id'],
                 tmstFirma: $signatureResult['tmst_firma'],
                 status: $saved->status(),

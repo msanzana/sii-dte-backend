@@ -17,7 +17,7 @@ class EnvioDteSignatureService
         string $envioXml,
         string $privateKeyPem,
         string $certificateBase64,
-        string $modulosBase64,
+        string $modulusBase64,
         string $exponentBase64
     ):string
     {
@@ -152,7 +152,7 @@ class EnvioDteSignatureService
         $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'RSAKeyValue');
 
         $modulusNode = $dom->createElementNS(self::XMLDSIG_NS,'Modulus');
-        $modulusNode->appendChild($dom->createTextNode($modulosBase64));
+        $modulusNode->appendChild($dom->createTextNode($modulusBase64));
 
         $exponentNode = $dom->createElementNS(self::XMLDSIG_NS,'Exponent');
         $exponentNode->appendChild($dom->createTextNode($exponentBase64));

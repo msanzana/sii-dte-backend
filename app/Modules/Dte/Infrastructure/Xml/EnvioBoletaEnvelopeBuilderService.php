@@ -1,7 +1,8 @@
 <?php
 namespace App\Modules\Dte\Infrastructure\Xml;
 
-use App\Models\Dte\Domain\Entities\Company;
+
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Exceptions\SiiBoletaSendException;
 use DOMDocument;

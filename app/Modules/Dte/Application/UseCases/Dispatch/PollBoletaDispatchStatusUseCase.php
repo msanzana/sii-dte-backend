@@ -3,17 +3,18 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 
 use App\Modules\Dte\Application\DTOs\PollBoletaDispatchStatusInputDto;
 use App\Modules\Dte\Application\DTOs\PollBoletaDispatchStatusResultDto;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DispatchNotFoundException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteBoletaDispatchStatusDomainService;
-use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
+//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiSendStatusService;
-use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
+//use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 final class PollBoletaDispatchStatusUseCase
@@ -21,12 +22,13 @@ final class PollBoletaDispatchStatusUseCase
     public function __construct(
         private readonly SiiDispatchRepositoryInterface $dispatchRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
-        private readonly SiiCertificateRepositoryInterface $certificateRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
         private readonly DteBoletaDispatchStatusDomainService $boletaDispatchStatusDomainService,
-        private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
         private readonly SiiBoletaApiAuthenticationService $siiBoletaApiAuthenticationService,
         private readonly SiiBoletaApiSendStatusService $siiBoletaApiSendStatusService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
+        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
     {}
 
@@ -51,26 +53,30 @@ final class PollBoletaDispatchStatusUseCase
                 throw CompanyNotFoundException::withId($dispatch->companyId());
             }
 
-            $certificate = $this->certificateRepository->findDefaultByCompanyId(
-                $dispatch->companyId()
-            );
+            // $certificate = $this->certificateRepository->findDefaultByCompanyId(
+            //     $dispatch->companyId()
+            // );
 
-            if(!$certificate)
-            {
-                throw CertificateNotFoundException::defaultFromCompany(
-                    $dispatch->companyId()
-                );
-            }
+            // if(!$certificate)
+            // {
+            //     throw CertificateNotFoundException::defaultFromCompany(
+            //         $dispatch->companyId()
+            //     );
+            // }
 
-            $certificateMaterial = $this->certificateMaterialExtractorService->extract(
-                $certificate
-            );
+            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+            //     $certificate
+            // );
 
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute( $dispatch->companyId() );
             $token = $this->siiBoletaApiAuthenticationService->authenticate(
                 environment: $dispatch->environment(),
-                privateKeyPem: $certificateMaterial['private_key_pem'],
-                certificateBase64: $certificateMaterial['certificate_base64'],
-                modulusBase64: $certificateMaterial['modulus_base64']
+                // privateKeyPem: $certificateMaterial['private_key_pem'],
+                // certificateBase64: $certificateMaterial['certificate_base64'],
+                // modulusBase64: $certificateMaterial['modulus_base64']
+                privateKeyPem: $certificateContext->privateKeyPem,
+                certificateBase64: $certificateContext->certificateBase64,
+                modulusBase64: $certificateContext->modulusBase64
             );
 
             $result = $this->siiBoletaApiSendStatusService->query(
