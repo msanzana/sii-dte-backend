@@ -133,28 +133,42 @@ class CertificateMaterialExtractorService
     public function extractFromRawMaterial(string $pfxContents, string $password): array
     {
         $certStore = [];
-        $ok = openssl_pkcs12_read( $pfxContents, $certStore, $password );
+
+        $ok = openssl_pkcs12_read(
+                $pfxContents,
+                $certStore,
+                $password
+        );
+
         if (!$ok)
         {
             throw InvalidCertificateException::because(
                 'No fue posible abrir el PFX almacenado con la contraseña proporcionada.'
                 );
         }
-        if (!isset($certStore['cert']) || !is_string($certStore['cert']) || trim($certStore['cert']) === '' )
+        if (!isset($certStore['cert']) ||
+            !is_string($certStore['cert']) ||
+            trim($certStore['cert']) === '' )
         {
             throw InvalidCertificateException::because(
                 'El PFX almacenado no contiene un certificado X509 válido.'
             );
         }
-        if ( !isset($certStore['pkey']) || !is_string($certStore['pkey']) || trim($certStore['pkey']) === '' )
+
+        if ( !isset($certStore['pkey']) ||
+            !is_string($certStore['pkey']) ||
+            trim($certStore['pkey']) === '' )
         {
             throw InvalidCertificateException::because(
                 'El PFX almacenado no contiene una llave privada válida.'
                 );
         }
+
         $certificatePem = $certStore['cert'];
         $privateKeyPem = $certStore['pkey'];
+
         $publicKeyResource = openssl_pkey_get_public($certificatePem);
+
         if ($publicKeyResource === false)
         {
             throw InvalidCertificateException::because(
@@ -162,20 +176,26 @@ class CertificateMaterialExtractorService
             );
         }
         $details = openssl_pkey_get_details($publicKeyResource);
+
         if ($details === false)
         {
             throw InvalidCertificateException::because(
             'No fue posible obtener los detalles de la llave pública del certificado.' );
         }
-        if ( !isset($details['rsa']) || !is_array($details['rsa']) || !isset($details['rsa']['n']) || !isset($details['rsa']['e']) )
-        {
+
+        if ( !isset($details['rsa']) ||
+            !is_array($details['rsa']) ||
+            !isset($details['rsa']['n']) ||
+            !isset($details['rsa']['e'])
+        ){
             throw InvalidCertificateException::because(
                 'La llave pública del certificado no expone un bloque RSA utilizable.'
-                );
+            );
         }
         $modulus = base64_encode($details['rsa']['n']);
         $exponent = base64_encode($details['rsa']['e']);
         $certificateBase64 = $this->pemToBase64Body($certificatePem);
+
         return [
             'private_key_pem' => $privateKeyPem,
             'certificate_pem' => $certificatePem,
@@ -197,5 +217,4 @@ class CertificateMaterialExtractorService
         }
         return $clean;
     }
-
 }

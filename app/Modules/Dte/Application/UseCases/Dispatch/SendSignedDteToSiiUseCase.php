@@ -77,7 +77,7 @@ final class SendSignedDteToSiiUseCase
 
             $absoluteSignedPath = storage_path($document->signedXmlPath());
 
-            if(File::exists($absoluteSignedPath))
+            if(!File::exists($absoluteSignedPath))
             {
                 throw new RuntimeException(
                     "No existe el XML firmado del documento en {$document->signedXmlPath()}."

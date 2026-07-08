@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\Dte\Application\UseCases\Document;
 
+use App\Modules\Dte\Application\DTOs\EmissionCertificateMaterialContextDto;
 use App\Modules\Dte\Application\DTOs\QuerySiiDocumentStatusInputDto;
 use App\Modules\Dte\Application\DTOs\QuerySiiDocumentStatusResultDto;
 use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
@@ -80,32 +81,31 @@ final class QuerySiiDocumentStatusUseCase
                 return $this->queryFacturaFamily(
                     document: $document,
                     company: $company,
-                    certificateMaterial: (array) $certificateContext
+                    certificateContext: $certificateContext
                 );
             }
 
             return $this->queryBoletaFamily(
                 document: $document,
                 company: $company,
-                certificateMaterial: (array) $certificateContext
+                certificateContext: $certificateContext
             );
-            }
-        );
+        });
     }
 
     private function queryFacturaFamily(
         $document,
         $company,
-        array $certificateMaterial
+        EmissionCertificateMaterialContextDto $certificateContext
     ): QuerySiiDocumentStatusResultDto
     {
         $environment = $document->siiEnvironment() ?? config('dte.default_environment');
 
         $token = $this->siiSoapAuthenticationService->authenticate(
             environment: $environment,
-            privateKeyPem: $certificateMaterial['private_key_pem'],
-            certificateBase64: $certificateMaterial['certificate_base64'],
-            modulusBase64: $certificateMaterial['modulus_base64']
+            privateKeyPem: $certificateContext->privateKeyPem,
+            certificateBase64: $certificateContext->certificateBase64,
+            modulusBase64: $certificateContext->modulusBase64
         );
 
         [$consultantRutBody, $consultantRutDv] = $this->splitConfiguredSenderRut();
@@ -167,16 +167,16 @@ final class QuerySiiDocumentStatusUseCase
     private function QueryBoletaFamily(
         $document,
         $company,
-        array $certificateMaterial
+        EmissionCertificateMaterialContextDto $certificateContext
     ): QuerySiiDocumentStatusResultDto
     {
         $environment = $document->siiEnvironment() ?? config('dte.default_environment');
 
         $token = $this->siiBoletaApiAuthenticationService->authenticate(
             environment: $environment,
-            privateKeyPem: $certificateMaterial['private_key_pem'],
-            certificateBase64: $certificateMaterial['certificate_base64'],
-            modulusBase64: $certificateMaterial['modulus_base64']
+            privateKeyPem: $certificateContext->privateKeyPem,
+            certificateBase64: $certificateContext->certificateBase64,
+            modulusBase64: $certificateContext->modulusBase64
         );
 
         [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());

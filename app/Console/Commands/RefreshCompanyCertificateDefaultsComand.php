@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class RefreshCompanyCertificateDefaultsComand extends Command
 {
-    protected $sigtnature = 'dte:refresh-company-certificate-defaults';
+    protected $signature = 'dte:refresh-company-certificate-defaults';
     protected $desccription = 'Recalcula vigencia y certificado default por empresa';
     public function __construct(
         private readonly SiiCertificateRepositoryInterface $siiCertificateRepository,
