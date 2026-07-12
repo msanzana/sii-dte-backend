@@ -7,7 +7,7 @@ final class ReserveFoliosInputDto
         public readonly int $companyId,
         public readonly int $externalSystemId,
         public readonly string $siiDocumentTypeCode,
-        public readonly int $requestQuantity,
+        public readonly int $requestedQuantity,
         public readonly ?int $branchOfficeNumber,
         public readonly ?int $facilityNumber,
         public readonly ?string $externalBranchCode,

@@ -9,8 +9,8 @@ interface FolioDetailRepositoryInterface
     public function findAvailableByFilters(
         int $companyId,
         int $externalSystemId,
-        string $siiDocumentoTypeCode,
-        ?int $branchOfficerNumber,
+        string $siiDocumentTypeCode,
+        ?int $branchOfficeNumber,
         ?int $facilityNumber,
         ?string $externalBranchCode,
         int $limit

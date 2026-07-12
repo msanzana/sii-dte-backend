@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Dte\Domain\RepositoryContracts;
 use App\Modules\Dte\Domain\Entities\ExternalSystem;
-interface DteRepositoryInterface
+interface ExternalSystemRepositoryInterface
 {
     public function create(ExternalSystem $externalSystem): ExternalSystem;
     public function update(ExternalSystem $externalSystem): ExternalSystem;
