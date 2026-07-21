@@ -60,5 +60,29 @@ final class FolioDetail
     {
         return $this->folioNumber;
     }
+    public function folioStatusId(): int
+    {
+        return $this->folioStatusId;
+    }
+    public function reserved(): bool
+    {
+        return $this->reserved;
+    }
+    public function reservedAt(): ?string
+    {
+        return $this->reservedAt;
+    }
+    public function releasedAt(): ?string
+    {
+        return $this->releasedAt;
+    } 
+    public function usedAt(): ?string
+    {
+        return $this->usedAt;
+    }
+    public function dteDocumentId():?int
+    {
+        return $this->dteDocumentId;
+    }
 
 }

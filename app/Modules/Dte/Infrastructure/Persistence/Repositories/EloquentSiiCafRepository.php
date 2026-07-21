@@ -145,4 +145,19 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
 
         return $this->mapper->toDomain($model);
     }
+    public function updateOperationalFolioCounters(
+        int $cafId,
+        int $availableFoliosCount,
+        int $reservedFoliosCount,
+        int $usedFoliosCount
+    ): void {
+        SiiCafEloquentModel::query()
+            ->where('id', $cafId)
+            ->update([
+                'available_folios_count' => $availableFoliosCount,
+                'reserved_folios_count' => $reservedFoliosCount,
+                'used_folios_count' => $usedFoliosCount,
+                'updated_at' => now(),
+            ]);
+    }
 }

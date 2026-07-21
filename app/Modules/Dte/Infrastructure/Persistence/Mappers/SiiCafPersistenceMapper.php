@@ -17,7 +17,7 @@ final class SiiCafPersistenceMapper
             lastAssignedFolio : $model->last_assigned_folio !== null ? (int) $model->last_assigned_folio : null,
             cafXmlPath: $model->caf_xml_path,
             privateKeyPemEncrypted: $model->private_key_pem_encrypted,
-            publicKeyPem: $model->public_key_encrypted,
+            publicKeyPem: $model->public_key_pem,
             authorizedAt: $model->authorizedAt?->format('Y-m-d'),
             isActive: (bool) $model->is_active,
         );

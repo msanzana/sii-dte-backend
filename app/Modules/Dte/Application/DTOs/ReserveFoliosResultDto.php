@@ -9,6 +9,6 @@ final class ReserveFoliosResultDto
         public readonly int $availableQuantityAfter,
         public readonly array $folios,
         public readonly string $status,
-        public readonly string $warning,
+        public readonly ?string $warning,
     ){}
 }

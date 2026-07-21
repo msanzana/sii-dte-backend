@@ -16,7 +16,7 @@ final class ReserveFoliosService
         private readonly FolioDetailRepositoryInterface $folioDetailRepository,
         private readonly FolioStatusRepositoryInterface $folioStatusRepository,
         private readonly FolioDetailEventRepositoryInterface $folioDetailEventRepository,
-        private readonly RecalculateCafCountersService $repaymentCountersService
+        private readonly RecalculateCafCountersService $recalculateCafCountersService,
     ){}
 
     public function execute(ReserveFoliosInputDto $input): ReserveFoliosResultDto
@@ -71,7 +71,55 @@ final class ReserveFoliosService
                 );
                 $reservedFolios[] = $folioDetail->folioNumber();
 
-                
+                if($availableFolios !== [])
+                {
+                    $cafId = $availableFolios[0]->cafId();
+                    $this->recalculateCafCountersService->execute($cafId);
+                }
+
+                $availableAfter = $this->folioDetailRepository->countAvailableByFilter(
+                    companyId: $input->companyId,
+                    externalSystemId: $input->externalSystemId,
+                    siiDocumentTypeCode: $input->siiDocumentTypeCode,
+                    branchOfficeNumber: $input->branchOfficeNumber,
+                    facilityNumber: $input->facilityNumber,
+                    externalBranchCode: $input->externalBranchCode,
+                );
+
+                $reservedQuantity = count($reservedFolios);
+
+                if ($reservedQuantity === 0)
+                {
+                    return new ReserveFoliosResultDto(
+                        requestedQuantity: $input->requestedQuantity,
+                        reservedQuantity:0,
+                        availableQuantityAfter:0,
+                        folios:[],
+                        status: 'empty',
+                        warning: 'No existen folios disponibles para los filtros solicitados.'
+                    );
+                }
+
+                if($reservedQuantity < $input->requestedQuantity)
+                {
+                    return new ReserveFoliosResultDto(
+                        requestedQuantity: $input->requestedQuantity,
+                        reservedQuantity: $reservedQuantity,
+                        availableQuantityAfter: $availableAfter,
+                        folios: $reservedFolios,
+                        status: 'partial',
+                        warning: '',
+                    );
+                }
+
+                return new ReserveFoliosResultDto(
+                    requestedQuantity: $input->requestedQuantity,
+                    reservedQuantity: $reservedQuantity,
+                    availableQuantityAfter: $availableAfter,
+                    folios: $reservedFolios,
+                    status: 'success',
+                    warning: null,
+                );
             }
         });
     }

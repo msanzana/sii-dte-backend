@@ -5,7 +5,7 @@ use App\Modules\Dte\Domain\Entities\FolioDetail;
 
 interface FolioDetailRepositoryInterface
 {
-    public function createBNranch(array $details): void;
+    public function createBranch(array $details): void;
     public function findAvailableByFilters(
         int $companyId,
         int $externalSystemId,
@@ -45,4 +45,7 @@ interface FolioDetailRepositoryInterface
         ?int $facilityNumber,
         ?string $externalBranchCode
     ): int;
+    public function countReservedByCafId(int $cafId): int;
+
+    public function countUsedByCafId(int $cafId): int;
 }

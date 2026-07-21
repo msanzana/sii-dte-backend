@@ -13,7 +13,7 @@ final class FolioReservation
         private readonly ?int $facilityNumber,
         private readonly ?string $externalBranchCode,
         private readonly int $folioRangeFrom,
-        private readonly int $folioRanbgeTo,
+        private readonly int $folioRangeTo,
         private readonly ?int $currentFolio,
         private readonly int $reserverQuantity,
         private readonly string $reservedAt,
@@ -60,7 +60,7 @@ final class FolioReservation
     }
     public function folioRangeTo(): ?int
     {
-        return $this->folioRanbgeTo;
+        return $this->folioRangeTo;
     }
     public function currentFolio(): ?int
     {

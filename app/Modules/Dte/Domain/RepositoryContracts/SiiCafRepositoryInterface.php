@@ -30,4 +30,10 @@ interface SiiCafRepositoryInterface
         int $dteType,
         int $folio
     ): ?SiiCaf;
+    public function updateOperationalFolioCounters(
+        int $cafId,
+        int $availableFoliosCount,
+        int $reservedFoliosCount,
+        int $usedFoliosCount
+    ): void;
 }

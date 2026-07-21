@@ -6,7 +6,7 @@ final class CreateExternalSystemInputDto
         public readonly int $companyId,
         public readonly string $code,
         public readonly string $name,
-        public readonly ?string $descripcion,
+        public readonly ?string $description,
         public readonly bool $isActive = true
     )
     {}
