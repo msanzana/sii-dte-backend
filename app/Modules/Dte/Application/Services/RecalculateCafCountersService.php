@@ -2,19 +2,52 @@
 
 namespace App\Modules\Dte\Application\Services;
 
+use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiCafRepositoryInterface;
+use RuntimeException;
+
 final class RecalculateCafCountersService
 {
+    public function __construct(
+        private readonly SiiCafRepositoryInterface $cafRepository,
+        private readonly FolioDetailRepositoryInterface $folioDetailRepository,
+    ) {
+    }
+
     public function execute(int $cafId): void
     {
-        /*
-         * Este servicio queda declarado en este subbloque como parte del contrato funcional.
-         * Su implementación real depende del repositorio Eloquent del siguiente subbloque.
-         *
-         * En el Subbloque 5.A.3 se conecta a:
-         * - conteo de available
-         * - conteo de reserved
-         * - conteo de used
-         * y update de sii_cafs
-         */
+        $caf = $this->cafRepository->findById($cafId);
+
+        if (!$caf) {
+            throw new RuntimeException(
+                "No existe el CAF {$cafId} para recalcular sus contadores."
+            );
+        }
+
+        $totalAuthorizedFolios = max(
+            0,
+            $caf->folioEnd() - $caf->folioStart() + 1
+        );
+
+        $reservedFolios = $this->folioDetailRepository
+            ->countReservedByCafId($cafId);
+
+        $usedFolios = $this->folioDetailRepository
+            ->countUsedByCafId($cafId);
+
+        $availableFolios = max(
+            0,
+            $totalAuthorizedFolios
+                - $reservedFolios
+                - $usedFolios
+        );
+
+        $this->cafRepository->updateOperationalFolioCounters(
+            cafId: $cafId,
+            availableFoliosCount: $availableFolios,
+            reservedFoliosCount: $reservedFolios,
+            usedFoliosCount: $usedFolios
+        );
     }
+
 }

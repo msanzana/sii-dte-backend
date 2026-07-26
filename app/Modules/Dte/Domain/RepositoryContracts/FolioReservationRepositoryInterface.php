@@ -3,9 +3,9 @@ namespace App\Modules\Dte\Domain\RepositoryContracts;
 
 use App\Modules\Dte\Domain\Entities\FolioReservation;
 
-interface FolioReservesRepositoryInterface
+interface FolioReservationRepositoryInterface
 {
-    public function create(FolioReservation $reserves): FolioReservation;
+    public function create(FolioReservation $reservation): FolioReservation;
     public function updateCurrentFolio(int $reservationId, ?int $currentFolio): void;
     public function updateValidity(int $reservationId, bool $isCurrentlyValid, bool $isActive): void;
     public function findByCompanyFilters(
