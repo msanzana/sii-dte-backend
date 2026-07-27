@@ -6,6 +6,11 @@ use App\Modules\Dte\Domain\RepositoryContracts\CityRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyCertificateNoticeRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\ExternalSystemRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailEventRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioReservationRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioStatusRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\LocationRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiCafRepositoryInterface;
@@ -16,6 +21,11 @@ use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentCityReposito
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentCompanyCertificateNoticeRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentCompanyRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentFolioDetailEventRepository;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentFolioDetailRepository;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentFolioReservationRepository;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentFolioStatusRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentIntegrationLogRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentLocationRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCafRepository;
@@ -75,6 +85,30 @@ class DteRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             CompanyCertificateNoticeRepositoryInterface::class,
             EloquentCompanyCertificateNoticeRepository::class
+        );
+        $this->app->bind(
+            ExternalSystemRepositoryInterface::class,
+            EloquentExternalSystemRepository::class
+        );
+
+        $this->app->bind(
+            FolioStatusRepositoryInterface::class,
+            EloquentFolioStatusRepository::class
+        );
+
+        $this->app->bind(
+            FolioReservationRepositoryInterface::class,
+            EloquentFolioReservationRepository::class
+        );
+
+        $this->app->bind(
+            FolioDetailRepositoryInterface::class,
+            EloquentFolioDetailRepository::class
+        );
+
+        $this->app->bind(
+            FolioDetailEventRepositoryInterface::class,
+            EloquentFolioDetailEventRepository::class
         );
     }
 

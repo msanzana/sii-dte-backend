@@ -4,10 +4,8 @@ namespace App\Modules\Dte\Infrastructure\Persistence\Repositories;
 use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailEventRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioDetailEventEloquentModel;
 
-final class EloquentFolioDetailRepository implements FolioDetailEventRepositoryInterface
+final class EloquentFolioDetailEventRepository implements FolioDetailEventRepositoryInterface
 {
-
-
     public function create(
         int $folioDetailId,
         int $companyId,

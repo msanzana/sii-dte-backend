@@ -9,6 +9,9 @@ use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationControll
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
+use App\Modules\Dte\Presentation\Http\Controllers\ExternalSystemController;
+use App\Modules\Dte\Presentation\Http\Controllers\FolioController;
+use App\Modules\Dte\Presentation\Http\Controllers\FolioStatusController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDocumentStatusController;
@@ -44,4 +47,12 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/dispatches/{dispatchId}/poll-upload-status', [SiiDispatchController::class, 'poll']);
     Route::post('/dispatches/{dispatchId}/poll-boleta-send-status', [SiiBoletaDispatchController::class, 'poll']);
+
+    Route::get('/external-systems',[ExternalSystemController::class, 'index']);
+    Route::post('/external-systems',[ExternalSystemController::class, 'store']);
+
+    Route::get('/folio-statuses',[FolioStatusController::class, 'index']);
+    Route::get('/folios/available',[FolioController::class, 'available']);
+    Route::post('/folios/reserve',[FolioController::class, 'reserve']);
+    Route::post('/folios/release',[FolioController::class, 'release']);
 //});

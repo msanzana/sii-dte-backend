@@ -8,7 +8,7 @@ use App\Modules\Dte\Infrastructure\Persistence\Mappers\FolioDetailPersistenceMap
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
 
-final class EloquetFolioDepotRepository implements FolioDetailRepositoryInterface
+final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterface
 {
     public function __construct(
         private readonly FolioDetailPersistenceMapper $mapper
