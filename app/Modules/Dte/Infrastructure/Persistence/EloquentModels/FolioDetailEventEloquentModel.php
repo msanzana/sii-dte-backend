@@ -24,6 +24,19 @@ class FolioDetailEventEloquentModel extends Model
         'created_at',
     ];
     protected $casts = [
-        
+        'folio_detail_id' => 'integer',
+        'company_id' => 'integer',
+        'external_system_id' => 'integer',
+        'branch_office_number' => 'integer',
+        'facility_number' => 'integer',
+        'user_id' => 'integer',
+        'created_at' => 'datetime',
     ];
+    public function folioDetail()
+    {
+        return $this->belongsTo(
+            FolioDetaiLEloquentModel::class,
+            'folio_detail_id',
+        );
+    }
 }

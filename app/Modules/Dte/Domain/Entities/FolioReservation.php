@@ -15,9 +15,9 @@ final class FolioReservation
         private readonly int $folioRangeFrom,
         private readonly int $folioRangeTo,
         private readonly ?int $currentFolio,
-        private readonly int $reserverQuantity,
+        private readonly int $reservedQuantity,
         private readonly string $reservedAt,
-        private readonly ?string $expiredAt,
+        private readonly ?string $expiresAt,
         private readonly bool $isCurrentlyValid,
         private readonly bool $isActive,
 
@@ -68,15 +68,15 @@ final class FolioReservation
     }
     public function reservedQuantity(): ?int
     {
-        return $this->reserverQuantity;
+        return $this->reservedQuantity;
     }
     public function reservedAt(): string
     {
         return $this->reservedAt;
     }
-    public function expiredAt(): ?string
+    public function expiresAt(): ?string
     {
-        return $this->expiredAt;
+        return $this->expiresAt;
     }
     public function isCurrentlyValid(): bool
     {

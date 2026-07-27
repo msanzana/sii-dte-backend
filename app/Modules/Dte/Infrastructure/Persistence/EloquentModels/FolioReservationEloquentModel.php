@@ -2,10 +2,11 @@
 namespace App\Modules\Dte\Infrastructure\Persistence\EloquentModels;
 
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\ExternalSystemEloquentModel;
+use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioDetailEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCafEloquentModel;
 use Illuminate\Database\Eloquent\Model;
 
-class FoliosReservationEloquentModel extends Model
+class FolioReservationEloquentModel extends Model
 {
     protected $table = 'folio_reservations';
 
