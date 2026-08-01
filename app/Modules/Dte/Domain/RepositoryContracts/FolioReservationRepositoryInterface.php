@@ -15,4 +15,9 @@ interface FolioReservationRepositoryInterface
         ?int $branchOfficeNumber = null,
         ?int $facilityNumber = null): array;
     public function findById(int $reservationId): ?FolioReservation;
+    public function existsOverlappingRange(
+    int $cafId,
+    int $folioRangeFrom,
+    int $folioRangeTo
+): bool;
 }

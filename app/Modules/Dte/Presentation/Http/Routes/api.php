@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Dte\Presentation\Http\Controllers\CafController;
+use App\Modules\Dte\Presentation\Http\Controllers\CafRangeAllocationController;
 use App\Modules\Dte\Presentation\Http\Controllers\CertificateController;
 use App\Modules\Dte\Presentation\Http\Controllers\CompanyCertificateNoticeController;
 use App\Modules\Dte\Presentation\Http\Controllers\CompanyController;
@@ -55,4 +56,6 @@ use Illuminate\Support\Facades\Route;
     Route::get('/folios/available',[FolioController::class, 'available']);
     Route::post('/folios/reserve',[FolioController::class, 'reserve']);
     Route::post('/folios/release',[FolioController::class, 'release']);
+    
+    Route::post('/cafs/{cafId}/range-allocations',[CafRangeAllocationController::class, 'store'])->whereNumber('cafId');
 //});

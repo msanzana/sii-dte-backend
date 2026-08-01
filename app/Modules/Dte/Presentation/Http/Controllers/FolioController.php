@@ -34,10 +34,10 @@ final class FolioController extends Controller
             $result = $this->findAvailableFoliosUseCase->execute(
                 input: new FindAvailableFoliosInputDto(
                     companyId: $companyId,
-                    externalSystemId: (int) $request->validate('external_system_id'),
+                    externalSystemId: (int) $request->validated('external_system_id'),
                     siiDocumentTypeCode: (string) $request->validated('sii_document_type_code'),
-                    branchOfficeNumber: $this->nullableInteger($request->validate('branch_office_number')),
-                    facilityNumber: $this->nullableInteger($request->validate('facility_number')),
+                    branchOfficeNumber: $this->nullableInteger($request->validated('branch_office_number')),
+                    facilityNumber: $this->nullableInteger($request->validated('facility_number')),
                     externalBranchCode: $this->nullableString($request->validated('external_branch_code'))
                 ),
                 previewLimit: (int) ($request->validated('preview_limit') ?? 10)
@@ -116,7 +116,7 @@ final class FolioController extends Controller
                     companyId: $companyId,
                     externalSystemId: (int) $request->validated('external_system_id'),
                     siiDocumentTypeCode: (string) $request->validated('sii_document_type_code'),
-                    folioNumber: (int) $request->validate('folio_number'),
+                    folioNumber: (int) $request->validated('folio_number'),
                     branchOfficeNumber: $this->nullableInteger($request->validated('branch_office_number')),
                     facilityNumber: $this->nullableInteger($request->validated('facility_number')),
                     externalBranchCode: $this->nullableString($request->validated('external_branch_code')),

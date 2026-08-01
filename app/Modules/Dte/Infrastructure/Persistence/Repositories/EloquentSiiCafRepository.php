@@ -31,6 +31,11 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
             'public_key_pem' => $caf->publicKeyPem(),
             'authorized_at' => $caf->authorizedAt(),
             'is_active' => $caf->isActive(),
+            'external_system_id' => $caf->externalSystemId(),
+            'requested_folios_count' => $caf->requestedFoliosCount(),
+            'available_folios_count' => $caf->availableFoliosCount(),
+            'reserved_folios_count' => $caf->reservedFoliosCount(),
+            'used_folios_count' => $caf->usedFoliosCount(),
         ]);
 
         $model->save();
@@ -89,6 +94,7 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
         $cafs = SiiCafEloquentModel::query()
             ->where('company_id', $companyId)
             ->where('dte_type', $dteType)
+            ->whereNull('external_system_id')
             ->where('is_active', true)
             ->orderBy('folio_start')
             ->lockForUpdate()
@@ -157,6 +163,28 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
                 'available_folios_count' => $availableFoliosCount,
                 'reserved_folios_count' => $reservedFoliosCount,
                 'used_folios_count' => $usedFoliosCount,
+                'updated_at' => now(),
+            ]);
+    }
+    public function findByIdForUpdate(int $id): ?SiiCaf
+    {
+        $model = SiiCafEloquentModel::query()
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        return $model
+            ? $this->mapper->toDomain($model)
+            : null;
+    }
+    public function assignExternalSystem(
+        int $cafId,
+        int $externalSystemId
+    ): void {
+        SiiCafEloquentModel::query()
+            ->where('id', $cafId)
+            ->update([
+                'external_system_id' => $externalSystemId,
                 'updated_at' => now(),
             ]);
     }

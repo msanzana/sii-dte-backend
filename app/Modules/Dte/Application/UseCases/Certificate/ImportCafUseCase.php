@@ -3,6 +3,7 @@ namespace App\Modules\Dte\Application\UseCases\Certificate;
 
 use App\Modules\Dte\Application\DTOs\ImportCafInputDto;
 use App\Modules\Dte\Application\DTOs\ImportCafResultDto;
+use App\Modules\Dte\Application\Services\ValidateExternalSystemAccessService;
 use App\Modules\Dte\Domain\Entities\SiiCaf;
 use App\Modules\Dte\Domain\Exceptions\CafRangeOverlapException;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
@@ -23,7 +24,8 @@ final class ImportCafUseCase
         private readonly DtePrivateStorageService $storageService,
         private readonly CafXmlParserService $cafXmlParserService,
         private readonly SecretEncryptionService $secretEncryptionService,
-    )
+        private readonly ValidateExternalSystemAccessService $validateExternalSystemAccessService,
+        )
     {}
     public function execute(ImportCafInputDto $input): ImportCafResultDto
     {
@@ -37,11 +39,15 @@ final class ImportCafUseCase
         {
             throw new \RuntimeException('No fue posible leer el archivo temporal del CAF.');
         }
+        $this->validateExternalSystemAccessService->execute(
+            companyId: $input->companyId,
+            externalSystemId: $input->externalSystemId,
+        );
 
         $parsed = $this->cafXmlParserService->parse($xmlContents);
 
         if(
-            $this->cafRepository->existsOverlappingTange(
+            $this->cafRepository->existsOverlappingRange(
                 companyId: $input->companyId,
                 dteType: $parsed['dte_type'],
                 folioStart: $parsed['folio_start'],
@@ -77,6 +83,13 @@ final class ImportCafUseCase
                 $parsed['private_key_material']
             );
 
+            $totalAuthorizedFolios = max(
+                0,
+                (int) $parsed['folio_end']
+                    - (int) $parsed['folio_start']
+                    + 1
+            );
+
             $caf = new SiiCaf(
                 id:null,
                 companyId: $input->companyId,
@@ -87,8 +100,15 @@ final class ImportCafUseCase
                 cafXmlPath: $relativePath,
                 privateKeyPemEncrypted: $encryptedPrivateMaterial,
                 publicKeyPem: $parsed['public_key_material'] ?? null,
-                authorizedAt: $parsed['authorizedAt'] ?? null,
+                authorizedAt: $parsed['authorized_at'] ?? null,
                 isActive:true,
+
+                externalSystemId: $input->externalSystemId,
+
+                requestedFoliosCount: $totalAuthorizedFolios,
+                availableFoliosCount: $totalAuthorizedFolios,
+                reservedFoliosCount: 0,
+                usedFoliosCount: 0,
             );
 
             $saved = $this->cafRepository->create($caf);
@@ -110,12 +130,15 @@ final class ImportCafUseCase
             return new ImportCafResultDto(
                 id: $saved->id(),
                 companyId: $saved->companyId(),
+                externalSystemId: (int) $saved->externalSystemId(),
                 dteType: $saved->dteType(),
                 folioStart: $saved->folioStart(),
                 folioEnd: $saved->folioEnd(),
                 authorizedAt: $saved->authorizedAt(),
                 cafXmlPath: $saved->cafXmlPath(),
                 isActive: $saved->isActive(),
+                requestedFoliosCount: $saved->requestedFoliosCount(),
+                availableFoliosCount: $saved->availableFoliosCount(),
             );
         });
     }

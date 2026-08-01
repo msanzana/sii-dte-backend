@@ -2,6 +2,7 @@
 namespace App\Modules\Dte\Infrastructure\Persistence\EloquentModels;
 
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyEloquentModel;
+use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\ExternalSystemEloquentModel;
 use Illuminate\Database\Eloquent\Model;
 
 class SiiCafEloquentModel extends Model
@@ -20,6 +21,7 @@ class SiiCafEloquentModel extends Model
         'is_active',
 
         // Campos incorporados por la Gran tarea post-término.
+        'external_system_id',
         'requested_folios_count',
         'available_folios_count',
         'reserved_folios_count',
@@ -32,6 +34,7 @@ class SiiCafEloquentModel extends Model
         'folio_end' => 'integer',
         'last_assigned_folio' => 'integer',
 
+        'external_system_id' => 'integer',
         'requested_folios_count' => 'integer',
         'available_folios_count' => 'integer',
         'reserved_folios_count' => 'integer',
@@ -44,4 +47,11 @@ class SiiCafEloquentModel extends Model
     {
         return $this->belongsTo(CompanyEloquentModel::class, 'company_id');
     }
+    public function externalSystem()
+{
+    return $this->belongsTo(
+        ExternalSystemEloquentModel::class,
+        'external_system_id'
+    );
+}
 }

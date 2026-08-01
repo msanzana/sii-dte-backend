@@ -29,9 +29,9 @@ final class FolioDetailPersistenceMapper
             folioStatusId: (int) $model->folio_status_id,
             reserved: (bool) $model->reserved,
 
-            reservedAt: $model->Reserved_at?->format('Y-m-d H:i:s'),
+            reservedAt: $model->reserved_at?->format('Y-m-d H:i:s'),
             releasedAt: $model->released_at?->format('Y-m-d H:i:s'),
-            usedAt: $model->used_at?->format('Y-M-d H:i:s'),
+            usedAt: $model->used_at?->format('Y-m-d H:i:s'),
 
             dteDocumentId: $model->dte_document_id !== null
                         ?(int) $model->dte_document_id

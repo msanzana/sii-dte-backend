@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\Dte\Infrastructure\Persistence\EloquentModels;
 
+use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioDetailEloquentModel;
 use Illuminate\Database\Eloquent\Model;
 
 class FolioDetailEventEloquentModel extends Model
@@ -35,7 +36,7 @@ class FolioDetailEventEloquentModel extends Model
     public function folioDetail()
     {
         return $this->belongsTo(
-            FolioDetaiLEloquentModel::class,
+            FolioDetailEloquentModel::class,
             'folio_detail_id',
         );
     }

@@ -14,7 +14,7 @@ Route::prefix('internal/auth')
 
 Route::middleware(['jwt.access'])->group(function () {
     Route::prefix('internal/auth')->group(function () {
-        require base_path('app/Modules/Auth/Presentation/Http/Routes/access.php');
+        require base_path('app/Modules/Auth/Presentation/Http/Routes/Access.php');
     });
 
     Route::prefix('internal/dte')->group(function () {

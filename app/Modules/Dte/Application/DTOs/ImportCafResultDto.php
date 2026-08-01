@@ -5,12 +5,16 @@ final class ImportCafResultDto
     public function __construct(
         public readonly int $id,
         public readonly int $companyId,
+        public readonly int $externalSystemId,
         public readonly int $dteType,
         public readonly int $folioStart,
         public readonly int $folioEnd,
         public readonly ?string $authorizedAt,
         public readonly ?string $cafXmlPath,
         public readonly bool $isActive,
+        public readonly int $requestedFoliosCount,
+        public readonly int $availableFoliosCount,
+
     )
     {}
 }

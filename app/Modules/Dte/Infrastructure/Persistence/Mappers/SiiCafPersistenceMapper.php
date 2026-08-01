@@ -18,8 +18,13 @@ final class SiiCafPersistenceMapper
             cafXmlPath: $model->caf_xml_path,
             privateKeyPemEncrypted: $model->private_key_pem_encrypted,
             publicKeyPem: $model->public_key_pem,
-            authorizedAt: $model->authorizedAt?->format('Y-m-d'),
+            authorizedAt: $model->authorized_at?->format('Y-m-d'),
             isActive: (bool) $model->is_active,
+            externalSystemId: $model->extenal_system_id !== null ? (int) $model->external_system_id : null,
+            requestedFoliosCount: (int) $model->requested_folios_count,
+            availableFoliosCount: (int) $model->available_folios_count,
+            reservedFoliosCount: (int) $model->reserved_folios_count,
+            usedFoliosCount: (int) $model->used_folios_count,
         );
     }
 }

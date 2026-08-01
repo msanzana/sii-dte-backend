@@ -52,6 +52,11 @@ final class ReleaseReservedFolioService
                 usedAt: $folioDetail->usedAt()
             );
 
+            if (!$availableStatus || !$reservedStatus) {
+                throw new RuntimeException(
+                    'No fue posible resolver los estados base de folio.'
+                );
+            }
             $this->FolioDetailEventRepository->create(
                 folioDetailId: (int) $folioDetail->id(),
                 companyId: $input->companyId,
@@ -65,7 +70,7 @@ final class ReleaseReservedFolioService
                 userId: $input->userId,
                 payloadJson: json_encode([
                     'sii_document_type_code' => $input->siiDocumentTypeCode,
-                    'external_branch_code' => $input->siiDocumentTypeCode,
+                    'external_branch_code' => $input->externalBranchCode,
                     'reason' => $input->reason
                 ],JSON_UNESCAPED_UNICODE)
             );

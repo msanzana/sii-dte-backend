@@ -29,9 +29,13 @@ class CafController extends Controller
         }
 
         try {
+            $companyId = (int) $request->attributes->get(
+                'auth_company_id'
+            );
             $result = $this->importCafUseCase->execute(
                 new ImportCafInputDto(
-                    companyId: (int) $data['company_id'],
+                    companyId: $companyId,
+                    externalSystemId: (int) $data['external_system_id'],
                     tempFilePath: $file->getRealPath(),
                     originalFilename: $file->getClientOriginalName(),
                 )
@@ -48,6 +52,9 @@ class CafController extends Controller
                     'authorizedAt' => $result->authorizedAt,
                     'cafXmlPath' => $result->cafXmlPath,
                     'isActive' => $result->isActive,
+                    'externalSystemId' => $result->externalSystemId,
+                    'requestedFoliosCount' => $result->requestedFoliosCount,
+                    'availableFoliosCount' => $result->availableFoliosCount,
                 ]),
             ], 201);
 

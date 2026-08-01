@@ -16,7 +16,7 @@ final class ExternalSystemPersistenceMapper
             code: (string) $model->code,
             name: (string) $model->name,
             description: $model->description,
-            isActive: (bool) $model->is_acive,
+            isActive: (bool) $model->is_active,
         );
     }
 }

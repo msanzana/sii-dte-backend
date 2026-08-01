@@ -12,7 +12,7 @@ class ImportCafRequest extends FormRequest
     public function rules():array
     {
         return [
-            'company_id' => ['required','integer','exists:companies,id'],
+            'external_system_id' => ['required','integer','exists:external_systems,id'],
             'caf_file' => ['required','file','mimetypes:text/xml,application/xml,text/plain'],
         ];
     }

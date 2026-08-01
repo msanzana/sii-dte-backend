@@ -4,6 +4,7 @@ final class ImportCafInputDto
 {
     public function __construct(
         public readonly int $companyId,
+        public readonly int $externalSystemId,
         public readonly string $originalFilename,
         public readonly string $tempFilePath,
         public readonly bool $isActive = true,

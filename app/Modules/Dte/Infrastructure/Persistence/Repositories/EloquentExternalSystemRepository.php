@@ -19,7 +19,7 @@ final class EloquentExternalSystemRepository implements ExternalSystemRepository
             'company_id' => $externalSystem->companyId(),
             'code' => trim($externalSystem->code()),
             'name' => trim($externalSystem->name()),
-            'descripcion' => $externalSystem->description(),
+            'description' => $externalSystem->description(),
             'is_active' => $externalSystem->isActive(),
         ]);
 
@@ -65,10 +65,12 @@ final class EloquentExternalSystemRepository implements ExternalSystemRepository
 
     public function findByCompanyAndId(int $companyId, int $id): ?ExternalSystem
     {
+
         $model = ExternalSystemEloquentModel::query()
                 ->where('company_id', $companyId)
                 ->where('id', $id)
                 ->first();
+        error_log(json_encode($model));
         return $model
             ? $this->mapper->toDomain($model)
             :null;
@@ -88,7 +90,7 @@ final class EloquentExternalSystemRepository implements ExternalSystemRepository
 
     public function findByCompanyId(int $companyId): array
     {
-        return ExternalSystemEloquentModel::whery()
+        return ExternalSystemEloquentModel::query()
                 ->where('company_id',$companyId)
                 ->orderByDesc('is_active')
                 ->orderBy('name')

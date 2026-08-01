@@ -5,7 +5,7 @@ use App\Modules\Dte\Domain\Entities\FolioDetail;
 
 interface FolioDetailRepositoryInterface
 {
-    public function createBranch(array $details): void;
+    public function createBatch(array $details): void;
     public function findAvailableByFilters(
         int $companyId,
         int $externalSystemId,

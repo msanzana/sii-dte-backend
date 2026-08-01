@@ -11,7 +11,7 @@ interface FolioDetailEventRepositoryInterface
         string $eventCode,
         ?string $fromStatusCode,
         ?string $toStatusCode,
-        ?int $message,
+        ?string $message,
         ?int $userId,
         ?string $payloadJson
     ): void;

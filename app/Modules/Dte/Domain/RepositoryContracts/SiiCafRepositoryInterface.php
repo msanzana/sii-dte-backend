@@ -36,4 +36,9 @@ interface SiiCafRepositoryInterface
         int $reservedFoliosCount,
         int $usedFoliosCount
     ): void;
+    public function findByIdForUpdate(int $id): ?SiiCaf;
+    public function assignExternalSystem(
+        int $cafId,
+        int $externalSystemId
+    ): void;
 }

@@ -12,17 +12,17 @@ class ExternalSystemEloquentModel extends Model
         'company_id',
         'code',
         'name',
-        'descripcion',
+        'description',
         'is_active',
     ];
-    protected $cast = [
+    protected $casts = [
         'company_id' => 'integer',
         'is_active' => 'boolean',
     ];
 
     public function company()
     {
-        return $this->belongTo(
+        return $this->belongsTo(
             CompanyEloquentModel::class,
             'company_id'
         );

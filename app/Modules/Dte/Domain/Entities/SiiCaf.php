@@ -14,6 +14,12 @@ final class SiiCaf
         private readonly ?string $publicKeyPem = null,
         private readonly ?string $authorizedAt = null,
         private readonly bool $isActive = true,
+        //-> Campos Nuevos 28-07-2026
+        private readonly ?int $externalSystemId = null,
+        private readonly int $requestedFoliosCount = 0,
+        private readonly int $availableFoliosCount =0,
+        private readonly int $reservedFoliosCount =0,
+        private readonly int $usedFoliosCount =0,
     )
     {}
 
@@ -65,5 +71,38 @@ final class SiiCaf
     public function publicKeyPem(): ?string
     {
         return $this->publicKeyPem;
+    }
+    public function externalSystemId():?int
+    {
+        return $this->externalSystemId;
+    }
+    public function requestedFoliosCount():int
+    {
+        return $this->requestedFoliosCount;
+    }
+    public function availableFoliosCount():int
+    {
+        return $this->availableFoliosCount;
+    }
+    public function reservedFoliosCount():int
+    {
+        return $this->reservedFoliosCount;
+    }
+    public function usedFoliosCount():int
+    {
+        return $this->usedFoliosCount;
+    }
+    public function totalAuthorizedFolios(): int
+    {
+        return max(
+            0,
+            $this->folioEnd - $this->folioStart + 1
+        );
+    }
+
+    public function containsFolio(int $folio): bool
+    {
+        return $folio >= $this->folioStart
+            && $folio <= $this->folioEnd;
     }
 }

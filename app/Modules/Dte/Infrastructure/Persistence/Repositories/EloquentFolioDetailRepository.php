@@ -14,14 +14,14 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
         private readonly FolioDetailPersistenceMapper $mapper
     ){}
 
-    public function createBranch(array $details): void
+    public function createBatch(array $details): void
     {
         if($details === [])
         {
             return;
         }
         $now = now();
-        $rowa = [];
+        $rows = [];
 
         foreach($details as $detail)
         {
@@ -41,6 +41,8 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
                 'facility_number' => $detail->facilityNumber(),
                 'external_branch_code' => $detail->externalBranchCode(),
                 'folio_number' => $detail->folioNumber(),
+                'folio_status_id' => $detail->folioStatusId(),
+                'dte_document_id' => $detail->dteDocumentId(),
                 'reserved' => $detail->reserved(),
                 'reserved_at' => $detail->reservedAt(),
                 'released_at' => $detail->releasedAt(),
@@ -85,7 +87,7 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
         );
 
         return $query
-            ->orderBy('folioDetails.folio_number')
+            ->orderBy('folio_details.folio_number')
             ->limit(max(1,$limit))
             ->lockForUpdate()
             ->get()
@@ -203,8 +205,8 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
                 'folio_statuses', 'folio_statuses.id','=','folio_details.folio_status_id'
             )
             ->where('folio_details.caf_id', $cafId)
-            ->where('folio_stastuses.code','reserved')
-            ->where('folio_detail.reserved',true)
+            ->where('folio_statuses.code','reserved')
+            ->where('folio_details.reserved',true)
             ->whereNull('folio_details.dte_document_id')
             ->count('folio_details.id');
     }

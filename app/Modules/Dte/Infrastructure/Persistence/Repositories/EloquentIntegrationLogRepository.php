@@ -16,7 +16,6 @@ final class EloquentIntegrationLogRepository implements IntegrationLogRepository
         ?int $documentId = null,
         ?string $code = null
     ): void {
-        error_log($code);
         $this->write('info',$channel,$message,$context,$companyId,$documentId,$code);
     }
 
