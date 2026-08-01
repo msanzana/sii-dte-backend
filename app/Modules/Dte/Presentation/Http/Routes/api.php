@@ -8,6 +8,7 @@ use App\Modules\Dte\Presentation\Http\Controllers\CompanyController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteDocumentPreparationController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteServiceController;
+use App\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
 use App\Modules\Dte\Presentation\Http\Controllers\ExternalSystemController;
@@ -16,7 +17,6 @@ use App\Modules\Dte\Presentation\Http\Controllers\FolioStatusController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDocumentStatusController;
-use App\Modules\Dte\Presentation\Http\Resources\DteTedBuildController;
 use Illuminate\Support\Facades\Route;
 
 
