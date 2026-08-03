@@ -24,10 +24,8 @@ final class RecalculateCafCountersService
             );
         }
 
-        $totalAuthorizedFolios = max(
-            0,
-            $caf->folioEnd() - $caf->folioStart() + 1
-        );
+        $availableFolios = $this->folioDetailRepository
+            ->countAvailableByCafId($cafId);
 
         $reservedFolios = $this->folioDetailRepository
             ->countReservedByCafId($cafId);
@@ -35,12 +33,6 @@ final class RecalculateCafCountersService
         $usedFolios = $this->folioDetailRepository
             ->countUsedByCafId($cafId);
 
-        $availableFolios = max(
-            0,
-            $totalAuthorizedFolios
-                - $reservedFolios
-                - $usedFolios
-        );
 
         $this->cafRepository->updateOperationalFolioCounters(
             cafId: $cafId,

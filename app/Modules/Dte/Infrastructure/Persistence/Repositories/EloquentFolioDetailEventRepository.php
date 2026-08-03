@@ -15,7 +15,7 @@ final class EloquentFolioDetailEventRepository implements FolioDetailEventReposi
         string $eventCode,
         ?string $fromStatusCode,
         ?string $toStatusCode,
-        ?int $message,
+        ?string $message,
         ?int $userId,
         ?string $payloadJson
     ): void
@@ -34,5 +34,26 @@ final class EloquentFolioDetailEventRepository implements FolioDetailEventReposi
             'payload_json' => $payloadJson,
             'created_at' => now(),
         ]);
+    }
+
+    public function createBatch(array $events): void
+    {
+        if ($events === []) {
+            return;
+        }
+
+        $now = now();
+
+        foreach ($events as &$event) {
+            $event['created_at'] =
+                $event['created_at'] ?? $now;
+        }
+
+        unset($event);
+
+        foreach (array_chunk($events, 500) as $chunk) {
+            FolioDetailEventEloquentModel::query()
+                ->insert($chunk);
+        }
     }
 }

@@ -42,7 +42,13 @@ final class FolioReservationPersistenceMapper
             expiresAt: $model->expires_at?->format('Y-m-d H:i:s'),
 
             isCurrentlyValid: (bool) $model->is_currently_valid,
-            isActive: (bool) $model->is_active
+            isActive: (bool) $model->is_active,
+            deactivatedAt:$model->deactivated_at?->format('Y-m-d H:i:s'),
+            deactivatedByUserId:$model->deactivated_by_user_id !== null
+                    ? (int) $model->deactivated_by_user_id
+                    : null,
+            deactivationSource:$model->deactivation_source,
+            deactivationReason:$model->deactivation_reason,
         );
     }
 }

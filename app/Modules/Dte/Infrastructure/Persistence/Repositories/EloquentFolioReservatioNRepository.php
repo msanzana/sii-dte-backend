@@ -5,6 +5,7 @@ use App\Modules\Dte\Domain\Entities\FolioReservation;
 use App\Modules\Dte\Domain\RepositoryContracts\FolioReservationRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioReservationEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\FolioReservationPersistenceMapper;
+use Illuminate\Database\Eloquent\Builder;
 
 final class EloquentFolioReservationRepository implements FolioReservationRepositoryInterface
 {
@@ -151,5 +152,188 @@ final class EloquentFolioReservationRepository implements FolioReservationReposi
                     });
             })
             ->exists();
+    }
+
+    public function findByCompanyAndId(
+        int $companyId,
+        int $reservationId
+    ): ?FolioReservation {
+        $model = FolioReservationEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where('id', $reservationId)
+            ->first();
+
+        return $model
+            ? $this->mapper->toDomain($model)
+            : null;
+    }
+
+    public function findByCompanyAndIdForUpdate(
+        int $companyId,
+        int $reservationId
+    ): ?FolioReservation {
+        $model = FolioReservationEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where('id', $reservationId)
+            ->lockForUpdate()
+            ->first();
+
+        return $model
+            ? $this->mapper->toDomain($model)
+            : null;
+    }
+
+    public function findPageByCompanyFilters(
+        int $companyId,
+        ?int $externalSystemId,
+        ?string $siiDocumentTypeCode,
+        ?int $branchOfficeNumber,
+        ?int $facilityNumber,
+        ?bool $isActive,
+        ?bool $isCurrentlyValid,
+        int $page,
+        int $perPage
+    ): array {
+        $query = FolioReservationEloquentModel::query()
+            ->where('company_id', $companyId);
+
+        $this->applyListFilters(
+            query: $query,
+            externalSystemId: $externalSystemId,
+            siiDocumentTypeCode: $siiDocumentTypeCode,
+            branchOfficeNumber: $branchOfficeNumber,
+            facilityNumber: $facilityNumber,
+            isActive: $isActive,
+            isCurrentlyValid: $isCurrentlyValid
+        );
+
+        return $query
+            ->orderByDesc('id')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get()
+            ->map(
+                fn(FolioReservationEloquentModel $model) =>
+                $this->mapper->toDomain($model)
+            )
+            ->all();
+    }
+    public function countByCompanyFilters(
+        int $companyId,
+        ?int $externalSystemId,
+        ?string $siiDocumentTypeCode,
+        ?int $branchOfficeNumber,
+        ?int $facilityNumber,
+        ?bool $isActive,
+        ?bool $isCurrentlyValid
+    ): int {
+        $query = FolioReservationEloquentModel::query()
+            ->where('company_id', $companyId);
+
+        $this->applyListFilters(
+            query: $query,
+            externalSystemId: $externalSystemId,
+            siiDocumentTypeCode: $siiDocumentTypeCode,
+            branchOfficeNumber: $branchOfficeNumber,
+            facilityNumber: $facilityNumber,
+            isActive: $isActive,
+            isCurrentlyValid: $isCurrentlyValid
+        );
+
+        return $query->count();
+    }
+
+    public function deactivate(
+        int $reservationId,
+        string $deactivatedAt,
+        ?int $deactivatedByUserId,
+        string $deactivationSource,
+        string $deactivationReason
+    ): void {
+        FolioReservationEloquentModel::query()
+            ->where('id', $reservationId)
+            ->update([
+                'is_active'              => false,
+                'is_currently_valid'     => false,
+                'deactivated_at'         => $deactivatedAt,
+                'deactivated_by_user_id' =>
+                $deactivatedByUserId,
+                'deactivation_source'    =>
+                $deactivationSource,
+                'deactivation_reason'    =>
+                $deactivationReason,
+                'updated_at'             => now(),
+            ]);
+    }
+    private function applyListFilters(
+        Builder $query,
+        ?int $externalSystemId,
+        ?string $siiDocumentTypeCode,
+        ?int $branchOfficeNumber,
+        ?int $facilityNumber,
+        ?bool $isActive,
+        ?bool $isCurrentlyValid
+    ): void {
+        if ($externalSystemId !== null) {
+            $query->where(
+                'external_system_id',
+                $externalSystemId
+            );
+        }
+
+        if ($siiDocumentTypeCode !== null) {
+            $query->where(
+                'sii_document_type_code',
+                $siiDocumentTypeCode
+            );
+        }
+
+        if ($branchOfficeNumber !== null) {
+            $query->where(
+                'branch_office_number',
+                $branchOfficeNumber
+            );
+        }
+
+        if ($facilityNumber !== null) {
+            $query->where(
+                'facility_number',
+                $facilityNumber
+            );
+        }
+
+        if ($isActive !== null) {
+            $query->where('is_active', $isActive);
+        }
+
+        if ($isCurrentlyValid !== null) {
+            $query->where(
+                'is_currently_valid',
+                $isCurrentlyValid
+            );
+        }
+    }
+
+    public function findExpiredActiveReferences(
+        string $expiresBefore,
+        int $limit
+    ): array {
+        return FolioReservationEloquentModel::query()
+        ->select(['id', 'company_id'])
+        ->where('is_active', true)
+        ->where('is_currently_valid', true)
+        ->whereNotNull('expires_at')
+        ->where('expires_at', '<=', $expiresBefore)
+        ->orderBy('expires_at')
+        ->orderBy('id')
+        ->limit(max(1, $limit))
+        ->get()
+        ->map(
+            fn (FolioReservationEloquentModel $model) => [
+                'id' => (int) $model->id,
+                'company_id' => (int) $model->company_id,
+            ]
+        )
+        ->all();
     }
 }

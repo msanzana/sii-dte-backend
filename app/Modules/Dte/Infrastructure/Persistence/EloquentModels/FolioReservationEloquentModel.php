@@ -23,9 +23,13 @@ class FolioReservationEloquentModel extends Model
         'current_folio',
         'reserved_quantity',
         'reserved_at',
-        'requires_at',
+        'expires_at',
         'is_currently_valid',
-        'is_active'
+        'is_active',
+        'deactivated_at',
+        'deactivated_by_user_id',
+        'deactivation_source',
+        'deactivation_reason',
     ];
 
     protected $casts = [
@@ -35,17 +39,20 @@ class FolioReservationEloquentModel extends Model
 
         'branch_office_number' => 'integer',
         'facility_number' => 'integer',
-        
+
         'folio_range_from' => 'integer',
         'folio_range_to' => 'integer',
         'current_folio' => 'integer',
         'reserved_quantity' => 'integer',
 
         'reserved_at' => 'datetime',
-        'requires_at' => 'datetime',
+        'expires_at' => 'datetime',
 
         'is_currently_valid' => 'boolean',
         'is_active' => 'boolean',
+
+        'deactivated_at' => 'datetime',
+        'deactivated_by_user_id' => 'integer',
     ];
 
     public function caf()

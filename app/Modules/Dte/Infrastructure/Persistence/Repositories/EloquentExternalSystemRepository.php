@@ -70,7 +70,6 @@ final class EloquentExternalSystemRepository implements ExternalSystemRepository
                 ->where('company_id', $companyId)
                 ->where('id', $id)
                 ->first();
-        error_log(json_encode($model));
         return $model
             ? $this->mapper->toDomain($model)
             :null;

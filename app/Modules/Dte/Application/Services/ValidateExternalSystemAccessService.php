@@ -12,8 +12,6 @@ final class ValidateExternalSystemAccessService
     ){}
     public function execute(int $companyId, int $externalSystemId): ExternalSystem
     {
-        error_log($companyId);
-        error_log($externalSystemId);
         $externalSystem = $this->externalSystemRepository->findByCompanyAndId(
             $companyId,
             $externalSystemId

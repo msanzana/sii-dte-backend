@@ -262,4 +262,181 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
             );
         }
     }
+    public function findPageByReservationFilters(
+        int $companyId,
+        int $reservationId,
+        ?string $statusCode,
+        ?bool $reserved,
+        ?int $folioFrom,
+        ?int $folioTo,
+        int $page,
+        int $perPage
+    ): array {
+        $query = $this->buildReservationDetailQuery(
+            companyId: $companyId,
+            reservationId: $reservationId,
+            statusCode: $statusCode,
+            reserved: $reserved,
+            folioFrom: $folioFrom,
+            folioTo: $folioTo
+        );
+
+        return $query
+            ->with('status')
+            ->orderBy('folio_number')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get()
+            ->map(
+                fn (FolioDetailEloquentModel $model) =>
+                    $this->mapper->toDomain($model)
+            )
+            ->all();
+    }
+
+    public function countByReservationFilters(
+        int $companyId,
+        int $reservationId,
+        ?string $statusCode,
+        ?bool $reserved,
+        ?int $folioFrom,
+        ?int $folioTo
+    ): int {
+        return $this->buildReservationDetailQuery(
+            companyId: $companyId,
+            reservationId: $reservationId,
+            statusCode: $statusCode,
+            reserved: $reserved,
+            folioFrom: $folioFrom,
+            folioTo: $folioTo
+        )->count();
+    }
+
+    public function findReversibleByReservationForUpdate(
+        int $reservationId,
+        int $limit
+    ): array {
+        return FolioDetailEloquentModel::query()
+            ->select('folio_details.*')
+            ->with('status')
+            ->join(
+                'folio_statuses',
+                'folio_statuses.id',
+                '=',
+                'folio_details.folio_status_id'
+            )
+            ->where(
+                'folio_details.folio_reservation_id',
+                $reservationId
+            )
+            ->whereIn(
+                'folio_statuses.code',
+                ['available', 'reserved']
+            )
+            ->whereNull('folio_details.dte_document_id')
+            ->whereNull('folio_details.used_at')
+            ->orderBy('folio_details.id')
+            ->limit(max(1, $limit))
+            ->lockForUpdate()
+            ->get()
+            ->map(
+                fn (FolioDetailEloquentModel $model) =>
+                    $this->mapper->toDomain($model)
+            )
+            ->all();
+    }
+
+    public function markExpiredByIds(
+        array $folioDetailIds,
+        int $expiredStatusId,
+        string $expiredAt
+    ): void {
+        if ($folioDetailIds === []) {
+            return;
+        }
+
+        FolioDetailEloquentModel::query()
+            ->whereIn('id', $folioDetailIds)
+            ->update([
+                'folio_status_id' => $expiredStatusId,
+                'reserved' => false,
+                'expired_at' => $expiredAt,
+                'updated_at' => now(),
+            ]);
+    }
+
+    public function countByReservationId(
+        int $reservationId
+    ): int {
+        return FolioDetailEloquentModel::query()
+            ->where(
+                'folio_reservation_id',
+                $reservationId
+            )
+            ->count();
+    }
+
+    public function countAvailableByCafId(
+        int $cafId
+    ): int {
+        return FolioDetailEloquentModel::query()
+            ->join(
+                'folio_statuses',
+                'folio_statuses.id',
+                '=',
+                'folio_details.folio_status_id'
+            )
+            ->where('folio_details.caf_id', $cafId)
+            ->where('folio_statuses.code', 'available')
+            ->where('folio_details.reserved', false)
+            ->whereNull('folio_details.dte_document_id')
+            ->whereNull('folio_details.used_at')
+            ->count('folio_details.id');
+    }
+
+    private function buildReservationDetailQuery(
+        int $companyId,
+        int $reservationId,
+        ?string $statusCode,
+        ?bool $reserved,
+        ?int $folioFrom,
+        ?int $folioTo
+    ): Builder {
+        $query = FolioDetailEloquentModel::query()
+            ->where('company_id', $companyId)
+            ->where(
+                'folio_reservation_id',
+                $reservationId
+            );
+
+        if ($statusCode !== null) {
+            $query->whereHas(
+                'status',
+                fn ($statusQuery) =>
+                    $statusQuery->where('code', $statusCode)
+            );
+        }
+
+        if ($reserved !== null) {
+            $query->where('reserved', $reserved);
+        }
+
+        if ($folioFrom !== null) {
+            $query->where(
+                'folio_number',
+                '>=',
+                $folioFrom
+            );
+        }
+
+        if ($folioTo !== null) {
+            $query->where(
+                'folio_number',
+                '<=',
+                $folioTo
+            );
+        }
+
+        return $query;
+    }
 }

@@ -20,17 +20,21 @@ final class FolioReservation
         private readonly ?string $expiresAt,
         private readonly bool $isCurrentlyValid,
         private readonly bool $isActive,
+        private readonly ?string $deactivatedAt = null,
+        private readonly ?int $deactivatedByUserId = null,
+        private readonly ?string $deactivationSource = null,
+        private readonly ?string $deactivationReason = null,
 
     ) {}
     public function id(): ?int
     {
         return $this->id;
     }
-    public function cafId(): ?int
+    public function cafId(): int
     {
         return $this->cafId;
     }
-    public function externalSystemId(): ?int
+    public function externalSystemId(): int
     {
         return $this->externalSystemId;
     }
@@ -54,11 +58,11 @@ final class FolioReservation
     {
         return $this->externalBranchCode;
     }
-    public function folioRangeFrom(): ?int
+    public function folioRangeFrom(): int
     {
         return $this->folioRangeFrom;
     }
-    public function folioRangeTo(): ?int
+    public function folioRangeTo(): int
     {
         return $this->folioRangeTo;
     }
@@ -66,7 +70,7 @@ final class FolioReservation
     {
         return $this->currentFolio;
     }
-    public function reservedQuantity(): ?int
+    public function reservedQuantity(): int
     {
         return $this->reservedQuantity;
     }
@@ -85,5 +89,24 @@ final class FolioReservation
     public function isActive(): bool
     {
         return $this->isActive;
+    }
+    public function deactivatedAt(): ?string
+    {
+        return $this->deactivatedAt;
+    }
+
+    public function deactivatedByUserId(): ?int
+    {
+        return $this->deactivatedByUserId;
+    }
+
+    public function deactivationSource(): ?string
+    {
+        return $this->deactivationSource;
+    }
+
+    public function deactivationReason(): ?string
+    {
+        return $this->deactivationReason;
     }
 }

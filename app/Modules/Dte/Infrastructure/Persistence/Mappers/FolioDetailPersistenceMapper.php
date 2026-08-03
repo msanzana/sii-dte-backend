@@ -36,6 +36,13 @@ final class FolioDetailPersistenceMapper
             dteDocumentId: $model->dte_document_id !== null
                         ?(int) $model->dte_document_id
                         :null,
-        );
+            expiredAt:$model->expired_at?->format('Y-m-d H:i:s'),
+            folioStatusCode:$model->relationLoaded('status')
+                    ? $model->status?->code
+                    : null,
+            folioStatusName:$model->relationLoaded('status')
+                    ? $model->status?->name
+                    : null,
+    );
     }
 }

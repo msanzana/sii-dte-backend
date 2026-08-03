@@ -27,6 +27,7 @@ class FolioDetailEloquentModel extends Model
         'released_at',
         'used_at',
         'dte_document_id',
+        'expired_at',
     ];
     protected $casts = [
         'folio_reservation_id' => 'integer',
@@ -45,6 +46,9 @@ class FolioDetailEloquentModel extends Model
         'reserved_at' => 'datetime',
         'released_at' => 'datetime',
         'used_at' => 'datetime',
+        
+        'expired_at' => 'datetime',
+        
     ];
 
     public function reservation()

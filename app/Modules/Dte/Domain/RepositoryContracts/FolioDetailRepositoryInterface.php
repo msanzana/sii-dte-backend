@@ -48,4 +48,55 @@ interface FolioDetailRepositoryInterface
     public function countReservedByCafId(int $cafId): int;
 
     public function countUsedByCafId(int $cafId): int;
+
+        /**
+     * @return FolioDetail[]
+     */
+    public function findPageByReservationFilters(
+        int $companyId,
+        int $reservationId,
+        ?string $statusCode,
+        ?bool $reserved,
+        ?int $folioFrom,
+        ?int $folioTo,
+        int $page,
+        int $perPage
+    ): array;
+
+    public function countByReservationFilters(
+        int $companyId,
+        int $reservationId,
+        ?string $statusCode,
+        ?bool $reserved,
+        ?int $folioFrom,
+        ?int $folioTo
+    ): int;
+
+    /**
+     * Devuelve solamente detalles en estado available o reserved
+     * que no estén asociados ni utilizados.
+     *
+     * @return FolioDetail[]
+     */
+    public function findReversibleByReservationForUpdate(
+        int $reservationId,
+        int $limit
+    ): array;
+
+    /**
+     * @param int[] $folioDetailIds
+     */
+    public function markExpiredByIds(
+        array $folioDetailIds,
+        int $expiredStatusId,
+        string $expiredAt
+    ): void;
+
+    public function countByReservationId(
+        int $reservationId
+    ): int;
+
+    public function countAvailableByCafId(
+        int $cafId
+    ): int;
 }

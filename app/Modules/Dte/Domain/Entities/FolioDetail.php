@@ -19,6 +19,9 @@ final class FolioDetail
         private readonly ?string $releasedAt,
         private readonly ?string $usedAt,
         private readonly ?int $dteDocumentId,
+        private readonly ?string $expiredAt = null,
+        private readonly ?string $folioStatusCode = null,
+        private readonly ?string $folioStatusName = null,
     ) {}
     public function id(): ?int
     {
@@ -75,7 +78,7 @@ final class FolioDetail
     public function releasedAt(): ?string
     {
         return $this->releasedAt;
-    } 
+    }
     public function usedAt(): ?string
     {
         return $this->usedAt;
@@ -84,5 +87,18 @@ final class FolioDetail
     {
         return $this->dteDocumentId;
     }
+    public function expiredAt(): ?string
+    {
+        return $this->expiredAt;
+    }
 
+    public function folioStatusCode(): ?string
+    {
+        return $this->folioStatusCode;
+    }
+
+    public function folioStatusName(): ?string
+    {
+        return $this->folioStatusName;
+    }
 }

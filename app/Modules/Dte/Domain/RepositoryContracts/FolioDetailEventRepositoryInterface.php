@@ -15,4 +15,11 @@ interface FolioDetailEventRepositoryInterface
         ?int $userId,
         ?string $payloadJson
     ): void;
+
+    /**
+     * Cada elemento debe contener los campos de folio_detail_events.
+     *
+     * @param array<int, array<string, mixed>> $events
+     */
+    public function createBatch(array $events): void;
 }
