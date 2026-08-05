@@ -6,6 +6,8 @@ use App\Jobs\Dte\Aothomation\PumpPendingDocumentStatusQueriesJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\Dte\Aothomation\ReconcileCafCountersJob;
+use App\Jobs\Dte\Aothomation\SyncExpiredFolioReservationsJob;
 
 Artisan::command('inspire', function () {
     $this->comment('DTE automation scheduler ready.');
@@ -41,3 +43,32 @@ Schedule::job(
     ->withoutOverlapping(1)
     ->onOneServer();
 Schedule::command('dte:refresh-company-certificate-defaults')->hourly();
+Schedule::job(
+    new SyncExpiredFolioReservationsJob(),
+    (string) config(
+        'dte.automation.queues.maintenance',
+        'dte-maintenance'
+    ),
+    (string) config(
+        'dte.automation.queue_connection'
+    )
+)
+    ->name('dte-expired-folio-reservations')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer();
+
+Schedule::job(
+    new ReconcileCafCountersJob(),
+    (string) config(
+        'dte.automation.queues.maintenance',
+        'dte-maintenance'
+    ),
+    (string) config(
+        'dte.automation.queue_connection'
+    )
+)
+    ->name('dte-caf-counter-reconciliation')
+    ->dailyAt('02:30')
+    ->withoutOverlapping(60)
+    ->onOneServer();

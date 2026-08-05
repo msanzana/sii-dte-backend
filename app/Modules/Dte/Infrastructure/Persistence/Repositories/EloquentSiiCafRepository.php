@@ -188,4 +188,16 @@ final class EloquentSiiCafRepository implements SiiCafRepositoryInterface
                 'updated_at' => now(),
             ]);
     }
+    public function findIdsForCounterReconciliation(
+        int $afterId,
+        int $limit
+    ): array {
+        return SiiCafEloquentModel::query()
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
 }

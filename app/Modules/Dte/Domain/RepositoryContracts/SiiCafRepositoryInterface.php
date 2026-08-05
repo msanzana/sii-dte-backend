@@ -41,4 +41,11 @@ interface SiiCafRepositoryInterface
         int $cafId,
         int $externalSystemId
     ): void;
+    /**
+     * @return int[]
+     */
+    public function findIdsForCounterReconciliation(
+        int $afterId,
+        int $limit
+    ): array;
 }

@@ -142,12 +142,15 @@ return [
             'pipeline' => env('DTE_AUTOMATION_PIPELINE_QUEUE', 'dte-pipeline'),
             'dispatch_polling' => env('DTE_AUTOMATION_DISPATCH_POLLING_QUEUE', 'dte-dispatch-polling'),
             'document_status' => env('DTE_AUTOMATION_DOCUMENT_STATUS_QUEUE', 'dte-document-status'),
+            'maintenance' => env('DTE_AUTOMATION_MAINTENANCE_QUEUE','dte-maintenance'),
         ],
 
         'limits' => [
             'documents_per_pump' => env('DTE_AUTOMATION_DOCUMENTS_PER_PUMP', 50),
             'dispatches_per_pump' => env('DTE_AUTOMATION_DISPATCHES_PER_PUMP', 50),
             'document_status_queries_per_pump' => env('DTE_AUTOMATION_DOCUMENT_STATUS_QUERIES_PER_PUMP', 50),
+            'expired_reservations_per_run' => env('DTE_EXPIRED_RESERVATIONS_PER_RUN',100),
+            'caf_counter_batch_size' => env('DTE_CAF_COUNTER_BATCH_SIZE',200),
         ],
 
         'delays' => [
