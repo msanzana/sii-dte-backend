@@ -177,6 +177,7 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
         ?int $facilityNumber,
         ?string $externalBranchCode
     ): int {
+
         $query = FolioDetailEloquentModel::query()
             ->join(
                 'folio_statuses', 'folio_statuses.id','=','folio_details.folio_status_id'
@@ -229,33 +230,20 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
         ?int $facilityNumber,
         ?string $externalBranchCode
     ): void {
-        if ($branchOfficeNumber === null) {
-            $query->whereNull(
-                'folio_details.branch_office_number'
-            );
-        } else {
+        if ($branchOfficeNumber !== null) {
             $query->where(
                 'folio_details.branch_office_number',
                 $branchOfficeNumber
             );
         }
-
-        if ($facilityNumber === null) {
-            $query->whereNull(
-                'folio_details.facility_number'
-            );
-        } else {
+        if ($facilityNumber !== null) {
             $query->where(
                 'folio_details.facility_number',
                 $facilityNumber
             );
         }
 
-        if ($externalBranchCode === null) {
-            $query->whereNull(
-                'folio_details.external_branch_code'
-            );
-        } else {
+        if ($externalBranchCode !== null) {
             $query->where(
                 'folio_details.external_branch_code',
                 $externalBranchCode

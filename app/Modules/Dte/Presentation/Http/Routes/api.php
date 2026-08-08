@@ -13,6 +13,7 @@ use App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
 use App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
 use App\Modules\Dte\Presentation\Http\Controllers\ExternalSystemController;
 use App\Modules\Dte\Presentation\Http\Controllers\FolioController;
+use App\Modules\Dte\Presentation\Http\Controllers\FolioReservationController;
 use App\Modules\Dte\Presentation\Http\Controllers\FolioStatusController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
@@ -58,4 +59,10 @@ use Illuminate\Support\Facades\Route;
     Route::post('/folios/release',[FolioController::class, 'release']);
     
     Route::post('/cafs/{cafId}/range-allocations',[CafRangeAllocationController::class, 'store'])->whereNumber('cafId');
-//});
+
+    Route::get('/folio-reservations',[FolioReservationController::class, 'index']);
+    Route::get('/folio-reservations/{reservationId}',[FolioReservationController::class, 'show'])->whereNumber('reservationId');
+    Route::get('/folio-reservations/{reservationId}/details',[FolioReservationController::class, 'details'])->whereNumber('reservationId');
+    Route::post('/folio-reservations/{reservationId}/deactivate',[FolioReservationController::class, 'deactivate'])->whereNumber('reservationId');
+
+ //});

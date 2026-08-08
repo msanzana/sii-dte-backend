@@ -29,7 +29,7 @@ final class FolioReservationController extends Controller
     ):JsonResponse
     {
         $companyId = (int) $request->attributes->get(
-            'auth_comopany_id'
+            'auth_company_id'
         );
 
         $result = $this->listUseCase->execute(
@@ -121,7 +121,7 @@ final class FolioReservationController extends Controller
                         'reserved_at' => $item->reservedAt,
                         'released_at' => $item->releasedAt,
                         'used_at' => $item->usedAt,
-                        'expired_at' => $item->expiredAt,
+                        'expires_at' => $item->expiresAt,
                         'dte_document_id' => $item->dteDocumentId,
                         'branch_office_number' => $item->branchOfficeNumber,
                         'facility_number' => $item->facilityNumber,
@@ -201,7 +201,7 @@ final class FolioReservationController extends Controller
             'current_folio' => $item->currentFolio,
             'assigned_quantity' => $item->assignedQuantity,
             'reserved_at' =>  $item->reservedAt,
-            'expires_at' => $item->expiredAt,
+            'expires_at' => $item->expiresAt,
             'is_currently_valid' => $item->isCurrentlyValid,
             'is_active' => $item->isActive,
             'deactivated_at' => $item->deactivatedAt,

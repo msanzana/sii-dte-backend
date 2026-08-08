@@ -13,7 +13,7 @@ final class FolioReservationItemDto
         public readonly ?string $externalBranchCode,
         public readonly int $folioRangeFrom,
         public readonly int $folioRangeTo,
-        public readonly int $currentFolio,
+        public readonly ?int $currentFolio,
         public readonly int $assignedQuantity,
         public readonly string $reservedAt,
         public readonly ?string $expiresAt,
@@ -25,4 +25,4 @@ final class FolioReservationItemDto
         public readonly ?string $deactivationReason,
 
     ) {}
-} 
+}
