@@ -158,6 +158,7 @@ final class EloquentFolioReservationRepository implements FolioReservationReposi
         int $companyId,
         int $reservationId
     ): ?FolioReservation {
+        error_log($companyId);
         $model = FolioReservationEloquentModel::query()
             ->where('company_id', $companyId)
             ->where('id', $reservationId)
@@ -256,12 +257,9 @@ final class EloquentFolioReservationRepository implements FolioReservationReposi
                 'is_active'              => false,
                 'is_currently_valid'     => false,
                 'deactivated_at'         => $deactivatedAt,
-                'deactivated_by_user_id' =>
-                $deactivatedByUserId,
-                'deactivation_source'    =>
-                $deactivationSource,
-                'deactivation_reason'    =>
-                $deactivationReason,
+                'deactivated_by_user_id' => $deactivatedByUserId,
+                'deactivation_source'    => $deactivationSource,
+                'deactivation_reason'    => $deactivationReason,
                 'updated_at'             => now(),
             ]);
     }

@@ -61,7 +61,7 @@ final class DeactivateFolioReservationService
                 );
             }
             $now = now()->format('Y-m-d H:i:s');
-            $expiresDetails = 0;
+            $expiredDetails = 0;
         
             do{
                 $details = $this->detailRepository->findReversibleByReservationForUpdate(
@@ -78,7 +78,7 @@ final class DeactivateFolioReservationService
 
                 foreach($details as $detail)
                 {
-                    $detailIds = (int) $detail->id();
+                    $detailIds[] = (int) $detail->id();
                     $events[] = [
                         'folio_detail_id' => (int) $detail->id(),
                         'company_id' => $detail->companyId(),
@@ -124,7 +124,7 @@ final class DeactivateFolioReservationService
 
             $unaffectedDetails = max(
                 0,
-                $totalDetails - $expiresDetails
+                $totalDetails - $expiredDetails
             );
 
             $this->logRepository->info(

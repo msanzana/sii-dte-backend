@@ -99,7 +99,7 @@ final class FolioReservationController extends Controller
     {
         try {
             $result = $this->detailsUseCase->execute(
-                companyId: (int) $request->attributes->get('path_company_id'),
+                companyId: (int) $request->attributes->get('auth_company_id'),
                 reservationId: $reservationId,
                 statusCode: $this->nullableString($request->validated('status_code')),
                 reserved: $this->nullableBoolean($request->validated('reserved')),
@@ -121,7 +121,7 @@ final class FolioReservationController extends Controller
                         'reserved_at' => $item->reservedAt,
                         'released_at' => $item->releasedAt,
                         'used_at' => $item->usedAt,
-                        'expires_at' => $item->expiresAt,
+                        'expired_at' => $item->expiredAt,
                         'dte_document_id' => $item->dteDocumentId,
                         'branch_office_number' => $item->branchOfficeNumber,
                         'facility_number' => $item->facilityNumber,
@@ -201,7 +201,7 @@ final class FolioReservationController extends Controller
             'current_folio' => $item->currentFolio,
             'assigned_quantity' => $item->assignedQuantity,
             'reserved_at' =>  $item->reservedAt,
-            'expires_at' => $item->expiresAt,
+            'expired_at' => $item->expiredAt,
             'is_currently_valid' => $item->isCurrentlyValid,
             'is_active' => $item->isActive,
             'deactivated_at' => $item->deactivatedAt,

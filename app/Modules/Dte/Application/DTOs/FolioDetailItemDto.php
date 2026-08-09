@@ -15,7 +15,7 @@ final class FolioDetailItemDto
         public readonly ?string $reservedAt,
         public readonly ?string $releasedAt,
         public readonly ?string $usedAt,
-        public readonly ?string $expiresAt,
+        public readonly ?string $expiredAt,
         public readonly ?int $dteDocumentId,
         public readonly ?int $branchOfficeNumber,
         public readonly ?int $facilityNumber,
