@@ -18,6 +18,7 @@ final class CompanyPersistenceMapper
             tradeName: $model->trade_name,
             giro: $model->giro,
             address: $model->address,
+            siiActivityCode: $model->sii_activity_code,
             cityId: $model->city_id,
             dteEmail: $model->dte_email,
             resolutionNumber: $model->resolution_number,

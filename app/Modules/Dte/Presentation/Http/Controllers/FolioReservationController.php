@@ -201,7 +201,7 @@ final class FolioReservationController extends Controller
             'current_folio' => $item->currentFolio,
             'assigned_quantity' => $item->assignedQuantity,
             'reserved_at' =>  $item->reservedAt,
-            'expired_at' => $item->expiredAt,
+            'expires_at' => $item->expiresAt,
             'is_currently_valid' => $item->isCurrentlyValid,
             'is_active' => $item->isActive,
             'deactivated_at' => $item->deactivatedAt,
@@ -220,7 +220,7 @@ final class FolioReservationController extends Controller
     {
         return $value !== null ? filter_var($value, FILTER_VALIDATE_BOOLEAN) : null;
     }
-    
+
     private function nullableString(mixed $value): ?string
     {
         if($value === null)

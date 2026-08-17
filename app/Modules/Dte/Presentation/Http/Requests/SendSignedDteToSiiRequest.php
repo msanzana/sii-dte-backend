@@ -20,7 +20,7 @@ class SendSignedDteToSiiRequest extends FormRequest
     public function rules():array
     {
         return [
-            'document_id' => ['required','integer','exists:dte_documents'],
+            'document_id' => ['required','integer','exists:dte_documents,id'],
         ];
     }
 }

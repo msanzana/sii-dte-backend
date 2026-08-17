@@ -23,7 +23,7 @@ class DteDocumentPreparationController extends Controller
         try {
             $result = $this->prepareDocumentForXmlUseCase->execute(
                 new PrepareDteDocumentForXmlInputDto(
-                    documentId: (int) $request->validated('documento_id')
+                    documentId: (int) $request->validated('document_id')
                 )
             );
 

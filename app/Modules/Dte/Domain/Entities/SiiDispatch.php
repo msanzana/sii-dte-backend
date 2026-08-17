@@ -1,5 +1,5 @@
 <?php
-namespace App\Modules\Dte\Domain\Exceptions;
+namespace App\Modules\Dte\Domain\Entities;
 final class SiiDispatch
 {
     public function __construct(

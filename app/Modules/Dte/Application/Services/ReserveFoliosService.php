@@ -109,7 +109,7 @@ final class ReserveFoliosService
             }
 
             $availableAfter = $this->folioDetailRepository
-                ->countAvailableByFilters(
+                ->countAvailableByFilter(
                     companyId: $input->companyId,
                     externalSystemId: $input->externalSystemId,
                     siiDocumentTypeCode: $input->siiDocumentTypeCode,

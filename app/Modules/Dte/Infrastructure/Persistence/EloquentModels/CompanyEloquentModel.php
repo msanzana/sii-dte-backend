@@ -16,6 +16,7 @@ class CompanyEloquentModel extends Model
         'trade_name',
         'giro',
         'address',
+        'sii_activity_code',
         'city_id',
         'dte_email',
         'resolution_number',

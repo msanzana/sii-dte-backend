@@ -13,11 +13,17 @@ class StoreDteDocumentRequest extends FormRequest
     public function rules():array
     {
         return [
-            'country_id' => ['required', 'integer', 'exists:companies,id'],
-            'external_id' => ['nullable', 'uuid'],
-            'dte_type' => ['required','integer', Rule::in([33,34,39,41,46,52,56,61])],
-            'issue_date' => ['required', 'date'],
 
+            'external_id' => ['nullable', 'uuid'],
+            'external_system_id' => ['nullable','integer',],
+            'proposed_folio' => ['nullable','integer','min:1','required_with:external_system_id',],
+            'proposed_sii_document_type' => ['nullable','integer', Rule::in([33,34,39,41,46,52,56,61])],
+            'branch_office_number' => ['nullable', 'integer','min:1',],
+            'facility_number' => ['nullable','integer','min:1',],
+            'external_branch_code' => ['nullable','string','max:100',],
+            'dte_type' => ['required','integer', Rule::in([33,34,39,41,46,52,56,61,]),],
+            'issue_date' => ['required', 'date'],
+            
             'receiver.document' => ['required','string','max:20'],
             'receiver.name' => ['required','string','max:120'],
             'receiver.giro' => ['nullable','string','max:150'],

@@ -13,6 +13,14 @@ final class CreateDteDocumentResultDto
         public readonly float $exemptAmount,
         public readonly float $taxAmount,
         public readonly float $totalAmount,
+
+        public readonly ?int $externalSystemId,
+        public readonly ?int $folio,
+        public readonly ?int $cafId,
+        public readonly ?int $folioReservationId,
+        public readonly ?int $branchOfficeNumber,
+        public readonly ?int $facilityNumber,
+        public readonly ?string $externalBranchCode,
     )
     {}
 }

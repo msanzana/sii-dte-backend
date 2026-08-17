@@ -17,10 +17,18 @@ class DteTedEmbedderService
 
         $positionTmstFirma = strpos($dteXmlIso88591,'<TmstFirma>');
 
-        if($positionTmstFirma !== false) {
-            return substr($dteXmlIso88591,0, $positionTmstFirma)
-            .$tedXmlUtf8. PHP_EOL
-            .substr($dteXmlIso88591, $positionTmstFirma);
+        if ($positionTmstFirma !== false) {
+            return substr(
+                $dteXmlIso88591,
+                0,
+                $positionTmstFirma
+            )
+            . $tedXmlIso88591
+            . PHP_EOL
+            . substr(
+                $dteXmlIso88591,
+                $positionTmstFirma
+            );
         }
 
         $closingDocumento = strrpos($dteXmlIso88591,'</Documento>');

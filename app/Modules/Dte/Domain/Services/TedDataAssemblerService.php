@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Dte\Domain\Services;
 
-use App\Models\Dte\Domain\Entities\Company;
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Exceptions\InvalidTedDataException;
 
@@ -30,6 +30,7 @@ final class TedDataAssemblerService
             'rr' => $document->receiver()->document(),
             'rsr' => $this->normalizeTedText($document->receiver()->name()),
             'mnt' => $this->formatIntegerAmount($document->totalAmount()),
+            'it1' => $this->normalizeTedText($firstItem->name()),
             'caf_xml_fragment' => $cafXmlFragment,
             'tsted' => now()->format('Y-m-d\TH:i:s'),
         ];

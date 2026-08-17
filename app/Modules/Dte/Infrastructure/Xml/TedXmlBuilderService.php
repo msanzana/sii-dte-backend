@@ -16,7 +16,7 @@ class TedXmlBuilderService
         $xml.= '<MNT>'.$this->escape($data['mnt']).'</MNT>';
         $xml.= '<IT1>'.$this->escape($data['it1']).'</IT1>';
         $xml.= $data['caf_xml_fragment'];
-        $xml.= '<TSTED>'.$this->escape($data['']).'</TSTED>';
+        $xml.= '<TSTED>'.$this->escape($data['tsted']).'</TSTED>';
         $xml.= '</DD>';
 
         return $xml;
@@ -27,7 +27,7 @@ class TedXmlBuilderService
         $ddXml = $this->buildDdXml($data);
 
         $xml = '';
-        $xml .= '<TED version "1.0">';
+        $xml .= '<TED version="1.0">';
         $xml .= $ddXml;
         $xml .= '<FRMT algoritmo="SHA1withRSA">'.$this->escape($frmtBase64).'</FRMT>';
         $xml .= '</TED>';

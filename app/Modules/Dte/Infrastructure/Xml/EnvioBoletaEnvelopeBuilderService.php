@@ -27,8 +27,8 @@ class EnvioBoletaEnvelopeBuilderService
             ];
         }
         $signedDom = new DOMDocument('1.0','ISO-8859-1');
-        $signedDom->preserveWhiteSpace = false;
-        $signedDom->formatOutput = true;
+        $signedDom->preserveWhiteSpace = true;
+        $signedDom->formatOutput = false;
 
         $loaded = @$signedDom->loadXml($signedXml);
 
@@ -39,13 +39,15 @@ class EnvioBoletaEnvelopeBuilderService
             );
         }
 
-        $xpath = new DOMXPath($signedDom);
-        $dteNode = $xpath->query("/*[Local-name()='DTE']")->item(0);
+        //$xpath = new DOMXPath($signedDom);
+        $dteNode = $signedDom->documentElement;
 
-        if(!$dteNode instanceof DOMElement)
-        {
+        if (
+            !$dteNode instanceof DOMElement
+            || $dteNode->localName !== 'DTE'
+        ) {
             throw SiiBoletaSendException::because(
-                'No se encontró el nodo DTE dentro del XML firmado de boleta.'
+                'El elemento raíz del XML firmado de la boleta no corresponde a DTE.'
             );
         }
 

@@ -4,6 +4,7 @@ namespace App\Modules\Dte\Infrastructure\Xml;
 use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException;
+use App\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -12,7 +13,12 @@ use DOMXPath;
 class EnvioDteEnvelopeBuilderService
 {
     private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
+    private const XMLDSIG_NS =
+    'http://www.w3.org/2000/09/xmldsig#';
 
+    public function __construct(
+        private readonly XmlDsigIntegrityService $integrityService
+    ) {}
     public function build(
         DteDocument $document,
         Company $company,
@@ -20,8 +26,8 @@ class EnvioDteEnvelopeBuilderService
     ):array
     {
         $signedDteDom = new DOMDocument('1.0','ISO-8859-1');
-        $signedDteDom->preserveWhiteSpace = false;
-        $signedDteDom->formatOutput = true;
+        $signedDteDom->preserveWhiteSpace = true;
+        $signedDteDom->formatOutput = false;
 
         $loaded = @$signedDteDom->loadXML($signedDteXml);
 
@@ -32,13 +38,33 @@ class EnvioDteEnvelopeBuilderService
             );
         }
 
-        $signedDteXPath = new DOMXPath($signedDteDom);
+        $dteNode = $signedDteDom->documentElement;
 
-        $dteNode = $signedDteXPath->query("*/*[local-name()='DTE']")->item(0);
-
-        if (!$dteNode instanceof DOMElement) {
+        if (
+            !$dteNode instanceof DOMElement
+            || $dteNode->localName !== 'DTE'
+        ) {
             throw InvalidSignatureXmlException::because(
-                'No se encontró el nodo DTE dentro del XML firmado del documento.'
+                'El elemento raíz del XML firmado no corresponde a DTE.'
+            );
+        }
+
+        /*
+        * NUEVA VALIDACIÓN IMPORTANTE:
+        *
+        * No permitir un DTE generado con
+        * http://www.sii.cl/siiDte
+        */
+        if (
+            $dteNode->namespaceURI
+            !== self::NS_SII_DTE
+        ) {
+            throw InvalidSignatureXmlException::because(
+                'El DTE firmado utiliza un namespace SII incorrecto. '
+                . 'Esperado: '
+                . self::NS_SII_DTE
+                . '. Recibido: '
+                . ($dteNode->namespaceURI ?? 'NULL')
             );
         }
 
@@ -53,11 +79,22 @@ class EnvioDteEnvelopeBuilderService
 
         $receiverRut = trim((string) config('dte.sii.receiver_rut', '60803000-K'));
 
+        if ($receiverRut === '') {
+            throw InvalidSignatureXmlException::because(
+                'Falta configurar el RUT receptor del SII.'
+            );
+        }
+
         $envioDom = new DOMDocument('1.0', 'ISO-8859-1');
-        $envioDom->preserveWhiteSpace = false;
-        $envioDom->formatOutput = true;
+        $envioDom->preserveWhiteSpace = true;
+        $envioDom->formatOutput = false;
 
         $envioDte = $envioDom->createElementNS(self::NS_SII_DTE, 'EnvioDTE');
+        $envioDte->setAttributeNS(
+            'http://www.w3.org/2000/xmlns/',
+            'xmlns:ds',
+            self::XMLDSIG_NS
+        );
         $envioDte->setAttributeNS(
             'http://www.w3.org/2001/XMLSchema-instance',
             'xsi:schemaLocation',
@@ -80,7 +117,7 @@ class EnvioDteEnvelopeBuilderService
         $this->appendElement($envioDom, $caratula, 'RutReceptor', $receiverRut);
         $this->appendElement($envioDom, $caratula, 'FchResol', (string) $company->resolutionDate());
         $this->appendElement($envioDom, $caratula, 'NroResol', (string) $company->resolutionNumber());
-        $this->appendElement($envioDom, $caratula, 'TmsFirmaEnv', now()->format('Y-m-d\TH:i:s'));
+        $this->appendElement($envioDom, $caratula, 'TmstFirmaEnv', now()->format('Y-m-d\TH:i:s'));
 
         $subTotDte = $envioDom->createElementNS(self::NS_SII_DTE, 'SubTotDTE');
         $this->appendElement($envioDom, $subTotDte, 'TpoDTE', (string) $document->dteType()->value);
@@ -92,15 +129,33 @@ class EnvioDteEnvelopeBuilderService
 
         $xml = $envioDom->saveXML();
 
-        if ($xml === false || $xml === '') {
+        if (
+            $xml === false
+            || trim($xml) === ''
+        ) {
             throw InvalidSignatureXmlException::because(
                 'No fue posible serializar el XML del EnvioDTE.'
             );
         }
 
+        /*
+        * En este punto el sobre todavía no tiene
+        * la firma de SetDTE.
+        *
+        * Estamos comprobando que la firma interna
+        * del DTE siga siendo válida DESPUÉS de importarlo.
+        */
+        $this->integrityService
+            ->assertAllSignaturesValid(
+                $xml
+            );
+
         return [
-            'set_dte_id' => $setDteId,
-            'envelope_xml' => $xml,
+            'set_dte_id' =>
+                $setDteId,
+
+            'envelope_xml' =>
+                $xml,
         ];
     }
 

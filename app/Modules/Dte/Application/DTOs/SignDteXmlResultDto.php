@@ -1,6 +1,5 @@
 <?php
-namespace App\Modules\Dte\Presentation\Http\Resources;
-
+namespace App\Modules\Dte\Application\DTOs;
 final class SignDteXmlResultDto
 {
     public function __construct(

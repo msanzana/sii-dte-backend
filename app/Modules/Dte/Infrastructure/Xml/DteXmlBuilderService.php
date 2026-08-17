@@ -6,19 +6,36 @@ use RuntimeException;
 
 class DteXmlBuilderService
 {
-    private const NS_SII_DTE = 'http://www.sii.cl/siiDte';
+    private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
+    private const XMLDSIG_NS =
+        'http://www.w3.org/2000/09/xmldsig#';
 
+    private const XSI_NS =
+        'http://www.w3.org/2001/XMLSchema-instance';
     public function build(
         array $data
     ): string
     {
+        
         $dom = new DOMDocument('1.0','ISO-8859-1');
-        $dom->formatOutput = true;
-        $dom->preserveWhiteSpace = false;
+        $dom->preserveWhiteSpace = true;
+        $dom->formatOutput = false;
 
         $dte = $dom->createElementNS(self::NS_SII_DTE,'DTE');
+        $dte->setAttributeNS(
+            'http://www.w3.org/2000/xmlns/',
+            'xmlns:ds',
+            self::XMLDSIG_NS
+        );
+
+        $dte->setAttributeNS(
+            'http://www.w3.org/2000/xmlns/',
+            'xmlns:xsi',
+            self::XSI_NS
+        );
+
         $dte->setAttribute('version', $data['version'] ?? '1.0');
-        $dte->appendChild($dte);
+        $dom->appendChild($dte);
 
         $documento = $this->appendElement($dom,$dte,'Documento');
         $documento->setAttribute('ID', $data['document_xml_id']);
@@ -28,20 +45,20 @@ class DteXmlBuilderService
         $this->buildIdDoc($dom, $encabezado, $data['id_doc']);
         $this->buildEmitter($dom, $encabezado, $data['emitter']);
         $this->buildReceiver($dom, $encabezado, $data['receiver']);
-        $this->buildDetail($dom, $encabezado, $data['totals']);
+        $this->buildTotals($dom, $encabezado, $data['totals']);
 
         foreach ($data['details'] as $detail)
         {
             $this->buildDetail($dom, $documento, $detail);
         }
 
-        foreach ($data['reference'] as $reference)
+        foreach ($data['references'] as $reference)
         {
             $this->buildReference($dom, $documento, $reference);
         }
 
         $xml = $dom->saveXml();
-        if ($xml === false) {
+        if ($xml === false || trim($xml) === '') {
             throw new RuntimeException('No fue posible serializar el XML del DTE.');
         }
 
@@ -68,6 +85,39 @@ class DteXmlBuilderService
             $this->appendElement($dom, $emisor, 'GiroEmis', (string) $emitter['giro']);
         }
 
+        /*
+        * Correo del emisor.
+        *
+        * Debe ir antes de Acteco/DirOrigen.
+        */
+        if (!empty($emitter['email'])) {
+            $this->appendElement(
+                $dom,
+                $emisor,
+                'CorreoEmisor',
+                (string) $emitter['email']
+            );
+        }
+
+        /*
+        * Actividad económica SII.
+        *
+        * Es la pieza que actualmente falta.
+        */
+        if (
+            empty($emitter['acteco'])
+        ) {
+            throw new RuntimeException(
+                'La empresa no tiene configurado el código de actividad económica SII requerido para generar el DTE.'
+            );
+        }
+
+        $this->appendElement(
+            $dom,
+            $emisor,
+            'Acteco',
+            (string) $emitter['acteco']
+        );
         $this->appendElement($dom, $emisor, 'DirOrigen', (string) $emitter['direccion']);
         $this->appendElement($dom, $emisor, 'CmnaOrigen', (string) $emitter['commune']);
         $this->appendElement($dom, $emisor, 'CiudadOrigen', (string) $emitter['city']);

@@ -1,6 +1,5 @@
 <?php
-namespace App\Modules\Dte\Domain\RepositoryContracts;
-use App\Modules\Dte\Domain\Entities\DteLineItem;
+namespace App\Modules\Dte\Domain\Services;
 final class DteTotalsDomainService
 {
     public function calculate(array $items): array

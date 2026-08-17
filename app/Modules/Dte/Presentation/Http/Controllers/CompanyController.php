@@ -31,6 +31,7 @@ class CompanyController extends Controller
                     tradeName: $data['trade_name'] ?? null,
                     giro: $data['giro'] ?? null,
                     address: $data['address'],
+                    siiActivityCode: $data['sii_activity_code'],
                     cityId: (int) $data['city_id'],
                     dteEmail: $data['dte_email'] ?? null,
                     resolutionNumber: $data['resolution_number'] ?? null,

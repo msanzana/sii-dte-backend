@@ -49,7 +49,7 @@ class CafTedMaterialExtractorService
 
         return [
             'caf_xml_fragment' => $cafXmlFragment,
-            'private_key:pem' => $privateKeyPem,
+            'private_key_pem' => $privateKeyPem,
         ];
     }
 

@@ -1,5 +1,5 @@
 <?php
-namespace App\Modules\Dte\Application\UseCases\Document;
+namespace App\Modules\Dte\Domain\Services;
 
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Enums\DteStatus;
@@ -30,8 +30,10 @@ final class DteXmlSignDomainService
             );
         }
 
-        if($document->signedXmlPath() === null || trim($document->signedXmlPath()) !== '')
-        {
+        if (
+            $document->signedXmlPath() !== null
+            && trim($document->signedXmlPath()) !== ''
+        ) {
             throw InvalidDocumentStateException::because(
                 "El documento {$document->id()} ya tiene un XML firmado."
             );

@@ -20,10 +20,12 @@ class DteDocumentController extends Controller
     {}
 
     public function store(StoreDteDocumentRequest $request): JsonResponse{
-        $data = $request->validated;
+        $data = $request->validated();
+
+        $companyId = (int) $request->attributes->get('auth_company_id');
 
         $items = [];
-        foreach($data['item'] as $item)
+        foreach($data['items'] as $item)
         {
             $items[] = new DteLineItemInputDto(
                 itemCodeType: $item['item_code_type'] ?? null,
@@ -51,7 +53,7 @@ class DteDocumentController extends Controller
             );
         }
         $input = new CreateDteDocumentInputDto(
-            companyId: (int) $data['company_id'],
+            companyId: $companyId,
             dteType: (int) $data['dte_type'],
             issueDate: $data['issue_date'],
             receiver: new ReceiverInputDto(
@@ -67,32 +69,30 @@ class DteDocumentController extends Controller
             externalId: $data['external_id'] ?? null,
             headerPayload: $data['header_payload'] ?? null,
             rawInput: $data,
+            externalSystemId: isset($data['external_system_id']) ? (int) $data['external_system_id'] : null,
+            proposedFolio: isset($data['proposed_folio'])? (int) $data['proposed_folio'] : null,
+            proposedSiiDocumentType:isset($data['proposed_sii_document_type'])? (int) $data['proposed_sii_document_type'] : null,
+            branchOfficeNumber:isset($data['branch_office_number'])? (int) $data['branch_office_number'] : null,
+            facilityNumber: isset($data['facility_number'])? (int) $data['facility_number'] : null,
+            externalBranchCode: isset($data['external_branch_code']) && trim((string) $data['external_branch_code']) !== '' ? trim((string) $data['external_branch_code']) : null,
         );
 
         try{
             $result = $this->createDteDocumentUseCase->execute($input);
             return response()->json([
                 'message' => 'Documento registrado.',
-                'data' => new DteDocumentResource((Object) [
-                    'id' => $result->id,
-                    'externalId' => $result->externalId,
-                    'status' => $result->status,
-                    'dteType' => $result->dteType,
-                    'issueDate' => $result->issueDate,
-                    'receiverCityId' => $result->receiverCityId,
-                    'netAmount' => $result->netAmount,
-                    'exemptAmount' => $result->exemptAmount,
-                    'taxAmount' => $result->taxAmount,
-                    'totalAmount' => $result->totalAmount,
-                ]),
+                'data' => new DteDocumentResource($result),
             ],201);
+
         }
-        catch(DomainException $e)
-        {
+        catch (\RuntimeException $exception) {
             return response()->json([
-                'message' => 'No fue posible registrar el documento.',
-                'error' => $e->getMessage(),
-            ],422);
+                'message' =>
+                    'No fue posible registrar el documento.',
+
+                'error' =>
+                    $exception->getMessage(),
+            ], 422);
         }
     }
 }

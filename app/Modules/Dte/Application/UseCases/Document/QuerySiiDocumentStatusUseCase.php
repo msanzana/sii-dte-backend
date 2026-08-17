@@ -10,14 +10,11 @@ use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteSiiDocumentStatusDomainService;
-use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiDocumentStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaDocumentStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
-use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -59,21 +56,6 @@ final class QuerySiiDocumentStatusUseCase
                 throw CompanyNotFoundException::withId($document->companyId());
             }
 
-            // $certificate = $this->certificateRepository->findDefaultByCompanyId(
-            //     $document->companyId()
-            // );
-
-            // if(!$certificate)
-            // {
-            //     throw CertificateNotFoundException::defaultFromCompany(
-            //         $document->companyId()
-            //     );
-            // }
-
-            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
-            //     $certificate
-            // );
-
             $certificateContext = $this->loadCertificateMaterialForEmisionService->execute( $document->companyId());
 
             if($document->dteType()->isFacturaFamily())
@@ -105,7 +87,8 @@ final class QuerySiiDocumentStatusUseCase
             environment: $environment,
             privateKeyPem: $certificateContext->privateKeyPem,
             certificateBase64: $certificateContext->certificateBase64,
-            modulusBase64: $certificateContext->modulusBase64
+            modulusBase64: $certificateContext->modulusBase64,
+            exponentBase64: $certificateContext->exponentBase64,
         );
 
         [$consultantRutBody, $consultantRutDv] = $this->splitConfiguredSenderRut();

@@ -20,6 +20,7 @@ class StoreCompanyRequest extends FormRequest
             'trade_name' => ['required','string','max:120'],
             'giro' => ['required','string','max:150'],
             'address' => ['required','string','max:150'],
+            'sii_activity_code' => ['required','string','max:10',],
             'city_id' => ['required','integer','exists:cities,id'],
             'dte_email'=> ['required','string','max:150'],
             'resolution_number' => ['required','string','max:20'],

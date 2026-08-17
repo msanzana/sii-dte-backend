@@ -12,6 +12,15 @@ final class CreateDteDocumentInputDto
         public readonly ?string $externalId = null,
         public readonly ?array $headerPayload = null,
         public readonly ?array $rawInput = null,
+                /*
+         * Origen sistema externo / folio.
+         */
+        public readonly ?int $externalSystemId = null,
+        public readonly ?int $proposedFolio = null,
+        public readonly ?int $proposedSiiDocumentType = null,
+        public readonly ?int $branchOfficeNumber = null,
+        public readonly ?int $facilityNumber = null,
+        public readonly ?string $externalBranchCode = null,
     )
     {}
 }

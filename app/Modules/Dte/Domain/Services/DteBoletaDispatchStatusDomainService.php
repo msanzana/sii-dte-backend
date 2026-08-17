@@ -1,8 +1,8 @@
 <?php
 namespace App\Modules\Dte\Domain\Services;
 
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Domain\Exceptions\SiiBoletaSendStatusException;
-use App\Modules\Dte\Domain\Exceptions\SiiDispatch;
 
 final class DteBoletaDispatchStatusDomainService
 {

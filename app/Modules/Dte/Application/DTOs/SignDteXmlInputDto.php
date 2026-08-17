@@ -1,5 +1,5 @@
 <?php
-namespace App\Modules\Dte\Application\UseCases\Document;
+namespace App\Modules\Dte\Application\DTOs;
 final class SignDteXmlInputDto
 {
     public function __construct(

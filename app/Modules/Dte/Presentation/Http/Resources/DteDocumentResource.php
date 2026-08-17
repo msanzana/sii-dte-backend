@@ -9,7 +9,7 @@ class DteDocumentResource extends JsonResource
     public function toArray(Request $request):array{
         return [
             'id' => $this->resource->id,
-            'external_id' => $this->resource->external_id,
+            'external_id' => $this->resource->externalId,
             'status' => $this->resource->status,
             'dte_type' => $this->resource->dteType,
             'issue_date' => $this->resource->issueDate,
@@ -18,6 +18,13 @@ class DteDocumentResource extends JsonResource
             'exempt_amount' => $this->resource->exemptAmount,
             'tax_amount' => $this->resource->taxAmount,
             'total_amount' => $this->resource->totalAmount,
+            'external_system_id' => $this->resource->externalSystemId,
+            'folio' => $this->resource->folio,
+            'caf_id' => $this->resource->cafId,
+            'folio_reservation_id' => $this->resource->folioReservationId,
+            'branch_office_number' => $this->resource->branchOfficeNumber,
+            'facility_number' => $this->resource->facilityNumber,
+            'external_branch_code' => $this->resource->externalBranchCode,
         ];
     }
 }

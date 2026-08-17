@@ -2,6 +2,7 @@
 namespace App\Modules\Dte\Application\Mappers;
 
 use App\Modules\Dte\Application\DTOs\CreateDteDocumentInputDto;
+use App\Modules\Dte\Application\DTOs\ResolvedReservedFolioForDteDto;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Entities\DteLineItem;
 use App\Modules\Dte\Domain\Entities\DteReference;
@@ -15,6 +16,7 @@ final class DteDocumentDtoMapper
     public function toDomain (
         CreateDteDocumentInputDto $dto,
         array $calculatedTotals,
+        ?ResolvedReservedFolioForDteDto $resolvedFolio = null,
     ): DteDocument
     {
         $items = [];
@@ -43,7 +45,7 @@ final class DteDocumentDtoMapper
         foreach($dto->references as $index => $referenceDto){
             $references[] = new DteReference(
                 lineNumber: $index +1,
-                referencedDteType: $referenceDto->referenceDteType,
+                referencedDteType: $referenceDto->referencedDteType,
                 referencedFolio: $referenceDto->referencedFolio,
                 referencedIssueDate: $referenceDto->referencedIssueDate,
                 referenceCode: $referenceDto->referenceCode,
@@ -57,8 +59,13 @@ final class DteDocumentDtoMapper
             companyId: $dto->companyId,
             dteType: DteType::from($dto->dteType),
             issueDate: $dto->issueDate,
-            status:DteStatus::READY_FOR_XML->value,
-            receiver:new ReceiverData(
+            /*
+            * Diferencia fundamental entre ambos flujos.
+            */
+            status: $resolvedFolio !== null
+                    ? DteStatus::FOLIO_ASSIGNED->value
+                    : DteStatus::READY_FOR_XML->value,
+            receiver: new ReceiverData(
                 document: $dto->receiver->document,
                 name: $dto->receiver->name,
                 giro: $dto->receiver->giro,
@@ -75,6 +82,13 @@ final class DteDocumentDtoMapper
             headerPayload: $dto->headerPayload,
             totalsPayload: $calculatedTotals,
             rawInput: $dto->rawInput,
+            folio: $resolvedFolio?->folioNumber,
+            externalSystemId: $resolvedFolio?->externalSystemId,
+            cafId: $resolvedFolio?->cafId,
+            folioReservationId: $resolvedFolio?->folioReservationId,
+            branchOfficeNumber: $resolvedFolio?->branchOfficeNumber,
+            facilityNumber: $resolvedFolio?->facilityNumber,
+            externalBranchCode: $resolvedFolio?->externalBranchCode,
         );
     }
 }

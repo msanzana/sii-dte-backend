@@ -10,6 +10,7 @@ final class Company
         private readonly string $legalName,
         private readonly ?string $tradeName = null,
         private readonly ?string $giro = null,
+        private readonly ?string $siiActivityCode = null,
         private readonly string $address,
         private readonly int $cityId,
         private readonly ?string $dteEmail = null,
@@ -74,5 +75,9 @@ final class Company
     public function isActive(): bool
     {
         return $this->isActive;
+    }
+    public function siiActivityCode(): ?string
+    {
+        return $this->siiActivityCode;
     }
 }

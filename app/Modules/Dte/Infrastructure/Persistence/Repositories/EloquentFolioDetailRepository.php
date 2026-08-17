@@ -427,4 +427,87 @@ final class EloquentFolioDetailRepository implements FolioDetailRepositoryInterf
 
         return $query;
     }
+    public function findReservedForDocumentCreationForUpdate(
+        int $companyId,
+        int $externalSystemId,
+        string $siiDocumentTypeCode,
+        int $folioNumber,
+        ?int $branchOfficeNumber,
+        ?int $facilityNumber,
+        ?string $externalBranchCode
+    ): ?FolioDetail {
+        $query = FolioDetailEloquentModel::query()
+            ->select('folio_details.*')
+            ->join('folio_statuses','folio_statuses.id','=','folio_details.folio_status_id')
+            ->join('folio_reservations','folio_reservations.id','=','folio_details.folio_reservation_id')
+            ->where('folio_details.company_id',$companyId)
+            ->where('folio_details.external_system_id', $externalSystemId)
+            ->where('folio_details.sii_document_type_code',$siiDocumentTypeCode)
+            ->where('folio_details.folio_number',$folioNumber)
+            ->where('folio_statuses.code','reserved')
+            ->where('folio_statuses.is_active',true)
+            ->where('folio_details.reserved',true)
+            ->whereNull('folio_details.dte_document_id')
+            ->whereNull('folio_details.used_at')
+            ->where('folio_reservations.is_active',true)
+            ->where('folio_reservations.is_currently_valid',true)
+            ->where(function ($query) {
+                $query
+                    ->whereNull('folio_reservations.expires_at')
+                    ->orWhere('folio_reservations.expires_at','>',now());
+        });
+        /*
+        * Aquí NULL significa exactamente NULL,
+        * no "cualquier sucursal".
+        */
+        $this->applyExactDistributionFilters(
+            query: $query,
+            branchOfficeNumber: $branchOfficeNumber,
+            facilityNumber: $facilityNumber,
+            externalBranchCode: $externalBranchCode
+        );
+
+        $model = $query
+            ->lockForUpdate()
+            ->first();
+
+        return $model
+            ? $this->mapper->toDomain($model)
+            : null;
+    }
+    public function assignToDocument(
+        int $folioDetailId,
+        int $assignedStatusId,
+        int $dteDocumentId
+    ): bool {
+        $affected = FolioDetailEloquentModel::query()
+            ->where('id', $folioDetailId)
+            ->whereNull('dte_document_id')
+            ->whereNull('used_at')
+            ->where('reserved', true)
+            ->update([
+                'folio_status_id' => $assignedStatusId,
+                'reserved' => false,
+                'dte_document_id' => $dteDocumentId,
+                'updated_at' => now(),
+            ]);
+
+        return $affected === 1;
+    }
+    public function findByDocumentIdForUpdate(
+        int $dteDocumentId
+    ): ?FolioDetail {
+        $model = FolioDetailEloquentModel::query()
+            ->with('status')
+            ->where(
+                'dte_document_id',
+                $dteDocumentId
+            )
+            ->lockForUpdate()
+            ->first();
+
+        return $model
+            ? $this->mapper->toDomain($model)
+            : null;
+    }
 }

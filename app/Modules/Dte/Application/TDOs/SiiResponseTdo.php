@@ -1,6 +1,6 @@
 <?php
 namespace App\Modules\Dte\Application\DTOs;
-final class CreateDteDocumentResultDto
+final class SiiResponseDto
 {
     public function __construct(
         public readonly bool $success,

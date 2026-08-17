@@ -36,6 +36,12 @@ final class DteDocument
         private readonly ?string $tedXml = null,
         private readonly ?string $lastErrorCode = null,
         private readonly ?string $lastErrorMessage = null,
+        private readonly ?int $externalSystemId = null,
+        private readonly ?int $cafId = null,
+        private readonly ?int $folioReservationId = null,
+        private readonly ?int $branchOfficeNumber = null,
+        private readonly ?int $facilityNumber = null,
+        private readonly ?string $externalBranchCode = null,
     ) {
     }
 
@@ -189,6 +195,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $this->lastErrorCode,
             lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
 
@@ -218,6 +230,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $this->lastErrorCode,
             lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
 
@@ -249,6 +267,12 @@ final class DteDocument
             tedXml: $tedXml,
             lastErrorCode: $this->lastErrorCode,
             lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
 
@@ -278,6 +302,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $this->lastErrorCode,
             lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
     public function withSentStatus(): self
@@ -306,6 +336,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $this->lastErrorCode,
             lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
     public function withAcceptedStatus(): self
@@ -334,6 +370,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: null,
             lastErrorMessage: null,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
 
@@ -365,6 +407,12 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $code,
             lastErrorMessage: $message,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
         );
     }
 
@@ -397,5 +445,34 @@ final class DteDocument
             lastErrorCode: $code,
             lastErrorMessage: $message,
         );
+    }
+    public function externalSystemId(): ?int
+    {
+        return $this->externalSystemId;
+    }
+
+    public function cafId(): ?int
+    {
+        return $this->cafId;
+    }
+
+    public function folioReservationId(): ?int
+    {
+        return $this->folioReservationId;
+    }
+
+    public function branchOfficeNumber(): ?int
+    {
+        return $this->branchOfficeNumber;
+    }
+
+    public function facilityNumber(): ?int
+    {
+        return $this->facilityNumber;
+    }
+
+    public function externalBranchCode(): ?string
+    {
+        return $this->externalBranchCode;
     }
 }

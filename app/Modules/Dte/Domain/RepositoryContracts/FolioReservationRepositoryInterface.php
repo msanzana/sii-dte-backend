@@ -73,4 +73,8 @@ interface FolioReservationRepositoryInterface
         string $expiresBefore,
         int $limit
     ): array;
+    public function advanceCurrentFolio(
+        int $reservationId,
+        int $folio
+    ): void;
 }

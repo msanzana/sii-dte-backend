@@ -23,6 +23,10 @@ class SiiFacturaUploadService
         $response = Http::withHeaders([
             'Cookie' => 'TOKEN='.$token,
             'Referer' => $referer,
+            'User-Agent' => 'Mozilla/4.0 (compatible; PROG 1.0; Laravel DTE Client)',
+            'Accept' => '*/*',
+            'Accept-Language' => 'es-cl',
+            'Cache-Control' => 'no-cache',
         ])
         ->attach('rutSender', $senderRutBody)
         ->attach('dvSender', $senderRutDv)
@@ -34,10 +38,13 @@ class SiiFacturaUploadService
         $httpStatus = $response->status();
         $body = (string) $response->body();
 
-        if($httpStatus >200 || $httpStatus >= 300)
+        if($httpStatus < 200 || $httpStatus >= 300)
         {
             throw SiiUploadException::because(
-                'El upload al SII respondio con HTTP '. $httpStatus
+                'El upload al SII respondió con HTTP '
+                . $httpStatus
+                . '. Body: '
+                . mb_substr($body, 0, 2000)
             );
         }
 

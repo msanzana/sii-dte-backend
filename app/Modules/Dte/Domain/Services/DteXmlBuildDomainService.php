@@ -23,7 +23,7 @@ final class DteXmlBuildDomainService
             );
         }
 
-        if($document->unsignedXmlPath() === null)
+        if($document->unsignedXmlPath() !== null)
         {
             throw InvalidDocumentStateException::because(
                 "El documento {$document->id()} ya tiene un XML base generado."

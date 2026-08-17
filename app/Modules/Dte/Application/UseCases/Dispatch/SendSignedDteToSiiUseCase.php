@@ -4,22 +4,19 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 use App\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto;
 use App\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto;
 use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
-use App\Modules\Dte\Domain\Exceptions\SiiDispatch;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteSiiSendDomainService;
-//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService;
 use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
-//use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -39,8 +36,6 @@ final class SendSignedDteToSiiUseCase
         private readonly SiiFacturaUploadService $siiFacturaUploadService,
         private readonly DtePrivateStorageService $storageService,
         private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
-        // private readonly SiiCertificateRepositoryInterface $certificateRepository,
-        // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     ){}
 
     public function execute(SendSignedDteToSiiInputDto $input): SendSignedDteToSiiResultDto
@@ -60,16 +55,6 @@ final class SendSignedDteToSiiUseCase
             {
                 throw CompanyNotFoundException::withId($document->companyId());
             }
-
-            // $certificate = $this->certificateRepository->findDefaultByCompanyId($document->companyId());
-
-            // if (!$certificate) {
-            //     throw CertificateNotFoundException::defaultFromCompany(
-            //         $document->companyId()
-            //     );
-            // }
-
-            // $certificateMaterial = $this->certificateMaterialExtractorService->extract($certificate);
 
             $certificateContext = $this->loadCertificateMaterialForEmisionService->execute(
                 $document->companyId()
@@ -101,10 +86,6 @@ final class SendSignedDteToSiiUseCase
 
             $signedEnvelopeXml = $this->envioDteSignatureService->SignSetDte(
                 envioXml: $envelopeBuild['envelope_xml'],
-                // privateKeyPem: $certificateMaterial['private_key_pem'],
-                // certificateBase64: $certificateMaterial['certificate_base64'],
-                // modulosBase64: $certificateMaterial['modulos_base64'],
-                // exponentBase64: $certificateMaterial['exponent_base64']
                 privateKeyPem: $certificateContext->privateKeyPem,
                 certificateBase64: $certificateContext->certificateBase64,
                 modulusBase64: $certificateContext->modulusBase64,
@@ -114,7 +95,7 @@ final class SendSignedDteToSiiUseCase
             $envelopeFilename = sprintf(
                 'envio_company_%d_td_%d_f_%d_%s.xml',
                 $document->companyId(),
-                $document->dteType(),
+                $document->dteType()->value,
                 $document->folio(),
                 bin2hex(random_bytes(4))
             );
@@ -126,10 +107,21 @@ final class SendSignedDteToSiiUseCase
             );
 
             $token = $this->siiSoapAuthenticationService->authenticate(
-                environment: $document->siiEnvironment() ?? config('dte.default_environment'),
-                privateKeyPem: $$certificateContext->privateKeyPem,
-                certificateBase64: $certificateContext->certificateBase64,
-                modulusBase64:$certificateContext->certificateBase64
+                    environment:
+                        $document->siiEnvironment()
+                        ?? config('dte.default_environment'),
+
+                    privateKeyPem:
+                        $certificateContext->privateKeyPem,
+
+                    certificateBase64:
+                        $certificateContext->certificateBase64,
+
+                    modulusBase64:
+                        $certificateContext->modulusBase64,
+
+                    exponentBase64:
+                        $certificateContext->exponentBase64
             );
 
             [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());
@@ -141,13 +133,14 @@ final class SendSignedDteToSiiUseCase
                 environment: $document->siiEnvironment() ?? config('dte.default_environment'),
                 token: $token,
                 senderRutBody: $senderRutBody,
-                senderRutDv: $companyRutDv,
+                senderRutDv: $senderRutDv,
                 companyRutBody: $companyRutBody,
                 companyRutDv: $companyRutDv,
                 filename: $envelopeFilename,
                 xmlBody: $signedEnvelopeXml,
                 );
 
+            $environment = $document->siiEnvironment() ?? config('dte.default_environment');
             $dispatch = new SiiDispatch(
                 id:null,
                 batchUuid: (string) Str::uuid(),
@@ -158,7 +151,7 @@ final class SendSignedDteToSiiUseCase
                 status: $uploadResult['status_code'] === '0' ? 'send' : 'upload_rejected',
                 trackId: $uploadResult['track_id'],
                 requestIdentifier: $envelopeBuild['set_dte_id'],
-                requestPath: config('dte.sii.'.($document->siiEnvironment() ?? config('dte.default_environment'))-'.upload_url'),
+                requestPath: config("dte.sii.{$environment}.upload.url"),
                 requestHeaders: [
                     'Cookie' => 'TOKEN=<redacted>',
                     'Content-Type' => 'multipart/form-data'
@@ -171,7 +164,7 @@ final class SendSignedDteToSiiUseCase
                 retryCount: 0,
                 nextRetryAt: null,
                 errorMessage: $uploadResult['status_code'] !== '0' ? $uploadResult['status_message'] : null,
-                sentAt: now()->format('Y-m-d H:i:d'),
+                sentAt: now()->format('Y-m-d H:i:s'),
                 lastPolledAt:null,
                 processedAt: null,
             );
@@ -216,7 +209,7 @@ final class SendSignedDteToSiiUseCase
     private function splitRut(string $rut): array
     {
         $parts = explode('-',$rut);
-        if(!count($parts) !== 2)
+        if (count($parts) !== 2)
         {
             throw new RuntimeException(
                 "El RUT '{$rut}' no tiene el formato cuerpo-dv."

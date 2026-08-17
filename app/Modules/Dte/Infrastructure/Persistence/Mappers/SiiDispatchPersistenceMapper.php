@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Dte\Infrastructure\Persistence\Mappers;
 
-use App\Modules\Dte\Domain\Exceptions\SiiDispatch;
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiDispatchEloquentModel;
 
 final class SiiDispatchPersistenceMapper
@@ -10,7 +10,7 @@ final class SiiDispatchPersistenceMapper
     {
         return new SiiDispatch(
             id: $model->id,
-            batchUuid: $$model->batch_uuid,
+            batchUuid: $model->batch_uuid,
             companyId: $model->company_id,
             dteDocumentId: $model->dte_document_id,
             environment: $model->environment,

@@ -1,0 +1,241 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Symfony\Component\String\Exception\RuntimeException;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        /*
+         * Antes de crear la restricción única verificamos
+         * que no existan documentos duplicados.
+         */
+        $hasDuplicateDocuments = DB::table('dte_documents')
+            ->select([
+                'company_id',
+                'dte_type',
+                'folio',
+                DB::raw('COUNT(*) AS total'),
+            ])
+            ->whereNotNull('folio')
+            ->groupBy(
+                'company_id',
+                'dte_type',
+                'folio'
+            )
+            ->havingRaw('COUNT(*) > 1')
+            ->exists();
+
+        if ($hasDuplicateDocuments) {
+            throw new RuntimeException(
+                'Existen DTE duplicados por empresa, tipo y folio. Deben reconciliarse antes de continuar.'
+            );
+        }
+
+        /*
+         * Tampoco debe existir un mismo documento conectado
+         * a más de un folio_detail.
+         */
+        $hasDuplicateDetailAssignments = DB::table('folio_details')
+            ->select([
+                'dte_document_id',
+                DB::raw('COUNT(*) AS total'),
+            ])
+            ->whereNotNull('dte_document_id')
+            ->groupBy('dte_document_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->exists();
+
+        if ($hasDuplicateDetailAssignments) {
+            throw new RuntimeException(
+                'Existen documentos asociados a más de un folio_detail.'
+            );
+        }
+
+        /*
+         * Verificar referencias huérfanas antes de agregar FK.
+         */
+        $hasOrphanDocuments = DB::table('folio_details as fd')
+            ->leftJoin(
+                'dte_documents as dd',
+                'dd.id',
+                '=',
+                'fd.dte_document_id'
+            )
+            ->whereNotNull('fd.dte_document_id')
+            ->whereNull('dd.id')
+            ->exists();
+
+        if ($hasOrphanDocuments) {
+            throw new RuntimeException(
+                'Existen folio_details asociados a dte_document_id inexistentes.'
+            );
+        }
+
+        Schema::table('dte_documents', function (Blueprint $table) {
+            $table->unsignedBigInteger('external_system_id')
+                ->nullable()
+                ->after('company_id');
+
+            $table->unsignedBigInteger('caf_id')
+                ->nullable()
+                ->after('external_system_id');
+
+            $table->unsignedBigInteger('folio_reservation_id')
+                ->nullable()
+                ->after('caf_id');
+
+            $table->unsignedInteger('branch_office_number')
+                ->nullable()
+                ->after('folio_reservation_id');
+
+            $table->unsignedInteger('facility_number')
+                ->nullable()
+                ->after('branch_office_number');
+
+            $table->string('external_branch_code', 100)
+                ->nullable()
+                ->after('facility_number');
+
+            $table->foreign(
+                'external_system_id',
+                'fk_dte_documents_external_system'
+            )
+                ->references('id')
+                ->on('external_systems')
+                ->restrictOnDelete();
+
+            $table->foreign(
+                'caf_id',
+                'fk_dte_documents_caf'
+            )
+                ->references('id')
+                ->on('sii_cafs')
+                ->restrictOnDelete();
+
+            $table->foreign(
+                'folio_reservation_id',
+                'fk_dte_documents_folio_reservation'
+            )
+                ->references('id')
+                ->on('folio_reservations')
+                ->restrictOnDelete();
+
+            /*
+             * Un folio SII no puede pertenecer a dos documentos
+             * de la misma empresa y tipo DTE.
+             *
+             * MySQL permite múltiples NULL en UNIQUE,
+             * por lo que los documentos aún sin folio no chocan.
+             */
+            $table->unique(
+                [
+                    'company_id',
+                    'dte_type',
+                    'folio',
+                ],
+                'uq_dte_documents_company_type_folio'
+            );
+
+            $table->index(
+                [
+                    'company_id',
+                    'external_system_id',
+                    'status',
+                ],
+                'idx_dte_documents_company_system_status'
+            );
+
+            $table->index(
+                [
+                    'company_id',
+                    'external_system_id',
+                    'dte_type',
+                    'folio',
+                ],
+                'idx_dte_documents_company_system_type_folio'
+            );
+
+            $table->index(
+                [
+                    'company_id',
+                    'external_system_id',
+                    'branch_office_number',
+                    'facility_number',
+                ],
+                'idx_dte_documents_distribution'
+            );
+        });
+
+        Schema::table('folio_details', function (Blueprint $table) {
+            $table->unique(
+                'dte_document_id',
+                'uq_folio_details_dte_document'
+            );
+
+            $table->foreign(
+                'dte_document_id',
+                'fk_folio_details_dte_document'
+            )
+                ->references('id')
+                ->on('dte_documents')
+                ->restrictOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('folio_details', function (Blueprint $table) {
+            $table->dropForeign(
+                'fk_folio_details_dte_document'
+            );
+
+            $table->dropUnique(
+                'uq_folio_details_dte_document'
+            );
+        });
+
+        Schema::table('dte_documents', function (Blueprint $table) {
+            $table->dropForeign(
+                'fk_dte_documents_external_system'
+            );
+
+            $table->dropForeign(
+                'fk_dte_documents_caf'
+            );
+
+            $table->dropForeign(
+                'fk_dte_documents_folio_reservation'
+            );
+
+            $table->dropUnique(
+                'uq_dte_documents_company_type_folio'
+            );
+
+            $table->dropIndex(
+                'idx_dte_documents_company_system_status'
+            );
+
+            $table->dropIndex(
+                'idx_dte_documents_company_system_type_folio'
+            );
+
+            $table->dropIndex(
+                'idx_dte_documents_distribution'
+            );
+
+            $table->dropColumn([
+                'external_system_id',
+                'caf_id',
+                'folio_reservation_id',
+                'branch_office_number',
+                'facility_number',
+                'external_branch_code',
+            ]);
+        });
+    }
+};

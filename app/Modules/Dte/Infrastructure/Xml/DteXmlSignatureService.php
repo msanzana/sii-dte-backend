@@ -2,6 +2,7 @@
 namespace App\Modules\Dte\Infrastructure\Xml;
 
 use App\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException;
+use App\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -13,6 +14,10 @@ class DteXmlSignatureService
     private const SIGNATURE_ALGORITHM = 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
     private const DIGEST_ALGORITHM = 'http://www.w3.org/2000/09/xmldsig#sha1';
 
+    public function __construct(
+        private readonly XmlDsigIntegrityService $integrityService
+    ) {
+    }
     public function signDte(
         string $xmlWithTed,
         string $privateKeyPem,
@@ -25,11 +30,14 @@ class DteXmlSignatureService
         $dom->preserveWhiteSpace = false;
         $dom->formatOutput = true;
 
-        $loaded = @$dom->loadXml($xmlWithTed);
+        $loaded = @$dom->loadXML(
+            $xmlWithTed,
+            LIBXML_NONET
+        );
 
         if(!$loaded){
             throw InvalidSignatureXmlException::because(
-                 'No fue posible cargar el XML del DTE con TED para firmarlo.'
+                'No fue posible cargar el XML del DTE con TED para firmarlo.'
             );
         }
 
@@ -42,7 +50,7 @@ class DteXmlSignatureService
 
         $documentoNode = $this->getRequiredElement(
             $xpath,
-            "/*[local-name()='DTE]/*[local-name()='Documento']"
+            "/*[local-name()='DTE']/*[local-name()='Documento']"
         );
 
         if($documentoNode->hasAttribute('ID') === false)
@@ -92,59 +100,142 @@ class DteXmlSignatureService
             );
         }
 
-        $tmstFirma = now()->format('Y-m-d\TH:i:s');
+                /*
+        * ============================================================
+        * TmstFirma
+        * ============================================================
+        */
 
-        $tmstFirmaNode = $dom->createElementNS($dteNamespace, 'TmstFirma', $tmstFirma);
-        $tmstFirmaNode->appendChild($dom->createTextNode($tmstFirma));
-        $documentoNode->appendChild($tmstFirmaNode);
+        $tmstFirma = now()->format(
+            'Y-m-d\TH:i:s'
+        );
 
-        $canonicalDocumento = $documentoNode->C14N(false, false);
+        $tmstFirmaNode =
+            $dom->createElementNS(
+                $dteNamespace,
+                'TmstFirma'
+            );
 
-        if($canonicalDocumento === false || $canonicalDocumento === '')
-        {
+        $tmstFirmaNode->appendChild(
+            $dom->createTextNode(
+                $tmstFirma
+            )
+        );
+
+        $documentoNode->appendChild(
+            $tmstFirmaNode
+        );
+
+
+        /*
+        * ============================================================
+        * Crear Signature ANTES del C14N de Documento
+        * ============================================================
+        *
+        * Signature es hermano de Documento, no hijo.
+        *
+        * Por lo tanto NO forma parte del contenido firmado de Documento,
+        * pero permite estabilizar completamente el contexto de namespaces
+        * del nodo DTE antes de calcular el DigestValue.
+        */
+
+        $signatureNode =
+            $dom->createElementNS(
+                self::XMLDSIG_NS,
+                'ds:Signature'
+            );
+
+        $dteNode->appendChild(
+            $signatureNode
+        );
+
+
+        /*
+        * ============================================================
+        * Canonicalizar Documento con su contexto XML DEFINITIVO
+        * ============================================================
+        */
+
+        $canonicalDocumento =
+            $documentoNode->C14N(
+                false,
+                false
+            );
+
+        if (
+            $canonicalDocumento === false
+            || $canonicalDocumento === ''
+        ) {
             throw InvalidSignatureXmlException::because(
-                'No fue posible canonicalizar el npdo Documento para calcular el digest.'
+                'No fue posible canonicalizar el nodo Documento para calcular el digest.'
             );
         }
 
-        $digestValue = base64_encode(sha1($canonicalDocumento, true));
 
-        $signatureNode = $dom->createElementNS(Self::XMLDSIG_NS,'Signature');
-        $signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'SignedInfo');
+        /*
+        * ============================================================
+        * DigestValue
+        * ============================================================
+        */
 
-        $canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'CanonicalizationMethod');
+        $digestValue =
+            base64_encode(
+                sha1(
+                    $canonicalDocumento,
+                    true
+                )
+            );
+        $signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:SignedInfo');
+
+        $canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:CanonicalizationMethod');
         $canonicalizationMethodNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
 
-        $signatureMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'SignatureMethod');
+        $signatureMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:SignatureMethod');
         $signatureMethodNode->setAttribute('Algorithm', self::SIGNATURE_ALGORITHM);
 
-        $referenceNode = $dom->createElementNS(self::XMLDSIG_NS, 'Reference');
+        $referenceNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:Reference');
         $referenceNode->setAttribute('URI', "#{$documentXmlId}");
 
-        $transformsNode = $dom->createElementNS(self::XMLDSIG_NS,'transforms');
-        $transformNode = $dom->createElementNS(self::XMLDSIG_NS,'Transform');
+        //Transforms
+        $transformsNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transforms');
+        $transformNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transform');
         $transformNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
-        $transformsNode->appendChild($referenceNode);
+        $transformsNode->appendChild($transformNode);
 
-        $digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestMethod');
+        $digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:DigestMethod');
         $digestMethodNode->setAttribute('Algorithm', self::DIGEST_ALGORITHM);
 
-        $digestValueNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestValue');
+        $digestValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:DigestValue');
         $digestValueNode->appendChild($dom->createTextNode($digestValue));
 
         $referenceNode->appendChild($transformsNode);
         $referenceNode->appendChild($digestMethodNode);
         $referenceNode->appendChild($digestValueNode);
 
-        $signedInfoNode->appendChild($canonicalizationMethodNode);
-        $signedInfoNode->appendChild($signatureMethodNode);
-        $signedInfoNode->appendChild($referenceNode);
+        $signedInfoNode->appendChild(
+            $canonicalizationMethodNode
+        );
 
-        $signatureNode->appendChild($signedInfoNode);
+        $signedInfoNode->appendChild(
+            $signatureMethodNode
+        );
+
+        $signedInfoNode->appendChild(
+            $referenceNode
+        );
+
+        // $signatureNode->appendChild(
+        //     $signedInfoNode
+        // );
+
+        // $dteNode->appendChild(
+        //     $signatureNode
+        // );
+
 
         $canonicalSignedInfo = $signedInfoNode->C14N(false, false);
 
-        if($canonicalSignedInfo == false || $canonicalSignedInfo === '')
+        if($canonicalSignedInfo === false || $canonicalSignedInfo === '')
         {
             throw InvalidSignatureXmlException::because(
                 'No fue posible canonicalizar el nodo SignedInfo antes de firmarlo.'
@@ -153,7 +244,7 @@ class DteXmlSignatureService
 
         $privateKey = openssl_pkey_get_private($privateKeyPem);
 
-        if($privateKey == false)
+        if($privateKey === false)
         {
             throw InvalidSignatureXmlException::because(
                 'No fue posible cargar ña ññave privada del certificado para firmar el DTE.'
@@ -177,31 +268,61 @@ class DteXmlSignatureService
             );
         }
 
-        $signatureValueNode = $dom->createElementNS(self::XMLDSIG_NS,'SignatureValue');
-        $signatureValueNode->appendChild(
-            $dom->createTextNode(base64_encode($rawSignature))
-        );
+        $signatureValueNode =
+            $dom->createElementNS(
+                self::XMLDSIG_NS,
+                'ds:SignatureValue'
+            );
 
+        $signatureValueNode->appendChild(
+            $dom->createTextNode(
+                $this->wrapBase64(
+                    base64_encode(
+                        $rawSignature
+                    )
+                )
+            )
+        );
         $signatureNode->appendChild($signatureValueNode);
 
-        $keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyInfo');
+        $keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyInfo');
 
-        $keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyValue');
-        $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'RSAKeyValue');
+        $keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyValue');
+        $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:RSAKeyValue');
 
-        $ModulusNode = $dom->createElementNS(self::XMLDSIG_NS,'Modulus');
-        $ModulusNode->appendChild($dom->createTextNode($modulusBase64));
+        $modulusNode =
+            $dom->createElementNS(
+                self::XMLDSIG_NS,
+                'ds:Modulus'
+            );
 
-        $ExponentNode = $dom->createElementNS(self::XMLDSIG_NS, 'Exponent');
+        $modulusNode->appendChild(
+            $dom->createTextNode(
+                $this->wrapBase64(
+                    $modulusBase64
+                )
+            )
+        );
+
+        $ExponentNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:Exponent');
         $ExponentNode->appendChild($dom->createTextNode($exponentBase64));
 
-        $rsaKeyValueNode->appendChild($ModulusNode);
+        $rsaKeyValueNode->appendChild($modulusNode);
         $rsaKeyValueNode->appendChild($ExponentNode);
         $keyValueNode->appendChild($rsaKeyValueNode);
 
-        $x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'X509Data');
-        $x509CertificateNode = $dom->createElementNS(self::XMLDSIG_NS,'x509Certificate');
-        $x509CertificateNode->appendChild($dom->createTextNode($certificateBase64));
+        $x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:X509Data');
+        $x509CertificateNode = $dom->createElementNS(
+                                    self::XMLDSIG_NS,
+                                    'ds:X509Certificate'
+                                );
+        $x509CertificateNode->appendChild(
+            $dom->createTextNode(
+                $this->wrapBase64(
+                    $certificateBase64
+                )
+            )
+        );
         $x509DataNode->appendChild($x509CertificateNode);
 
         $keyInfoNode->appendChild($keyValueNode);
@@ -209,7 +330,16 @@ class DteXmlSignatureService
 
         $signatureNode->appendChild($keyInfoNode);
 
-        $dteNode->appendChild($signatureNode);
+        $digestAntesDeSerializar =
+            base64_encode(
+                sha1(
+                    $documentoNode->C14N(
+                        false,
+                        false
+                    ),
+                    true
+                )
+            );
 
         $signedXml = $dom->saveXML();
 
@@ -219,7 +349,34 @@ class DteXmlSignatureService
                 'No fue posible serializar el XML firmado del DTE.'
             );
         }
+        /*
+        * Verificamos el XML FINAL después de serializarlo.
+        *
+        * Esto comprueba:
+        *
+        * 1. DigestValue de Documento.
+        * 2. SignatureValue de SignedInfo.
+        */
 
+        if (
+            !hash_equals(
+                $digestValue,
+                $digestAntesDeSerializar
+            )
+        ) {
+            throw InvalidSignatureXmlException::because(
+                'El DigestValue del Documento cambió dentro del DOM antes de saveXML(). '
+                . 'Original: '
+                . $digestValue
+                . '. Actual: '
+                . $digestAntesDeSerializar
+            );
+        }
+
+        $this->integrityService
+            ->assertAllSignaturesValid(
+                $signedXml
+            );
         return [
             'signed_xml' => $signedXml,
             'tmst_firma' => $tmstFirma,
@@ -227,6 +384,43 @@ class DteXmlSignatureService
         ];
     }
 
+    private function wrapBase64(
+        string $value,
+        int $lineLength = 64
+    ): string {
+        /*
+        * Primero eliminamos cualquier whitespace previo.
+        */
+        $normalized =
+            preg_replace(
+                '/\s+/',
+                '',
+                $value
+            );
+
+        if (
+            $normalized === null
+            || $normalized === ''
+        ) {
+            throw InvalidSignatureXmlException::because(
+                'No fue posible normalizar un valor Base64 de la firma XML.'
+            );
+        }
+
+        /*
+        * Lo dividimos en líneas de 64 caracteres.
+        *
+        * No dejamos un salto adicional al final.
+        */
+        return rtrim(
+            chunk_split(
+                $normalized,
+                $lineLength,
+                "\n"
+            ),
+            "\r\n"
+        );
+    }
     private function getRequiredElement(DOMXPath $xpath, string $expression): DOMElement
     {
         $list = $xpath->query($expression);

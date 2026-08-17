@@ -10,6 +10,7 @@ final class CreateCompanyInputDto
         public readonly ?string $tradeName,
         public readonly ?string $giro,
         public readonly string $address,
+        public readonly ?string $siiActivityCode,
         public readonly int $cityId,
         public readonly ?string $dteEmail,
         public readonly ?string $resolutionNumber,

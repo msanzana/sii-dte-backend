@@ -32,11 +32,18 @@ class SiiDispatchEloquentModel extends Model
         'processed_at',
     ];
     protected $casts = [
+        'company_id' => 'integer',
+        'dte_document_id' => 'integer',
+        
         'request_headers' => 'array',
+        
+        'response_http_status' => 'integer',
         'retry_count' => 'integer',
+        
         'last_polled_at' => 'datetime',
         'processed_at' => 'datetime',
         'next_retry_at' => 'datetime',
+        'sent_at' => 'datetime',
     ];
 
     public function document(): BelongsTo

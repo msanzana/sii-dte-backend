@@ -99,4 +99,24 @@ interface FolioDetailRepositoryInterface
     public function countAvailableByCafId(
         int $cafId
     ): int;
+
+    public function findReservedForDocumentCreationForUpdate(
+        int $companyId,
+        int $externalSystemId,
+        string $siiDocumentTypeCode,
+        int $folioNumber,
+        ?int $branchOfficeNumber,
+        ?int $facilityNumber,
+        ?string $externalBranchCode
+    ): ?FolioDetail;
+
+    public function assignToDocument(
+        int $folioDetailId,
+        int $assignedStatusId,
+        int $dteDocumentId
+    ): bool;
+
+    public function findByDocumentIdForUpdate(
+        int $dteDocumentId
+    ): ?FolioDetail;
 }

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Dte\Infrastructure\Persistence\Repositories;
 
-use App\Modules\Dte\Domain\Exceptions\SiiDispatch;
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiDispatchEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\SiiDispatchPersistenceMapper;
@@ -75,7 +75,7 @@ final class EloquentSiiDispatchRepository implements SiiDispatchRepositoryInterf
 
     public function findById(int $id): ?SiiDispatch
     {
-        $model = SiiDispatchEloquentModel::query()->finmd($id);
+        $model = SiiDispatchEloquentModel::query()->find($id);
 
         if(!$model)
         {

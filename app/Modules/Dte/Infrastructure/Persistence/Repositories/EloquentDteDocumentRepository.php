@@ -46,6 +46,12 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'ted_xml' => $document->tedXml(),
             'last_error_code' => $document->lastErrorCode(),
             'last_error_message' => $document->lastErrorMessage(),
+            'external_system_id' => $document->externalSystemId(),
+            'caf_id' => $document->cafId(),
+            'folio_reservation_id' => $document->folioReservationId(),
+            'branch_office_number' => $document->branchOfficeNumber(),
+            'facility_number' => $document->facilityNumber(),
+            'external_branch_code' => $document->externalBranchCode(),
         ]);
 
         $model->save();

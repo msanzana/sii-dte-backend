@@ -13,7 +13,7 @@ class BuildTedRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'documentId' => (int) $this->route('documentId'),
+            'document_id' => (int) $this->route('documentId'),
         ]);
     }
     public function rules(): array

@@ -12,7 +12,7 @@ final class EloquentLocationRepository implements LocationRepositoryInterface
     public function findSummaryByCityId(int $cityId): ? LocationSummary
     {
         $row = DB::table('cities as c')
-                ->join('comunes as co', 'co.id','=','c.comune_id')
+                ->join('comunes as co', 'co.id','=','c.commune_id')
                 ->select([
                     'c.id AS city_id',
                     'c.name AS city_name',

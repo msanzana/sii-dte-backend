@@ -6,6 +6,7 @@ use App\Modules\Dte\Domain\RepositoryContracts\FolioReservationRepositoryInterfa
 use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioReservationEloquentModel;
 use App\Modules\Dte\Infrastructure\Persistence\Mappers\FolioReservationPersistenceMapper;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentFolioReservationRepository implements FolioReservationRepositoryInterface
 {
@@ -333,5 +334,20 @@ final class EloquentFolioReservationRepository implements FolioReservationReposi
             ]
         )
         ->all();
+    }
+    public function advanceCurrentFolio(
+        int $reservationId,
+        int $folio
+    ): void {
+        $folio = (int) $folio;
+
+        FolioReservationEloquentModel::query()
+            ->where('id', $reservationId)
+            ->update([
+                'current_folio' => DB::raw(
+                    "GREATEST(COALESCE(current_folio, 0), {$folio})"
+                ),
+                'updated_at' => now(),
+            ]);
     }
 }

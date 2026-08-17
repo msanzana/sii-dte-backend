@@ -42,6 +42,7 @@ final class CreateCompanyUseCase
                 tradeName: $input->tradeName,
                 giro: $input->giro,
                 address: $input->address,
+                siiActivityCode: $input->siiActivityCode,
                 cityId: $input->cityId,
                 dteEmail: $input->dteEmail,
                 resolutionNumber: $input->resolutionNumber,

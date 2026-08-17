@@ -8,13 +8,10 @@ use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\DispatchNotFoundException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteBoletaDispatchStatusDomainService;
-//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiSendStatusService;
-//use App\Modules\Dte\Presentation\Http\Resources\CertificateNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 final class PollBoletaDispatchStatusUseCase

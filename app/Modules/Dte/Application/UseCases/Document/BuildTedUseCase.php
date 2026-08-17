@@ -51,7 +51,7 @@ final class BuildTedUseCase
 
             $company = $this->companyRepository->findById($document->companyId());
 
-            if(!$company || $company->isActive())
+            if (!$company || !$company->isActive())
             {
                 throw CompanyNotFoundException::withId($document->companyId());
             }
@@ -115,7 +115,7 @@ final class BuildTedUseCase
             );
 
             $filename = sprintf(
-                'dte_company_%d_td_$d_f_%d_ted_%s.xml',
+                'dte_company_%d_td_%d_f_%d_ted_%s.xml',
                 $document->companyId(),
                 $document->dteType()->value,
                 $document->folio(),

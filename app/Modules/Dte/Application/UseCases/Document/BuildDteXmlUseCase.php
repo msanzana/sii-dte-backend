@@ -77,7 +77,7 @@ class BuildDteXmlUseCase
             $xml = $this->xmlBuilderService->build($xmlData);
 
             $filename = sprintf(
-                'dte_company_%d_td_%d_f_$d_%s.xml',
+                'dte_company_%d_td_%d_f_%d_%s.xml',
                 $document->companyId(),
                 $document->dteType()->value,
                 $document->folio(),

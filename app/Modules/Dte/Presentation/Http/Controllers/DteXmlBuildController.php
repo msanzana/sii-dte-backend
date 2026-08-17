@@ -23,7 +23,7 @@ class DteXmlBuildController extends Controller
         try {
             $result = $this->buildDteXmlUseCase->execute(
                 new BuildDteXmlInputDto(
-                    documentId: (int) $request->validated('documento_id')
+                    documentId: (int) $request->validated('document_id')
                 )
             );
             return response()->json([

@@ -30,7 +30,7 @@ return [
         'signed' => storage_path('app/private/dte/signed'),
         'responses' => storage_path('app/private/dte/responses'),
     ],
-    
+
     'openssl_binary' => env('OPENSSL_BINARY', 'openssl'),
     'openssl_modules' => env('OPENSSL_MODULES'),
     /*
@@ -64,7 +64,7 @@ return [
         'max_boletas_per_batch' => 500,
     ],
     'sii' => [
-        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '60803000-K'),
+        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '14222620-0'),
 
         'sender' => [
             'rut_body' => env('DTE_SII_SENDER_RUT_BODY', ''),
@@ -72,8 +72,8 @@ return [
         ],
         'cert' => [
             'soap' => [
-                'seed_url' => env('DTE_SII_CERT_SEED_URL', 'https://palena.sii.cl/DTEWS/CrSeed.jws'),
-                'token_url' => env('DTE_SII_CERT_TOKEN_URL', 'https://palena.sii.cl/DTEWS/GetTokenFromSeed.jws'),
+                'seed_url' => env('DTE_SII_CERT_SEED_URL', 'https://maullin.sii.cl/DTEWS/CrSeed.jws'),
+                'token_url' => env('DTE_SII_CERT_TOKEN_URL', 'https://maullin.sii.cl/DTEWS/GetTokenFromSeed.jws'),
                 'query_est_up_url' => env('DTE_SII_CERT_QUERY_EST_UP_URL', 'https://maullin.sii.cl/DTEWS/QueryEstUp.jws'),
                 'query_est_dte_url' => env('DTE_SII_CERT_QUERY_EST_DTE_URL', 'https://maullin.sii.cl/DTEWS/QueryEstDte.jws'),
             ],

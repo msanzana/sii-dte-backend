@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Dte\Application\Services;
 
-use App\Models\Dte\Domain\Entities\Company;
+use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\ValueObjects\LocationSummary;
 
@@ -15,7 +15,7 @@ final class DteXmlDataAssemblerService
     ): array
     {
         $documentXmlId = sprintf(
-            'F%s,T%s',
+            'DTE_F%s_T%s',
             $document->folio(),
             $document->dteType()->value
         );
@@ -46,7 +46,7 @@ final class DteXmlDataAssemblerService
                 'referenced_folio' => $reference->referencedFolio() !== null
                     ? (string) $reference->referencedFolio()
                     : null,
-                'reference_issue_date' => $reference->referencedIssueDate(),
+                'referenced_issue_date' => $reference->referencedIssueDate(),
                 'reference_code' => $reference->referenceCode(),
                 'reason' => $reference->reason(),
             ];
@@ -66,6 +66,8 @@ final class DteXmlDataAssemblerService
                 'rut' => $company->rut(),
                 'razon_social' => $company->legalName(),
                 'giro' => $company->giro(),
+                'email' => $company->dteEmail(),
+                'acteco' => $company->siiActivityCode(),
                 'direccion' => $company->address(),
                 'commune' => $emitterLocation->comuneName(),
                 'city' => $emitterLocation-> cityName(),
@@ -74,7 +76,7 @@ final class DteXmlDataAssemblerService
             'receiver' => [
                 'rut' => $document->receiver()->document(),
                 'razon_social' => $document->receiver()->name(),
-                'giro ' => $document->receiver()->giro(),
+                'giro' => $document->receiver()->giro(),
                 'direccion' => $document->receiver()->address(),
                 'commune' => $receiverLocation?->comuneName(),
                 'city' => $receiverLocation?->cityName(),

@@ -5,12 +5,9 @@ use App\Modules\Dte\Application\DTOs\PollSiiUploadStatusInputDto;
 use App\Modules\Dte\Application\DTOs\PollSiiUploadStatusResultDto;
 use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
 use App\Modules\Dte\Domain\Exceptions\DispatchNotFoundException;
-//use App\Modules\Dte\Domain\Exceptions\SiiAuthenticationException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
-//use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
-//use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
 use Illuminate\Support\Facades\DB;
@@ -57,16 +54,6 @@ final class PollSiiUploadStatusUseCase
                 );
             }
 
-            // $certificate = $this->certificateRepository->findDefaultByCompanyId($dispatch->companyId());
-
-            // if(!$certificate)
-            // {
-            //     throw new SiiAuthenticationException(
-            //         "No existe certificado por defecto para consultar el estado del dispatch {$dispatch->id()}."
-            //     );
-            // }
-
-            // $certificateMaterial = $this->certificateMaterialExtractorService->extract($certificate);
 
             $certificateContext = $this->loadCertificateMaterialForEmisionService->execute($dispatch->companyId());
 
@@ -74,7 +61,8 @@ final class PollSiiUploadStatusUseCase
                 environment: $dispatch->environment(),
                 privateKeyPem: $certificateContext->privateKeyPem,
                 certificateBase64: $certificateContext->certificateBase64,
-                modulusBase64: $certificateContext->modulusBase64
+                modulusBase64: $certificateContext->modulusBase64,
+                exponentBase64: $certificateContext->exponentBase64
 
             );
 
