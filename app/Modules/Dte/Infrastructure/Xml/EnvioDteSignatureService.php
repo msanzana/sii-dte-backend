@@ -72,6 +72,22 @@ class EnvioDteSignatureService
             );
         }
 
+        /*
+        * ============================================================
+        * Crear Signature
+        * ============================================================
+        *
+        * Es hermano de SetDTE.
+        */
+        $signatureNode =
+            $dom->createElementNS(
+                self::XMLDSIG_NS,
+                'ds:Signature'
+            );
+
+        $envioNode->appendChild(
+            $signatureNode
+        );
         $canonicalSetDte = $setDteNode->C14N(false,false);
 
         if($canonicalSetDte === false || $canonicalSetDte === '')
@@ -137,7 +153,9 @@ class EnvioDteSignatureService
             $signatureNode
         );
 
-
+        $signatureNode->appendChild(
+            $signedInfoNode
+        );
         /*
         * Ahora canonicalizamos SetDTE dentro del
         * contexto definitivo de EnvioDTE.
@@ -194,7 +212,19 @@ class EnvioDteSignatureService
         $keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyValue');
         $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:RSAKeyValue');
 
-        $modulusNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Modulus');
+        $modulusNode =
+            $dom->createElementNS(
+                self::XMLDSIG_NS,
+                'ds:Modulus'
+            );
+
+        $modulusNode->appendChild(
+            $dom->createTextNode(
+                $this->wrapBase64(
+                    $modulusBase64
+                )
+            )
+        );
         $signatureValueNode->appendChild(
             $dom->createTextNode(
                 $this->wrapBase64(

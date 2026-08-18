@@ -224,13 +224,13 @@ class DteXmlSignatureService
             $referenceNode
         );
 
-        // $signatureNode->appendChild(
-        //     $signedInfoNode
-        // );
+        $signatureNode->appendChild(
+            $signedInfoNode
+        );
 
-        // $dteNode->appendChild(
-        //     $signatureNode
-        // );
+        $dteNode->appendChild(
+            $signatureNode
+        );
 
 
         $canonicalSignedInfo = $signedInfoNode->C14N(false, false);
