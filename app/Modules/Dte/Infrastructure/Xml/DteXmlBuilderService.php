@@ -7,8 +7,8 @@ use RuntimeException;
 class DteXmlBuilderService
 {
     private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
-    private const XMLDSIG_NS =
-        'http://www.w3.org/2000/09/xmldsig#';
+    // private const XMLDSIG_NS =
+    //     'http://www.w3.org/2000/09/xmldsig#';
 
     private const XSI_NS =
         'http://www.w3.org/2001/XMLSchema-instance';
@@ -16,17 +16,21 @@ class DteXmlBuilderService
         array $data
     ): string
     {
-        
-        $dom = new DOMDocument('1.0','ISO-8859-1');
-        $dom->preserveWhiteSpace = true;
-        $dom->formatOutput = false;
+
+        $dom = new DOMDocument(
+            '1.0',
+            'ISO-8859-1'
+        );
+
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
 
         $dte = $dom->createElementNS(self::NS_SII_DTE,'DTE');
-        $dte->setAttributeNS(
-            'http://www.w3.org/2000/xmlns/',
-            'xmlns:ds',
-            self::XMLDSIG_NS
-        );
+        // $dte->setAttributeNS(
+        //     'http://www.w3.org/2000/xmlns/',
+        //     'xmlns:ds',
+        //     self::XMLDSIG_NS
+        // );
 
         $dte->setAttributeNS(
             'http://www.w3.org/2000/xmlns/',

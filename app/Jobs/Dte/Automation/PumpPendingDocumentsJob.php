@@ -1,5 +1,5 @@
 <?php
-namespace App\Jobs\Dte\Aothomation;
+namespace App\Jobs\Dte\Automation;
 
 use App\Jobs\Dte\Automation\AdvanceDteDocumentPipelineJob;
 use App\Modules\Dte\Domain\Enums\DteStatus;

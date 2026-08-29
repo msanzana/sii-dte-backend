@@ -8,11 +8,60 @@ class TedSignatureService
 {
     public function singDdXml(string $ddXmlUtf8, string $privateKeyPem):string
     {
-        $ddXmlLatin1 = iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $ddXmlUtf8);
+        /*
+        |--------------------------------------------------------------------------
+        | Normalización DD exigida por SII
+        |--------------------------------------------------------------------------
+        |
+        | Para calcular la firma del Timbre Electrónico, el SII exige eliminar
+        | saltos de línea, espacios y tabs que existan ENTRE tags.
+        |
+        | Ejemplo:
+        |
+        | </RE>
+        |     <TD>
+        |
+        | debe convertirse en:
+        |
+        | </RE><TD>
+        |
+        | El contenido interno de los elementos NO debe modificarse.
+        |
+        */
 
-                if ($ddXmlLatin1 === false || $ddXmlLatin1 === '') {
+        $normalizedDdXmlUtf8 = preg_replace(
+            '/>\s+</u',
+            '><',
+            trim($ddXmlUtf8)
+        );
+
+        if (
+            $normalizedDdXmlUtf8 === null
+            || $normalizedDdXmlUtf8 === ''
+        ) {
             throw InvalidTedDataException::because(
-                'No fue posible convertir el bloque DD a ISO-8859-1 antes de firmarlo.'
+                'No fue posible normalizar el bloque DD del TED.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Convertir el DD normalizado a ISO-8859-1
+        |--------------------------------------------------------------------------
+        */
+
+        $ddXmlLatin1 = iconv(
+            'UTF-8',
+            'ISO-8859-1//TRANSLIT//IGNORE',
+            $normalizedDdXmlUtf8
+        );
+
+        if (
+            $ddXmlLatin1 === false
+            || $ddXmlLatin1 === ''
+        ) {
+            throw InvalidTedDataException::because(
+                'No fue posible convertir el bloque DD normalizado a ISO-8859-1 antes de firmarlo.'
             );
         }
 

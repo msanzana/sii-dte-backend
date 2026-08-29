@@ -1,13 +1,14 @@
 <?php
 
-use App\Jobs\Dte\Aothomation\PumpPendingDispatchPollingJob;
-use App\Jobs\Dte\Aothomation\PumpPendingDocumentsJob;
-use App\Jobs\Dte\Aothomation\PumpPendingDocumentStatusQueriesJob;
+
+use App\Jobs\Dte\Automation\PumpPendingDispatchPollingJob;
+use App\Jobs\Dte\Automation\PumpPendingDocumentsJob;
+use App\Jobs\Dte\Automation\PumpPendingDocumentStatusQueriesJob;
+use App\Jobs\Dte\Automation\ReconcileCafCountersJob;
+use App\Jobs\Dte\Automation\SyncExpiredFolioReservationsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use App\Jobs\Dte\Aothomation\ReconcileCafCountersJob;
-use App\Jobs\Dte\Aothomation\SyncExpiredFolioReservationsJob;
 
 Artisan::command('inspire', function () {
     $this->comment('DTE automation scheduler ready.');

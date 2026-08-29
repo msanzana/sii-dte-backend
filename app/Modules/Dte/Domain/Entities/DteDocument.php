@@ -5,6 +5,7 @@ namespace App\Modules\Dte\Domain\Entities;
 use App\Modules\Dte\Domain\Enums\DteStatus;
 use App\Modules\Dte\Domain\Enums\DteType;
 use App\Modules\Dte\Domain\ValueObjects\ReceiverData;
+use DateTimeImmutable;
 
 final class DteDocument
 {
@@ -42,6 +43,10 @@ final class DteDocument
         private readonly ?int $branchOfficeNumber = null,
         private readonly ?int $facilityNumber = null,
         private readonly ?string $externalBranchCode = null,
+        private readonly ?DateTimeImmutable $queuedAt = null,
+        private readonly ?DateTimeImmutable $sentAt = null,
+        private readonly ?DateTimeImmutable $acceptedAt = null,
+        private readonly ?DateTimeImmutable $rejectedAt = null,
     ) {
     }
 
@@ -166,6 +171,25 @@ final class DteDocument
         return $this->lastErrorMessage;
     }
 
+    public function queuedAt(): ?DateTimeImmutable
+    {
+        return $this->queuedAt;
+    }
+
+    public function sentAt(): ?DateTimeImmutable
+    {
+        return $this->sentAt;
+    }
+
+    public function acceptedAt(): ?DateTimeImmutable
+    {
+        return $this->acceptedAt;
+    }
+
+    public function rejectedAt(): ?DateTimeImmutable
+    {
+        return $this->rejectedAt;
+    }
     public function withFolioAndStatus(
         int $folio,
         string $status,
@@ -201,6 +225,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
         );
     }
 
@@ -236,6 +264,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
         );
     }
 
@@ -273,6 +305,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
         );
     }
 
@@ -310,6 +346,44 @@ final class DteDocument
             externalBranchCode: $this->externalBranchCode,
         );
     }
+    public function withSendingStatus(): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SENDING->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
     public function withSentStatus(): self
     {
         return new self(
@@ -342,6 +416,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt ?? new DateTimeImmutable(),
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
         );
     }
     public function withAcceptedStatus(): self
@@ -376,6 +454,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt ?? new DateTimeImmutable(),
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
         );
     }
 
@@ -413,6 +495,10 @@ final class DteDocument
             branchOfficeNumber: $this->branchOfficeNumber,
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
+            rejectedAt: $this->rejectedAt,
         );
     }
 
@@ -444,6 +530,16 @@ final class DteDocument
             tedXml: $this->tedXml,
             lastErrorCode: $code,
             lastErrorMessage: $message,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt ?? new DateTimeImmutable(),
         );
     }
     public function externalSystemId(): ?int

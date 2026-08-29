@@ -1,7 +1,7 @@
 <?php
-namespace App\Jobs\Dte\Aothomation;
+namespace App\Jobs\Dte\Automation;
 
-use App\Modules\Dte\Application\Services\ReconcileAllCafCountersService;
+use App\Modules\Dte\Application\Services\SyncExpiredFolioReservationsService;
 use DragonCode\Contracts\Queue\ShouldQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -9,49 +9,45 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Context;
 
-final class ReconcileCafCountersJob implements ShouldQueue
+final class SyncExpiredFolioReservationsJob implements ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
 
-    public int $tries = 3;
+    public int $limits = 3;
 
     public function __construct()
     {
         $this->onConnection(
-            (string) config(
-                'dte.automation.queue_connection'
-            )
-        );
-        $this->onQueue(
-            (string) config
-            (
-                'dte.automation.queues.maintenance',
-                'dte-maintenance'
-            )
+            (string) config('dte.automation.queue_connection')
         );
 
+        $this->onQueue(
+            (string) config(
+                'dte.automation.queues.maintenance',
+                'dte_maintenance'
+            )
+        );
         $this->afterCommit();
     }
-    public function backOff():array
-    {
-        return [60,180,600];
+    
+    public function backoff():array{
+        return [30,120,300];
     }
 
     public function handle(
-        ReconcileAllCafCountersService $service
+        SyncExpiredFolioReservationsService $service
     ):void{
         Context::add(
             'job',
-            'reconcileCafCountersJob'
+            'SyncExpiredDolioReservationsJob'
         );
-
         $service->execute(
-            (string) config(
-                'dte.automation.limits.caf_counter_batch_size',
-                200
+            (int) config(
+                'dte.automation.limits.expired_reservations_per_run',
+                100
             )
         );
     }

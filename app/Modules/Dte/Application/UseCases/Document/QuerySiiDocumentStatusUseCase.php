@@ -15,6 +15,7 @@ use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiDocumentStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaDocumentStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
+use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -105,7 +106,7 @@ final class QuerySiiDocumentStatusUseCase
             receiverRutDv: $receiverRutDv,
             dteType: (string) $document->dteType()->value,
             folio: (string) $document->folio(),
-            issueDate: $document->issueDate(),
+            issueDate: (new DateTimeImmutable($document->issueDate()))->format('dmY'),
             amount: (string) round($document->totalAmount(),0),
             token: $token
         );

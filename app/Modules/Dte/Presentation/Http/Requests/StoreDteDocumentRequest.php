@@ -27,7 +27,7 @@ class StoreDteDocumentRequest extends FormRequest
             'receiver.document' => ['required','string','max:20'],
             'receiver.name' => ['required','string','max:120'],
             'receiver.giro' => ['nullable','string','max:150'],
-            'receiver.address' => ['nullable','string','max:150'],
+            'receiver.address' => ['required_if:dte_type,33','nullable','string','max:150'],
             'receiver.city_id' => ['nullable','integer','exists:cities,id'],
             'receiver.email' => ['nullable','email','max:150'],
 

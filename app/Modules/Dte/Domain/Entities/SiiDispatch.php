@@ -152,6 +152,35 @@ final class SiiDispatch
             processedAt: $this->processedAt,
         );
     }
+    public function withStatus(
+        string $status,
+        ?string $errorMessage = null
+    ): self {
+        return new self(
+            id: $this->id,
+            batchUuid: $this->batchUuid,
+            companyId: $this->companyId,
+            dteDocumentId: $this->dteDocumentId,
+            environment: $this->environment,
+            transportType: $this->transportType,
+            status: $status,
+            trackId: $this->trackId,
+            requestIdentifier: $this->requestIdentifier,
+            requestPath: $this->requestPath,
+            requestHeaders: $this->requestHeaders,
+            requestBodyPath: $this->requestBodyPath,
+            responseHttpStatus: $this->responseHttpStatus,
+            responseBody: $this->responseBody,
+            uploadStatusCode: $this->uploadStatusCode,
+            uploadStatusMessage: $this->uploadStatusMessage,
+            retryCount: $this->retryCount,
+            nextRetryAt: $this->nextRetryAt,
+            errorMessage: $errorMessage,
+            sentAt: $this->sentAt,
+            lastPolledAt: $this->lastPolledAt,
+            processedAt: $this->processedAt,
+        );
+    }
     public function withPollingResult(
         string $status,
         ?string $responseBody,

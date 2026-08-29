@@ -4,6 +4,7 @@ enum DispatchStatus: string
 {
     case PENDING = 'pending';
     case SENDING = 'sending';
+    case DELIVERY_UNKNOWN = 'delivery_unknown';
     case UPLOAD_OK = 'upload_ok';
     case UPLOAD_REJECTED = 'upload_rejected';
     case POLLING = 'polling';

@@ -143,21 +143,17 @@ class EnvioDteSignatureService
         * Signature será hermano de SetDTE,
         * por lo que no forma parte de su contenido firmado.
         */
-        $signatureNode =
-            $dom->createElementNS(
-                self::XMLDSIG_NS,
-                'ds:Signature'
-            );
-
-        $envioNode->appendChild(
-            $signatureNode
-        );
-
+        /*
+        * Signature ya fue creado anteriormente y ya es
+        * hermano de SetDTE.
+        *
+        * Aquí solamente debemos incorporar SignedInfo
+        * dentro de ese Signature existente.
+        */
         $signatureNode->appendChild(
             $signedInfoNode
         );
-        /*
-        * Ahora canonicalizamos SetDTE dentro del
+        /* Ahora canonicalizamos SetDTE dentro del
         * contexto definitivo de EnvioDTE.
         */
 
@@ -194,7 +190,12 @@ class EnvioDteSignatureService
             );
         }
 
-        $signatureValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:SignatureValue');
+        $signatureValueNode =
+                    $dom->createElementNS(
+                        self::XMLDSIG_NS,
+                        'ds:SignatureValue'
+                    );
+
         $signatureValueNode->appendChild(
             $dom->createTextNode(
                 $this->wrapBase64(
@@ -222,15 +223,6 @@ class EnvioDteSignatureService
             $dom->createTextNode(
                 $this->wrapBase64(
                     $modulusBase64
-                )
-            )
-        );
-        $signatureValueNode->appendChild(
-            $dom->createTextNode(
-                $this->wrapBase64(
-                    base64_encode(
-                        $rawSignature
-                    )
                 )
             )
         );
@@ -276,8 +268,8 @@ class EnvioDteSignatureService
         *
         * Ambas deben sobrevivir a la serialización final.
         */
-        
-        
+
+
         $this->integrityService
             ->assertAllSignaturesValid(
                 $xml

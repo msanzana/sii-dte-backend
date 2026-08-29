@@ -10,6 +10,7 @@ final class DteSiiDocumentStatusDomainService
     public function assertCanQueryStatus(DteDocument $document):void
     {
         $allowedStatuses = [
+            DteStatus::SENDING->value,
             DteStatus::SENT->value,
             DteStatus::ACCEPTED->value,
             DteStatus::ACCEPTED_WITH_REPAROS->value,

@@ -60,7 +60,7 @@ class DteDocumentController extends Controller
                 document: $data['receiver']['document'],
                 name: $data['receiver']['name'],
                 giro: $data['receiver']['giro'] ?? null,
-                address: $data['address'] ?? null,
+                address: $data['receiver']['address'] ?? null,
                 cityId: isset($data['receiver']['city_id']) ? (int) $data['receiver']['city_id'] : null,
                 email: $data['receiver']['email'] ?? null,
             ),

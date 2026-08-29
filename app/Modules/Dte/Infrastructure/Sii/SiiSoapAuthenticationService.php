@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Http;
 
 final class SiiSoapAuthenticationService
 {
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     /*
      * ==========================================================
      * XMLDSIG
@@ -79,7 +83,8 @@ final class SiiSoapAuthenticationService
          * 2. Solicitar semilla.
          */
         $seed = $this->requestSeed(
-            $seedUrl
+            environment: $environment,
+            seedUrl: $seedUrl,
         );
 
         /*
@@ -107,11 +112,9 @@ final class SiiSoapAuthenticationService
          * 4. Intercambiar semilla firmada por TOKEN.
          */
         return $this->requestToken(
-            tokenUrl:
-                $tokenUrl,
-
-            signedSeedXml:
-                $signedSeedXml,
+            environment: $environment,
+            tokenUrl: $tokenUrl,
+            signedSeedXml: $signedSeedXml,
         );
     }
 
@@ -180,6 +183,7 @@ final class SiiSoapAuthenticationService
      */
 
     private function requestSeed(
+        string $environment,
         string $seedUrl
     ): string {
         $soap =
@@ -189,11 +193,9 @@ final class SiiSoapAuthenticationService
 
         $response =
             $this->sendSoapRequest(
-                url:
-                    $seedUrl,
-
-                soap:
-                    $soap,
+                environment: $environment,
+                url: $seedUrl,
+                soap: $soap,
             );
 
         /*
@@ -891,6 +893,7 @@ XML;
      */
 
     private function requestToken(
+        string $environment,
         string $tokenUrl,
         string $signedSeedXml
     ): string {
@@ -905,11 +908,9 @@ XML;
 
         $response =
             $this->sendSoapRequest(
-                url:
-                    $tokenUrl,
-
-                soap:
-                    $soap,
+                environment: $environment,
+                url: $tokenUrl,
+                soap: $soap,
             );
 
         /*
@@ -1056,9 +1057,11 @@ XML;
      */
 
     private function sendSoapRequest(
+        string $environment,
         string $url,
         string $soap
     ): Response {
+        $this->requestThrottleService->wait($environment);
         try {
             $response =
                 Http::timeout(30)

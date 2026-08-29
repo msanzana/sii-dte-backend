@@ -64,8 +64,36 @@ return [
         'max_boletas_per_batch' => 500,
     ],
     'sii' => [
-        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '14222620-0'),
+        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '60803000-K'),
+        /*
+        |--------------------------------------------------------------------------
+        | Transporte / sesión SII
+        |--------------------------------------------------------------------------
+        |
+        | El SII recomienda reutilizar el TOKEN y evitar ráfagas de solicitudes.
+        | Se usa cache de archivo de forma explícita para no depender de que exista
+        | una tabla de cache en la base de datos.
+        |
+        */
+        'transport' => [
+            'cache_store' =>
+                env(
+                    'DTE_SII_TRANSPORT_CACHE_STORE',
+                    'file'
+                ),
 
+            'token_cache_ttl_minutes' =>
+                env(
+                    'DTE_SII_TOKEN_CACHE_TTL_MINUTES',
+                    50
+                ),
+
+            'minimum_request_interval_ms' =>
+                env(
+                    'DTE_SII_MIN_REQUEST_INTERVAL_MS',
+                    1500
+                ),
+        ],
         'sender' => [
             'rut_body' => env('DTE_SII_SENDER_RUT_BODY', ''),
             'rut_dv' => env('DTE_SII_SENDER_RUT_DV', ''),

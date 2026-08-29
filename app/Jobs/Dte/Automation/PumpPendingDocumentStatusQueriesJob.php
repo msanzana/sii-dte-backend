@@ -1,5 +1,5 @@
 <?php
-namespace App\Jobs\Dte\Aothomation;
+namespace App\Jobs\Dte\Automation;
 
 use App\Jobs\Dte\Automation\QuerySingleDocumentStatusJob;
 use App\Modules\Dte\Domain\Enums\DteStatus;
@@ -19,7 +19,7 @@ class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
     public function __construct()
     {
         $this->onConnection((string) config('dte.automation.queue_connection'));
-        $this->onQueue((string) config('dte.automation.queue.document_status'));
+        $this->onQueue((string) config('dte.automation.queues.document_status'));
         $this->afterCommit();
     }
 
@@ -37,7 +37,8 @@ class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
         Context::add('job','PumpPendingDocumentStatusQueriesJob');
 
         $ids = $documentRepository->findIdsByStatuses(
-            statuses: [DteStatus::SENT->value],
+            statuses: [DteStatus::SENDING->value,
+                        DteStatus::SENT->value,],
             limit:(int) config('dte.automation.limits.document_status_queries_per_pump',50)
         );
 
@@ -45,7 +46,7 @@ class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
         {
             QuerySingleDocumentStatusJob::dispatch($documentId)
                         ->onConnection((string) config('dte.automation.queue_connection'))
-                        ->onQueue((string) config('dte.automation.queue.document_status'));
+                        ->onQueue((string) config('dte.automation.queues.document_status'));
         }
     }
 }

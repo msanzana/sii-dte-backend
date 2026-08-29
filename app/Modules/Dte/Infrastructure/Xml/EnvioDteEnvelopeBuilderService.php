@@ -13,8 +13,7 @@ use DOMXPath;
 class EnvioDteEnvelopeBuilderService
 {
     private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
-    private const XMLDSIG_NS =
-    'http://www.w3.org/2000/09/xmldsig#';
+    private const XMLDSIG_NS ='http://www.w3.org/2000/09/xmldsig#';
 
     public function __construct(
         private readonly XmlDsigIntegrityService $integrityService
@@ -90,11 +89,11 @@ class EnvioDteEnvelopeBuilderService
         $envioDom->formatOutput = false;
 
         $envioDte = $envioDom->createElementNS(self::NS_SII_DTE, 'EnvioDTE');
-        $envioDte->setAttributeNS(
-            'http://www.w3.org/2000/xmlns/',
-            'xmlns:ds',
-            self::XMLDSIG_NS
-        );
+        // $envioDte->setAttributeNS(
+        //     'http://www.w3.org/2000/xmlns/',
+        //     'xmlns:ds',
+        //     self::XMLDSIG_NS
+        // );
         $envioDte->setAttributeNS(
             'http://www.w3.org/2001/XMLSchema-instance',
             'xsi:schemaLocation',
@@ -117,15 +116,40 @@ class EnvioDteEnvelopeBuilderService
         $this->appendElement($envioDom, $caratula, 'RutReceptor', $receiverRut);
         $this->appendElement($envioDom, $caratula, 'FchResol', (string) $company->resolutionDate());
         $this->appendElement($envioDom, $caratula, 'NroResol', (string) $company->resolutionNumber());
-        $this->appendElement($envioDom, $caratula, 'TmstFirmaEnv', now()->format('Y-m-d\TH:i:s'));
+        $this->appendElement($envioDom, $caratula, 'TmstFirmaEnv', now('America/Santiago')->format('Y-m-d\TH:i:s'));
 
         $subTotDte = $envioDom->createElementNS(self::NS_SII_DTE, 'SubTotDTE');
         $this->appendElement($envioDom, $subTotDte, 'TpoDTE', (string) $document->dteType()->value);
         $this->appendElement($envioDom, $subTotDte, 'NroDTE', '1');
         $caratula->appendChild($subTotDte);
 
-        $importedDte = $envioDom->importNode($dteNode, true);
-        $setDte->appendChild($importedDte);
+        //$importedDte = $envioDom->importNode($dteNode, true);
+        //$setDte->appendChild($importedDte);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Incorporar el DTE firmado sin importNode()
+        |--------------------------------------------------------------------------
+        |
+        | El DTE ya contiene una firma XMLDSig válida.
+        | No debemos importarlo a otro DOMDocument porque LIBXML puede
+        | reorganizar namespaces y alterar la canonicalización del Documento.
+        |
+        */
+
+        $placeholder = 'SIGNED_DTE_XML_PLACEHOLDER';
+
+        $setDte->appendChild(
+            $envioDom->createComment(
+                $placeholder
+            )
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Serializar primero la estructura base del EnvioDTE
+        |--------------------------------------------------------------------------
+        */
 
         $xml = $envioDom->saveXML();
 
@@ -134,9 +158,94 @@ class EnvioDteEnvelopeBuilderService
             || trim($xml) === ''
         ) {
             throw InvalidSignatureXmlException::because(
-                'No fue posible serializar el XML del EnvioDTE.'
+                'No fue posible serializar el XML base del EnvioDTE.'
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Quitar la declaración XML del DTE firmado
+        |--------------------------------------------------------------------------
+        |
+        | signedDteXml contiene algo como:
+        |
+        | <?xml version="1.0" encoding="ISO-8859-1"?>
+        | <DTE>...</DTE>
+        |
+        | Como el EnvioDTE ya posee su propia declaración XML, debemos eliminar
+        | únicamente la declaración inicial del DTE.
+        |
+        */
+
+        $signedDteBody = preg_replace(
+            '/^\s*<\?xml[^?]*\?>\s*/i',
+            '',
+            $signedDteXml,
+            1
+        );
+
+        if (
+            $signedDteBody === null
+            || trim($signedDteBody) === ''
+        ) {
+            throw InvalidSignatureXmlException::because(
+                'No fue posible preparar el DTE firmado para incorporarlo al EnvioDTE.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Localizar el marcador
+        |--------------------------------------------------------------------------
+        */
+
+        $marker =
+            '<!--'
+            . $placeholder
+            . '-->';
+
+        if (
+            !str_contains(
+                $xml,
+                $marker
+            )
+        ) {
+            throw InvalidSignatureXmlException::because(
+                'No se encontró el marcador del DTE firmado dentro del EnvioDTE.'
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Insertar textualmente el DTE firmado
+        |--------------------------------------------------------------------------
+        |
+        | Aquí NO usamos importNode().
+        |
+        | De esta manera el XML firmado conserva exactamente sus namespaces
+        | y su contenido serializado.
+        |
+        */
+
+        $xml = str_replace(
+            $marker,
+            $signedDteBody,
+            $xml
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verificar que la firma interna continúe válida
+        |--------------------------------------------------------------------------
+        |
+        | En este momento todavía NO existe la firma externa de SetDTE.
+        | Solamente comprobamos que la firma del Documento haya sobrevivido
+        | a su incorporación dentro del EnvioDTE.
+        |
+        */
+
 
         /*
         * En este punto el sobre todavía no tiene

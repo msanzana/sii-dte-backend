@@ -70,7 +70,7 @@ final class EloquentSiiDispatchRepository implements SiiDispatchRepositoryInterf
 
         $model->save();
 
-        return $this->findById((int) $model->id());
+        return $this->findById((int) $model->id);
     }
 
     public function findById(int $id): ?SiiDispatch

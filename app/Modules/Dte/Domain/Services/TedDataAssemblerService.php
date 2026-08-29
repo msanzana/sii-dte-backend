@@ -32,7 +32,7 @@ final class TedDataAssemblerService
             'mnt' => $this->formatIntegerAmount($document->totalAmount()),
             'it1' => $this->normalizeTedText($firstItem->name()),
             'caf_xml_fragment' => $cafXmlFragment,
-            'tsted' => now()->format('Y-m-d\TH:i:s'),
+            'tsted' => now('America/Santiago')->format('Y-m-d\TH:i:s'),
         ];
     }
     private function formatIntegerAmount(float $value): string

@@ -26,9 +26,13 @@ class DteXmlSignatureService
         string $exponentBase64
     ):array
     {
-        $dom = new DOMDocument('1.0', 'ISO-8859-1');
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
+        $dom = new DOMDocument(
+            '1.0',
+            'ISO-8859-1'
+        );
+
+        $dom->preserveWhiteSpace = true;
+        $dom->formatOutput = false;
 
         $loaded = @$dom->loadXML(
             $xmlWithTed,
@@ -106,7 +110,7 @@ class DteXmlSignatureService
         * ============================================================
         */
 
-        $tmstFirma = now()->format(
+        $tmstFirma = now('America/Santiago')->format(
             'Y-m-d\TH:i:s'
         );
 
@@ -142,12 +146,8 @@ class DteXmlSignatureService
         $signatureNode =
             $dom->createElementNS(
                 self::XMLDSIG_NS,
-                'ds:Signature'
+                'Signature'
             );
-
-        $dteNode->appendChild(
-            $signatureNode
-        );
 
 
         /*
@@ -185,30 +185,31 @@ class DteXmlSignatureService
                     true
                 )
             );
-        $signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:SignedInfo');
+        $signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'SignedInfo');
 
-        $canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:CanonicalizationMethod');
+        $canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'CanonicalizationMethod');
         $canonicalizationMethodNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
 
-        $signatureMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:SignatureMethod');
+        $signatureMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 'SignatureMethod');
         $signatureMethodNode->setAttribute('Algorithm', self::SIGNATURE_ALGORITHM);
 
-        $referenceNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:Reference');
+        $referenceNode = $dom->createElementNS(self::XMLDSIG_NS, 'Reference');
         $referenceNode->setAttribute('URI', "#{$documentXmlId}");
 
         //Transforms
+        /*
         $transformsNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transforms');
         $transformNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transform');
         $transformNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
         $transformsNode->appendChild($transformNode);
-
-        $digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:DigestMethod');
+        */
+        $digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestMethod');
         $digestMethodNode->setAttribute('Algorithm', self::DIGEST_ALGORITHM);
 
-        $digestValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:DigestValue');
+        $digestValueNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestValue');
         $digestValueNode->appendChild($dom->createTextNode($digestValue));
 
-        $referenceNode->appendChild($transformsNode);
+        //$referenceNode->appendChild($transformsNode);
         $referenceNode->appendChild($digestMethodNode);
         $referenceNode->appendChild($digestValueNode);
 
@@ -271,7 +272,7 @@ class DteXmlSignatureService
         $signatureValueNode =
             $dom->createElementNS(
                 self::XMLDSIG_NS,
-                'ds:SignatureValue'
+                'SignatureValue'
             );
 
         $signatureValueNode->appendChild(
@@ -285,15 +286,15 @@ class DteXmlSignatureService
         );
         $signatureNode->appendChild($signatureValueNode);
 
-        $keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyInfo');
+        $keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyInfo');
 
-        $keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyValue');
-        $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:RSAKeyValue');
+        $keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyValue');
+        $rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'RSAKeyValue');
 
         $modulusNode =
             $dom->createElementNS(
                 self::XMLDSIG_NS,
-                'ds:Modulus'
+                'Modulus'
             );
 
         $modulusNode->appendChild(
@@ -304,17 +305,17 @@ class DteXmlSignatureService
             )
         );
 
-        $ExponentNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:Exponent');
+        $ExponentNode = $dom->createElementNS(self::XMLDSIG_NS, 'Exponent');
         $ExponentNode->appendChild($dom->createTextNode($exponentBase64));
 
         $rsaKeyValueNode->appendChild($modulusNode);
         $rsaKeyValueNode->appendChild($ExponentNode);
         $keyValueNode->appendChild($rsaKeyValueNode);
 
-        $x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:X509Data');
+        $x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'X509Data');
         $x509CertificateNode = $dom->createElementNS(
                                     self::XMLDSIG_NS,
-                                    'ds:X509Certificate'
+                                    'X509Certificate'
                                 );
         $x509CertificateNode->appendChild(
             $dom->createTextNode(

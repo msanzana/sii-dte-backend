@@ -87,7 +87,7 @@ XML;
 
     private function resolveUrl(string $environment): string
     {
-        $url = (string) config("dte.sii.{$environment}.soap.query:est:dte:url");
+        $url = (string) config("dte.sii.{$environment}.soap.query_est_dte_url");
 
         if(trim($url) === '')
         {
@@ -100,10 +100,18 @@ XML;
 
     protected function extractTagValue(string $xml, string $tag): ?string
     {
-        if(preg_match('/<'. preg_quote($tag,'/'). '>\s*(.*?)\s*<\/'. preg_quote($tag, '/') .'>/', $xml, $m))
-        {
-            return trim($m[1]);
+        $escapedTag = preg_quote($tag, '/');
+
+        $pattern = '/<(?:[\w.-]+:)?'
+            . $escapedTag
+            . '\b[^>]*>\s*(.*?)\s*<\/(?:[\w.-]+:)?'
+            . $escapedTag
+            . '\s*>/si';
+
+        if (preg_match($pattern, $xml, $matches)) {
+            return trim($matches[1]);
         }
+
         return null;
     }
 }
