@@ -20,9 +20,22 @@ class CafXmlParserService
         }
 
         $xpath = new DOMXPath($dom);
+        $daXml = $this->extractDaXml($xml);
+        $publicKeyPem = $this->getOptionalNodeValue(
+            $xpath,
+            "//*[local-name()='AUTORIZACION']/*[local-name()='RSAPUBK']"
+        );
+        $siiKeyId = $this->getRequiredNodeValue(
+            $xpath,
+            "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='DA']/*[local-name()='IDK']"
+        );
+        $issuerRut = $this->getRequiredNodeValue(
+            $xpath,
+            "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='DA']/*[local-name()='RE']"
+        );
         $dteType = $this->getRequiredNodeValue(
             $xpath,
-             "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='DA']/*[local-name()='TD']"
+            "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='DA']/*[local-name()='TD']"
         );
         $folioStart = $this->getRequiredNodeValue(
             $xpath,
@@ -49,17 +62,48 @@ class CafXmlParserService
             "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='DA']/*[local-name()='RSAPK']"
         );
 
+        $frmaNode = $this->getRequiredNode(
+            $xpath,
+            "//*[local-name()='AUTORIZACION']/*[local-name()='CAF']/*[local-name()='FRMA']"
+        );
+
+        $frmaAlgorithm = trim(
+            $frmaNode->getAttribute('algoritmo')
+        );
+
+        if ($frmaAlgorithm === '') {
+            throw InvalidCafException::because(
+                'El nodo FRMA del CAF no contiene el atributo algoritmo.'
+            );
+        }
+
+        $frmaValue = trim(
+            $frmaNode->textContent
+        );
+
+        if ($frmaValue === '') {
+            throw InvalidCafException::because(
+                'El nodo FRMA del CAF no contiene la firma.'
+            );
+        }
+
         return [
+            'issuer_rut' => $issuerRut,
             'dte_type' => (int) $dteType,
             'folio_start' => (int) $folioStart,
             'folio_end' => (int) $folioEnd,
             'authorized_at' => $this->normalizeDate($authorizedAt),
+            'sii_key_id' => $siiKeyId,
+            'frma_algorithm' => $frmaAlgorithm,
+            'frma_value' => $frmaValue,
             'private_key_material' => $privateKeyNode->C14N(),
             'public_key_material' => $publicKeyNode ? $publicKeyNode->C14N() : null,
+            'public_key_pem' => $publicKeyPem,
+            'da_xml' => $daXml,
         ];
 
     }
-     private function getRequiredNodeValue(DOMXPath $xpath, string $expression): string
+    private function getRequiredNodeValue(DOMXPath $xpath, string $expression): string
     {
         $node = $this->getRequiredNode($xpath, $expression);
 
@@ -134,5 +178,47 @@ class CafXmlParserService
         }
 
         return $clean;
+    }
+    private function extractDaXml(string $xml): string
+    {
+        /*
+        * CAF normal del SII:
+        *
+        * <DA>
+        *     ...
+        * </DA>
+        *
+        * Se extrae directamente desde el XML original para no
+        * reconstruirlo mediante DOMDocument.
+        */
+        if (
+            preg_match(
+                '/<DA\b[^>]*>.*?<\/DA>/s',
+                $xml,
+                $matches
+            ) === 1
+        ) {
+            return $matches[0];
+        }
+
+        /*
+        * Soporte adicional por si alguna entrada utiliza
+        * un prefijo XML, por ejemplo:
+        *
+        * <sii:DA>...</sii:DA>
+        */
+        if (
+            preg_match(
+                '/<([A-Za-z_][A-Za-z0-9_.-]*):DA\b[^>]*>.*?<\/\1:DA>/s',
+                $xml,
+                $matches
+            ) === 1
+        ) {
+            return $matches[0];
+        }
+
+        throw InvalidCafException::because(
+            'No fue posible extraer el nodo DA original del CAF.'
+        );
     }
 }

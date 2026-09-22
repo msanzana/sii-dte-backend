@@ -4,6 +4,7 @@ namespace App\Modules\Dte\Application\Services;
 use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\ValueObjects\LocationSummary;
+use App\Modules\Dte\Domain\Enums\DteType;
 
 final class DteXmlDataAssemblerService
 {
@@ -51,16 +52,28 @@ final class DteXmlDataAssemblerService
                 'reason' => $reference->reason(),
             ];
         }
+        $headerPayload = $document->headerPayload() ?? [];
 
+        $idDoc = [
+            'tipo_dte' => (string) $document->dteType()->value,
+            'folio' => (string) $document->folio(),
+            'fecha_emision' => $document->issueDate(),
+        ];
+
+        if (
+            $document->dteType()->isBoletaFamily()
+            && array_key_exists('ind_servicio', $headerPayload)
+        ) {
+            $idDoc['ind_servicio'] = (string) $headerPayload['ind_servicio'];
+        }
+        if ($document->dteType() === DteType::BOLETA_ELECTRONICA) {
+            $idDoc['ind_mnt_neto'] = '2';
+        }
         return [
             'version' => '1.0',
             'document_xml_id' => $documentXmlId,
 
-            'id_doc' => [
-                'tipo_dte' => (string) $document->dteType()->value,
-                'folio' => (string) $document->folio(),
-                'fecha_emision' => $document->issueDate(),
-            ],
+            'id_doc' => $idDoc,
 
             'emitter' => [
                 'rut' => $company->rut(),

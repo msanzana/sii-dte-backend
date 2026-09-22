@@ -1,0 +1,3338 @@
+﻿===== EnvioBoletaEnvelopeBuilderService =====
+<?php
+namespace App\Modules\Dte\Infrastructure\Xml;
+
+
+use App\Modules\Dte\Domain\Entities\Company;
+use App\Modules\Dte\Domain\Entities\DteDocument;
+use App\Modules\Dte\Domain\Exceptions\SiiBoletaSendException;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
+
+class EnvioBoletaEnvelopeBuilderService
+{
+    private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
+    private const NS_XSI = 'http://www.w3.org/2001/XMLSchema-instance';
+    private const NS_XMLNS = 'http://www.w3.org/2000/xmlns/';
+    private const ENVIO_BOLETA_SCHEMA_LOCATION =
+        'http://www.sii.cl/SiiDte EnvioBOLETA_v11.xsd';
+
+    public function build(
+        DteDocument $document,
+        Company $company,
+        string $signedXml
+    ):array{
+        $wrap = filter_var(config('dte.sii.boleta.wrap_in_envio', true), FILTER_VALIDATE_BOOLEAN);
+
+        if(!$wrap)
+        {
+            return [
+                'request_identifier' => 'BOLETA:'.$document->id()
+            ];
+        }
+        $signedDom = new DOMDocument('1.0','ISO-8859-1');
+        $signedDom->preserveWhiteSpace = true;
+        $signedDom->formatOutput = false;
+
+        $loaded = @$signedDom->loadXml($signedXml);
+
+        if(!$loaded)
+        {
+            throw SiiBoletaSendException::because(
+                'No fue posible cargar el XML firmado de la boleta para construir el sobre de envÃ­o.'
+            );
+        }
+
+        //$xpath = new DOMXPath($signedDom);
+        $dteNode = $signedDom->documentElement;
+
+        if (
+            !$dteNode instanceof DOMElement
+            || $dteNode->localName !== 'DTE'
+        ) {
+            throw SiiBoletaSendException::because(
+                'El elemento raÃ­z del XML firmado de la boleta no corresponde a DTE.'
+            );
+        }
+
+        $senderRutBody= trim((string) config('dte.sii.sender.rut_body'));
+        $senderRutDv = trim((string) config('dte.sii.sender.rut_dv'));
+        $receiverRut = trim((string) config('dte.sii.receiver_rut', '60803000-K'));
+
+        if($senderRutBody === '' || $senderRutDv === '')
+        {
+            throw SiiBoletaSendException::because(
+                'Falta configurar DTE_SII_SENDER_RUT_BODY o DTE_SII_SENDER_RUT_DV para boleta.'
+            );
+        }
+
+        $envioDom = new DOMDocument('1.0', 'ISO-8859-1');
+        $envioDom->preserveWhiteSpace = false;
+        $envioDom->formatOutput = true;
+
+        $envioNode = $envioDom->createElementNS(
+            self::NS_SII_DTE,
+            'EnvioBOLETA'
+        );
+
+        $envioNode->setAttributeNS(
+            self::NS_XMLNS,
+            'xmlns:xsi',
+            self::NS_XSI
+        );
+
+        $envioNode->setAttributeNS(
+            self::NS_XSI,
+            'xsi:schemaLocation',
+            self::ENVIO_BOLETA_SCHEMA_LOCATION
+        );
+
+        $envioNode->setAttribute(
+            'version',
+            '1.0'
+        );
+
+        $envioDom->appendChild(
+            $envioNode
+        );
+
+        $setBoletaId = 'SetBoleta_'.$document->id();
+
+        $setNode = $envioDom->createElementNS(self::NS_SII_DTE, 'SetDTE');
+        $setNode->setAttribute('ID', $setBoletaId);
+        $envioNode->appendChild($setNode);
+
+        $caratula = $envioDom->createElementNS(self::NS_SII_DTE, 'Caratula');
+        $caratula->setAttribute('version','1.0');
+        $setNode->appendChild($caratula);
+
+        $this->appendElement($envioDom,$caratula,'RutEmisor',$company->rut());
+        $this->appendElement($envioDom,$caratula,'RutEnvia',$senderRutBody.'-'.$senderRutDv);
+        $this->appendElement($envioDom, $caratula, 'RutReceptor', $receiverRut);
+        $this->appendElement($envioDom, $caratula, 'FchResol', (string )$company->resolutionDate());
+        $this->appendElement($envioDom, $caratula, 'NroResol', (string) $company->resolutionNumber());
+        $this->appendElement($envioDom, $caratula, 'TmstFirmaEnv', now()->format('Y-m-d\TH:i:s'));
+
+        $SubTotDte = $envioDom->createElementNS(self::NS_SII_DTE, 'SubTotDTE');
+        $this->appendElement($envioDom, $SubTotDte, 'TpoDTE', (string) $document->dteType()->value);
+        $this->appendElement($envioDom, $SubTotDte, 'NroDTE', '1');
+        $caratula->appendChild($SubTotDte);
+
+        $importedDte = $envioDom->importNode($dteNode, true);
+        $setNode->appendChild($importedDte);
+
+        $xml = $envioDom->saveXML();
+
+        if($xml === false || $xml === '')
+        {
+            throw SiiBoletaSendException::because(
+                'No fue posible serializar el payload XML de EnvioBOLETA.'
+            );
+        }
+
+        return [
+            'request_identifier' => $setBoletaId,
+            'payload_xml' => $xml,
+        ];
+    }
+
+    private function appendElement(
+        DOMDocument $dom,
+        DOMElement $parent,
+        string $name,
+        string $value,
+    ): void {
+        $node = $dom->createElementNS(self::NS_SII_DTE, $name);
+        $node->appendChild($dom->createTextNode($value));
+        $parent->appendChild($node);
+    }
+}
+===== SERVICIOS DE FIRMA XML =====
+
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:3:final class 
+AssignCafRangeInputDto
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:4:{
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:5:    public 
+function __construct(
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:6:        public 
+readonly int $companyId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:7:        public 
+readonly int $cafId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:8:        public 
+readonly int $externalSystemId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:9:        public 
+readonly int $folioRangeFrom,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:10:        
+public readonly int $folioRangeTo,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeInputDto.php:11:        
+public readonly ?int $branchOfficeNumber,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:3:final class 
+AssignCafRangeResultDto
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:4:{
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:5:    public 
+function __construct(
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:6:        
+public readonly int $reservationId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:7:        
+public readonly int $cafId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:8:        
+public readonly int $companyId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:9:        
+public readonly int $externalSystemId,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:10:        
+public readonly int $dteType,
+  app\Modules\Dte\Application\DTOs\AssignCafRangeResultDto.php:11:        
+public readonly int $folioRangeFrom,
+  
+app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:3:
+> app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:4:final 
+class SendSignedBoletaToSiiInputDto
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:5:{
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:6:    
+public function __construct(
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:7:        
+public readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:8:    ) {
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:9:    }
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto.php:10:}
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:2:namespa
+ce App\Modules\Dte\Application\DTOs;
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:3:
+> app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:4:final 
+class SendSignedBoletaToSiiResultDto
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:5:{
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:6:    
+public function __construct(
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:7:       
+ public readonly int $dispatchId,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:8:       
+ public readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:9:       
+ public readonly string $batchUuid,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:10:      
+  public readonly string $status,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:11:      
+  public readonly ?string $trackId,
+  app\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto.php:12:      
+  public readonly ?string $sendStatusCode,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:3:final 
+class SendSignedDteToSiiInputDto
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:4:{
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:5:    public 
+function __construct(
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:6:        
+public readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:7:    )
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:8:    {}
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto.php:9:}
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:3:final 
+class SendSignedDteToSiiResultDto
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:4:{
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:5:    
+public function __construct(
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:6:        
+public readonly int $dispatchId,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:7:        
+public readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:8:        
+public readonly string $batchUuid,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:9:        
+public readonly string $status,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:10:        
+public readonly ?string $trackId,
+  app\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto.php:11:        
+public readonly ?string $uploadStatusCode,
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:3:final class 
+SignDteXmlInputDto
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:4:{
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:5:    public 
+function __construct(
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:6:        public 
+readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:7:    )
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:8:    {}
+  app\Modules\Dte\Application\DTOs\SignDteXmlInputDto.php:9:}
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:1:<?php
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:2:namespace 
+App\Modules\Dte\Application\DTOs;
+> app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:3:final class 
+SignDteXmlResultDto
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:4:{
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:5:    public 
+function __construct(
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:6:        public 
+readonly int $documentId,
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:7:        public 
+readonly string $externalId,
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:8:        public 
+readonly int $companyId,
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:9:        public 
+readonly int $dteType,
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:10:        public 
+readonly int $folio,
+  app\Modules\Dte\Application\DTOs\SignDteXmlResultDto.php:11:        public 
+readonly int $certificateId,
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:24:        
+}
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:25:
+> app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:26:        
+if ($document->unsignedXmlPath() === null || 
+trim($document->unsignedXmlPath()) === "")
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:27:        
+{
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:28:        
+    throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:29:        
+        "El documento {$document->id()} no tiene un XML base almacenado."
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:30:        
+    );
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:31:        
+}
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:32:
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:33:        
+if ($document->tedXml() !== null && trim($document->tedXml()) !== '') {
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:34:        
+    throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:28:        private readonly BuildDteXmlUseCase $buildDteXmlUseCase,
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:29:        private readonly BuildTedUseCase $buildTedUseCase,
+> app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:30:        private readonly SignDteXmlUseCase $signDteXmlUseCase,
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:31:        private readonly SendSignedDteToSiiUseCase 
+$sendSignedDteToSiiUseCase,
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:32:        private readonly SendSignedBoletaToSiiUseCase 
+$sendSignedBoletaToSiiUseCase,
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:33:    )
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:34:    {}
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:35:
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:36:    public function execute(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:37:        AdvanceDteAutomationInputDto $input
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:38:    ): AdvancedDteAutomationResultDto
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:76:                )
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:77:            ),
+> app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:78:                        'sign_xml' => $this->signDteXmlUseCase->execute(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:79:                new SignDteXmlInputDto(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:80:                    documentId: $input->documentId
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:81:                )
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:82:            ),
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:83:            'send_factura' => $this->sendSignedDteToSiiUseCase->execute(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:84:                new SendSignedDteToSiiInputDto(
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:85:                    documentId: $input->documentId
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.p
+hp:86:                )
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:30:use App\Modules\Dte\Domain\Enums\DteStatus;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:31:
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:32:final class SendSignedBoletaToSiiUseCase
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:33:{
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:34:    public function __construct(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:35:        private readonly DteDocumentRepositoryInterface 
+$documentRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:36:        private readonly CompanyRepositoryInterface $companyRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:37:        private readonly SiiDispatchRepositoryInterface 
+$dispatchRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:38:        private readonly IntegrationLogRepositoryInterface $logRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:39:        private readonly DteBoletaSendDomainService 
+$boletaSendDomainService,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:40:        private readonly SiiBoletaTokenProviderService 
+$siiBoletaTokenProviderService,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:136:            if (!File::exists($absoluteSignedPath)) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:137:                throw new RuntimeException(
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:138:                    "No existe el XML firmado de boleta en 
+{$document->signedXmlPath()}."
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:139:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:140:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:141:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:142:            $signedXml = File::get(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:143:                $absoluteSignedPath
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:144:            );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:145:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:146:            if (
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:164:                        document: $document,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:165:                        company: $company,
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:166:                        signedXml: $signedXml
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:167:                    );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:168:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:169:            /*
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:170:            
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:171:            | Nombre del archivo de envío
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:172:            
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:173:            */
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.ph
+p:174:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+4:use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+5:use App\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService;
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+6:use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+7:use Illuminate\Http\Client\ConnectionException;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+8:use Illuminate\Support\Facades\DB;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:2
+9:use Illuminate\Support\Facades\File;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+0:use Illuminate\Support\Str;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+1:use RuntimeException;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+2:use Throwable;
+  
+app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:33:
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+4:final class SendSignedDteToSiiUseCase
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+5:{
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+6:    public function __construct(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+7:        private readonly DteDocumentRepositoryInterface $documentRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+8:        private readonly CompanyRepositoryInterface $companyRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:3
+9:        private readonly SiiDispatchRepositoryInterface $dispatchRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:4
+0:        private readonly IntegrationLogRepositoryInterface $logRepository,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:4
+1:        private readonly DteSiiSendDomainService $sendDomainService,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:4
+2:        private readonly EnvioDteEnvelopeBuilderService 
+$envioDteEnvelopeBuilderService,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+41:                        document: $document,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+42:                        company: $company,
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+43:                        signedDteXml: $signedDteXml
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+44:                    );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+45:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+46:            $signedEnvelopeXml =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+47:                $this->envioDteSignatureService
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+48:                    ->SignSetDte(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+49:                        envioXml:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+50:                            $envelopeBuild[
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:1
+51:                                'envelope_xml'
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:16:use 
+App\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService;
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:17:use 
+App\Modules\Dte\Infrastructure\Xml\DteTedEmbedderService;
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:18:use 
+App\Modules\Dte\Infrastructure\Xml\TedSignatureService;
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:19:use 
+App\Modules\Dte\Infrastructure\Xml\TedXmlBuilderService;
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:20:use 
+Illuminate\Support\Facades\DB;
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:21:use 
+Illuminate\Support\Facades\File;
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:22:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:23:final 
+class BuildTedUseCase
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:24:{
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:25:    
+public function __construct(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:26:        
+private readonly DteDocumentRepositoryInterface $documentRepository,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:92:        
+    );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:93:
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:94:        
+    $absoluteUnsignedXmlPath = storage_path($document->unsignedXmlPath());
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:95:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:96:        
+    if(!File::exists($absoluteUnsignedXmlPath))
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:97:        
+    {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:98:        
+        throw new \RuntimeException(
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:99:        
+            "No existe el XML base del documento en 
+{$document->unsignedXmlPath()}."
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:100:       
+         );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:101:       
+     }
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:102:
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:103:       
+     $existingDteXml = File::get($absoluteUnsignedXmlPath);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:104:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:105:       
+     if($existingDteXml === false || trim($existingDteXml) === '')
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:106:       
+     {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:107:       
+         throw new \RuntimeException(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:108:       
+             'No fue posible leer el XML base del documento antes de incrustar 
+el TED.'
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:109:       
+         );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:110:       
+     }
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:111:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:11:use 
+App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:12:use 
+App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:13:use 
+App\Modules\Dte\Domain\Services\DteXmlSignDomainService;
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:14:use 
+App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:15:use 
+App\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService;
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:16:use 
+Illuminate\Support\Facades\DB;
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:17:use 
+Illuminate\Support\Facades\File;
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:18:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:19:final 
+class SignDteXmlUseCase
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:20:{
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:21:    
+public function __construct(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:22:      
+  private readonly DteDocumentRepositoryInterface $documentRepository,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:23:      
+  private readonly CompanyRepositoryInterface $companyRepository,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:24:      
+  private readonly IntegrationLogRepositoryInterface $logRepository,
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:25:      
+  private readonly DteXmlSignatureService $dteXmlSignatureService,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:26:      
+  private readonly DtePrivateStorageService $storageService,
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:27:      
+  private readonly DteXmlSignDomainService $xmlSignDomainService,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:28:      
+  private readonly LoadCertificateMaterialForEmisionService 
+$loadCertificateMaterialForEmisionService,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:29:    )
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:30:    {}
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:31:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:32:    
+public function execute(SignDteXmlInputDto $input): SignDteXmlResultDto
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:33:    {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:34:      
+  return DB::transaction(function () use ($input){
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:35:      
+      $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:36:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:37:      
+      if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:38:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:39:      
+          throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:40:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:41:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:42:      
+      $this->xmlSignDomainService->assertCanSignXml($document);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:43:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:44:      
+      $company = $this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:45:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:46:      
+      if(!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:47:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:48:      
+          throw CompanyNotFoundException::withId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:49:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:50:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:58:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:59:      
+          throw InvalidDocumentStateException::because(
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:60:      
+              "El No existe el Xml unsigned del documento en 
+{$document->unsignedXmlPath()}."
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:61:      
+          );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:62:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:63:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:64:      
+      $unsignedXml = File::get($absoluteUnsignedPath);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:65:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:66:      
+      if($unsignedXml === false || trim($unsignedXml) === '')
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:67:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:68:      
+          throw InvalidDocumentStateException::because(
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:69:      
+              'No fue posible leer el XML unsigned del documento antes del 
+firmarlo.'
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:70:      
+          );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:71:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:72:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:73:      
+      $signatureResult = $this->dteXmlSignatureService->signDte(
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:74:      
+          xmlWithTed: $unsignedXml,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:75:      
+          privateKeyPem: $certificateContext->privateKeyPem,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:76:      
+          certificateBase64: $certificateContext->certificateBase64,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:77:      
+          modulusBase64: $certificateContext->modulusBase64,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:78:      
+          exponentBase64: $certificateContext->exponentBase64,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:79:      
+      );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:80:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:81:      
+      $filename = sprintf(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:82:      
+          'dte_company_%d_td_%d_f_%d_signed_%s.xml',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:98:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:99:      
+      $this->logRepository->info(
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:100:     
+           channel: 'xml_sign',
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:101:     
+           message: 'DTE firmado correctamente con XMLDSig',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:102:     
+           context: [
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:103:     
+               'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:104:     
+               'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:105:     
+               'company_id' => $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:106:     
+               'dte_type' => $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:107:     
+               'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:108:     
+               //'certificate_id' => $certificate->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:109:     
+               'certificate_id' => $certificateContext->certificateId,
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:110:     
+               'document_xml_id' => $signatureResult['document_xml_id'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:111:     
+               'tmst_firma' => $signatureResult['tmst_firma'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:112:     
+               'signed_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:113:     
+           ],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:114:     
+           companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:115:     
+           documentId: $saved->id(),
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:116:     
+           code:'DTE_XML_SIGNED'
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:117:     
+       );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:118:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:119:     
+       return new SignDteXmlResultDto(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:120:     
+           documentId: $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:121:     
+           externalId: $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:122:     
+           companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:123:     
+           dteType: $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:124:     
+           folio: (int) $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:125:     
+           certificateId: (int) $certificateContext->certificateId,
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:126:     
+           documentXmlId: $signatureResult['document_xml_id'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:127:     
+           tmstFirma: $signatureResult['tmst_firma'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:128:     
+           status: $saved->status(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:129:     
+           signedXmlPath: $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:130:     
+       );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:131:     
+   });
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:132:    }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:133:}
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:19:use 
+RuntimeException;
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:20:
+> 
+app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:21:final 
+class AssignCafRangeUseCase
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:22:{
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:23:    
+private const INSERT_CHUNK_SIZE =500;
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:24:    
+public function __construct(
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:25:     
+   private readonly CompanyRepositoryInterface $companyRepository,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:26:     
+   private readonly SiiCafRepositoryInterface $cafRepository,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:27:     
+   private readonly FolioReservationRepositoryInterface 
+$folioReservationRepository,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:28:     
+   private readonly FolioDetailRepositoryInterface $folioDetailRepository,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:29:     
+   private readonly FolioStatusRepositoryInterface $folioStatusRepository,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:277:            folio: 
+$folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:278:            
+siiEnvironment: $siiEnvironment ?? $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:279:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:280:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:281:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:282:            
+lastErrorCode: $this->lastErrorCode,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:283:            
+lastErrorMessage: $this->lastErrorMessage,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:284:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:285:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:286:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:287:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:288:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:295:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:296:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:297:    public function 
+withUnsignedXmlBuilt(string $unsignedXmlPath): self
+  app\Modules\Dte\Domain\Entities\DteDocument.php:298:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:299:        return new self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:300:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:301:            externalId: 
+$this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:302:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:303:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:304:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:305:            status: 
+DteStatus::XML_BUILT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:316:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:317:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:318:            
+unsignedXmlPath: $unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:319:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:320:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:321:            
+lastErrorCode: $this->lastErrorCode,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:322:            
+lastErrorMessage: $this->lastErrorMessage,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:323:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:324:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:325:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:326:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:327:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:357:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:358:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:359:            
+unsignedXmlPath: $unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:360:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:361:            tedXml: 
+$tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:362:            
+lastErrorCode: $this->lastErrorCode,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:363:            
+lastErrorMessage: $this->lastErrorMessage,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:364:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:365:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:366:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:367:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:368:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:375:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:376:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:377:    public function 
+withSignedXml(string $signedXmlPath): self
+  app\Modules\Dte\Domain\Entities\DteDocument.php:378:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:379:        return new self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:380:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:381:            externalId: 
+$this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:382:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:383:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:384:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:385:            status: 
+DteStatus::SIGNED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:396:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:397:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:398:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:399:            
+signedXmlPath: $signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:400:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:401:            
+lastErrorCode: $this->lastErrorCode,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:402:            
+lastErrorMessage: $this->lastErrorMessage,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:403:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:404:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:405:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:406:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:407:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:430:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:431:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:432:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:433:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:434:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:435:            
+lastErrorCode: $this->lastErrorCode,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:436:            
+lastErrorMessage: $this->lastErrorMessage,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:437:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:438:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:439:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:440:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:441:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:471:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:472:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:473:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:474:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:475:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:476:            
+lastErrorCode: $code,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:477:            
+lastErrorMessage: $message,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:478:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:479:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:480:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:481:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:482:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:509:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:510:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:511:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:512:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:513:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:514:            
+lastErrorCode: null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:515:            
+lastErrorMessage: null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:516:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:517:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:518:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:519:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:520:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:550:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:551:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:552:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:553:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:554:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:555:            
+lastErrorCode: $code,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:556:            
+lastErrorMessage: $message,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:557:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:558:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:559:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:560:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:561:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:591:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:592:            
+siiEnvironment: $this->siiEnvironment,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:593:            
+unsignedXmlPath: $this->unsignedXmlPath,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:594:            
+signedXmlPath: $this->signedXmlPath,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:595:            tedXml: 
+$this->tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:596:            
+lastErrorCode: $code,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:597:            
+lastErrorMessage: $message,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:598:            
+externalSystemId: $this->externalSystemId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:599:            cafId: 
+$this->cafId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:600:            
+folioReservationId: $this->folioReservationId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:601:            
+branchOfficeNumber: $this->branchOfficeNumber,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:602:            
+facilityNumber: $this->facilityNumber,
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:4:use 
+DomainException;
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:5:
+> app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:6:final 
+class CafRangeAssignmentException extends DomainException
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:7:{
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:8:    
+public static function cafNotFount(int $cafId): self
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:9:    {
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:10:        
+return new self(
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:11:        
+    "No existe el CAF {$cafId}."
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:12:        
+);
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:13:    }
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:14:
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:4:use 
+App\Modules\Dte\Domain\Exceptions\DomainException;
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:5:
+> app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:6:class 
+InvalidSignatureXmlException extends DomainException
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:7:{
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:8:    
+public static function because(string $message): self
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:9:    {
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:10:       
+ return new self(
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:11:       
+     $message
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:12:       
+ );
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:13:    }
+  app\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException.php:14:}
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:24:        }
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:25:
+> app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:26:        
+if($document->signedXmlPath() === null || trim($document->signedXmlPath()) === 
+'')
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:27:        {
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:28:           
+ throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:29:           
+     "El documento {$document->id()} no tiene Xml firmado para enviar."
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:30:           
+ );
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:31:        }
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:32:    }
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:33:}
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:18:        }
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:19:
+> app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:20:        
+if($document->signedXmlPath() === null || trim($document->signedXmlPath()) === 
+'')
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:21:        {
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:22:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:23:              
+  "El documento {$document->id()} no tiene XML firmado para enviar."
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:24:            );
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:25:        }
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:26:
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:27:        
+if($document->dteType()->isBoletaFamily())
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:28:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:7:
+> app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:8:final class 
+DteXmlSignDomainService
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:9:{
+> app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:10:    public 
+function assertCanSignXml(DteDocument $document): void
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:11:    {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:12:        
+if($document->status() !== DteStatus::TED_BUILT->value)
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:13:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:14:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:15:              
+  "El documento {$document->id()} no está en estado ted_built."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:16:            );
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:17:        }
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:18:
+> app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:19:        
+if($document->unsignedXmlPath() === null || trim($document->unsignedXmlPath()) 
+=== '')
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:20:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:21:            
+throw InvalidDocumentStateException::because(
+> app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:22:              
+  "El documento {$document->id()} no tiene XML unsigned para firmar."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:23:            );
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:24:        }
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:25:
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:26:        
+if($document->tedXml() === null || trim($document->tedXml()) === '')
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:27:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:28:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:29:              
+  "El documento {$document->id()} no tiene TED persistido."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:30:            );
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:5:use 
+App\Modules\Dte\Domain\Exceptions\InvalidCafException;
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:6:
+> app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:7:final 
+class SiiCafSignatureKeyResolver
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:8:{
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:9:    
+public function resolve(string $siiKeyId): string
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:10:    {
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:11:     
+   $normalizedKeyId = trim($siiKeyId);
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:12:
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:13:     
+   $key = config(
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:14:     
+       "dte.sii.caf_signature_keys.{$normalizedKeyId}"
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureKeyResolver.php:15:     
+   );
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:5:use 
+App\Modules\Dte\Domain\Exceptions\InvalidCafException;
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:6:
+> app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:7:final 
+class SiiCafSignatureVerifier
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:8:{
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:9:    
+public function __construct(
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:10:        
+private readonly SiiCafSignatureKeyResolver $keyResolver
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:11:    ) {
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:12:    }
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:13:
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:14:    
+public function verify(
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:15:        
+string $daXml,
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:94:        
+* No modificamos el contenido interno de los nodos.
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:95:        
+*/
+> app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:96:        
+$normalizedDaXml = $this->normalizeDaXmlForSignature(
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:97:        
+    $daXml
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:98:        
+);
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:99:
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:100:       
+ /*
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:101:       
+ * Si la normalización no produjo ningún cambio,
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:102:       
+ * no tiene sentido verificar exactamente lo mismo
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:103:       
+ * una segunda vez.
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:104:       
+ */
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:126:       
+ );
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:127:    }
+> app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:128:    
+private function normalizeDaXmlForSignature(
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:129:       
+ string $daXml
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:130:    ): 
+string {
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:131:       
+ /*
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:132:       
+ * Eliminamos únicamente whitespace situado entre:
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:133:       
+ *
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:134:       
+ * >    <
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:135:       
+ *
+  app\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier.php:136:       
+ * Esto incluye espacios, tabs, CR y LF.
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:70:                    : null,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:71:            siiEnvironment:$model->sii_environment,
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:72:            unsignedXmlPath:$model->unsigned_xml_path,
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:73:            signedXmlPath:$model->signed_xml_path,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:74:            tedXml:$model->ted_xml,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:75:            lastErrorCode:$model->last_error_code,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:76:            lastErrorMessage:$model->last_error_message,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:77:            externalSystemId:$model->external_system_id !== null
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:78:                    ? (int) $model->external_system_id
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:79:                    : null,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:80:            cafId: $model->caf_id !== null
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapp
+er.php:81:                    ? (int) $model->caf_id
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:42:            'totals_payload' => $document->totalsPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:43:            'raw_input' => $document->rawInput(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:44:            'unsigned_xml_path' => 
+$document->unsignedXmlPath(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:45:            'signed_xml_path' => $document->signedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:46:            'ted_xml' => $document->tedXml(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:47:            'last_error_code' => $document->lastErrorCode(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:48:            'last_error_message' => 
+$document->lastErrorMessage(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:49:            'queued_at' => $document->queuedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:50:            'sent_at' => $document->sentAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:51:            'accepted_at' => $document->acceptedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:52:            'rejected_at' => $document->rejectedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:53:            'external_system_id' => 
+$document->externalSystemId(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:111:            'totals_payload' => $document->totalsPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:112:            'raw_input' => $document->rawInput(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:113:            'unsigned_xml_path' => 
+$document->unsignedXmlPath(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:114:            'signed_xml_path' => $document->signedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:115:            'ted_xml' => $document->tedXml(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:116:            'last_error_code' => $document->lastErrorCode(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:117:            'last_error_message' => 
+$document->lastErrorMessage(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:118:            'queued_at' => $document->queuedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:119:            'sent_at' => $document->sentAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:120:            'accepted_at' => $document->acceptedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:121:            'rejected_at' => $document->rejectedAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRe
+pository.php:122:        ]);
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:9:{
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:10: 
+   public function __construct(
+> app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:11: 
+       private readonly SiiSeedXmlSignerService $seedXmlSignerService,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:12: 
+       private readonly SiiRequestThrottleService $requestThrottleService,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:13: 
+   ) {
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:14: 
+   }
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:15: 
+   public function authenticate(
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:16: 
+       string $environment,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:17: 
+       string $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:18: 
+       string $certificateBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:19: 
+       string $modulusBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:47: 
+       }
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:48:
+> app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:49: 
+       $signedSeedXml = $this->seedXmlSignerService->sign(
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:50: 
+           seed: $seed,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:51: 
+           privateKeyPem: $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:52: 
+           certificateBase64: $certificateBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:53: 
+           modulusBase64: $modulusBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:54: 
+           exponentBase64: $exponentBase64
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:55: 
+       );
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:56:
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService.php:57: 
+       $this->requestThrottleService->wait($environment);
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:6:use 
+DOMDocument;
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:7:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:8:final class 
+SiiSeedXmlSignerService
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:9:{
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:10:    
+private const XMLDSIG_NS =
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:11:        
+'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:12:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:13:    
+private const C14N_ALGORITHM =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:14:        
+'http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:15:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:16:    
+private const SIGNATURE_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:17:        
+'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:18:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:19:    
+private const DIGEST_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:20:        
+'http://www.w3.org/2000/09/xmldsig#sha1';
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:21:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:22:    
+private const ENVELOPED_SIGNATURE_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:23:        
+'http://www.w3.org/2000/09/xmldsig#enveloped-signature';
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:24:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:25:    public 
+function sign(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:26:        
+string $seed,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:27:        
+string $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:28:        
+string $certificateBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:29:        
+string $modulusBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:30:        
+string $exponentBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:31:    ): 
+string {
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:159:        
+$signatureNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:160:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:161:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:162:          
+      'Signature'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:163:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:164:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:165:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:166:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:167:         
+* SIGNED INFO
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:168:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:169:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:170:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:171:        
+$signedInfoNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:172:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:173:          
+      self::XMLDSIG_NS,
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:174:          
+      'SignedInfo'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:175:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:176:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:177:        
+$canonicalizationMethodNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:178:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:179:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:180:          
+      'CanonicalizationMethod'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:181:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:182:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:183:        
+$canonicalizationMethodNode->setAttribute(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:184:          
+  'Algorithm',
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:185:          
+  self::C14N_ALGORITHM
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:186:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:187:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:188:        
+$signatureMethodNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:189:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:190:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:191:          
+      'SignatureMethod'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:192:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:193:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:194:        
+$signatureMethodNode->setAttribute(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:195:          
+  'Algorithm',
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:196:          
+  self::SIGNATURE_ALGORITHM
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:197:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:198:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:205:        
+$referenceNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:206:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:207:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:208:          
+      'Reference'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:209:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:210:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:211:        
+$referenceNode->setAttribute(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:212:          
+  'URI',
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:213:          
+  ''
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:214:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:215:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:220:        
+$transformsNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:221:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:222:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:223:          
+      'Transforms'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:224:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:225:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:226:        
+$transformNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:227:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:228:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:229:          
+      'Transform'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:230:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:231:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:232:        
+$transformNode->setAttribute(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:233:          
+  'Algorithm',
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:234:          
+  self::ENVELOPED_SIGNATURE_ALGORITHM
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:235:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:236:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:245:        
+$digestMethodNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:246:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:247:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:248:          
+      'DigestMethod'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:249:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:250:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:251:        
+$digestMethodNode->setAttribute(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:252:          
+  'Algorithm',
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:253:          
+  self::DIGEST_ALGORITHM
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:254:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:255:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:260:        
+$digestValueNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:261:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:262:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:263:          
+      'DigestValue'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:264:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:265:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:266:        
+$digestValueNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:267:          
+  $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:268:          
+      $digestValue
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:269:          
+  )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:270:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:283:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:284:        /*
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:285:         
+* SignedInfo completo.
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:286:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:287:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:288:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:289:          
+  $canonicalizationMethodNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:290:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:291:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:292:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:293:          
+  $signatureMethodNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:294:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:295:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:296:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:297:          
+  $referenceNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:298:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:299:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:300:        
+$signatureNode->appendChild(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:301:          
+  $signedInfoNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:302:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:303:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:304:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:305:         
+* Signature es hermano de item:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:306:         *
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:307:         
+* <getToken>
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:308:         
+*     <item>...</item>
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:309:         
+*     <Signature>...</Signature>
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:311:         *
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:312:         
+* Debe estar conectado al DOM antes de canonicalizar
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:313:         
+* SignedInfo.
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:314:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:315:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:316:        
+$getTokenNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:317:          
+  $signatureNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:318:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:319:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:320:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:321:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:324:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:325:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:326:        
+$canonicalSignedInfo =
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:327:          
+  $signedInfoNode->C14N(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:328:          
+      false,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:329:          
+      false
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:330:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:331:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:332:        
+if (
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:333:          
+  $canonicalSignedInfo === false
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:334:          
+  || $canonicalSignedInfo === ''
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:335:        ) 
+{
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:336:          
+  throw SiiAuthenticationException::because(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:337:          
+      'No fue posible canonicalizar SignedInfo de la semilla.'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:338:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:339:        }
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:340:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:341:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:342:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:343:         
+* LLAVE PRIVADA
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:344:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:345:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:366:        
+$signed =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:367:          
+  openssl_sign(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:368:          
+      $canonicalSignedInfo,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:369:          
+      $rawSignature,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:370:          
+      $privateKey,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:371:          
+      OPENSSL_ALGO_SHA1
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:372:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:373:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:374:        
+if (!$signed) {
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:375:          
+  throw SiiAuthenticationException::because(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:376:          
+      'OpenSSL no pudo firmar SignedInfo de la semilla.'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:377:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:378:        }
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:379:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:380:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:381:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:382:         
+* SIGNATURE VALUE
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:383:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:384:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:385:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:386:        
+$signatureValueNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:387:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:388:          
+      self::XMLDSIG_NS,
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:389:          
+      'SignatureValue'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:390:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:391:
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:392:        
+$signatureValueNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:393:          
+  $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:394:          
+      base64_encode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:395:          
+          $rawSignature
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:396:          
+      )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:397:          
+  )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:398:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:399:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:400:        
+$signatureNode->appendChild(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:401:          
+  $signatureValueNode
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:402:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:403:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:404:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:405:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:406:         
+* KEY INFO
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:407:         
+* ======================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:408:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:409:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:410:        
+$keyInfoNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:411:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:412:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:413:          
+      'KeyInfo'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:414:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:415:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:416:        
+$keyValueNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:417:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:418:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:419:          
+      'KeyValue'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:420:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:421:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:422:        
+$rsaKeyValueNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:423:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:424:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:425:          
+      'RSAKeyValue'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:426:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:427:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:428:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:429:         
+* Modulus
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:430:         
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:431:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:432:        
+$modulusNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:433:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:434:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:435:          
+      'Modulus'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:436:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:437:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:438:        
+$modulusNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:439:          
+  $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:440:          
+      $modulusBase64
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:441:          
+  )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:442:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:448:        
+$exponentNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:449:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:450:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:451:          
+      'Exponent'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:452:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:453:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:454:        
+$exponentNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:455:          
+  $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:456:          
+      $exponentBase64
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:457:          
+  )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:458:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:476:        
+$x509DataNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:477:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:478:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:479:          
+      'X509Data'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:480:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:481:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:482:        
+$x509CertificateNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:483:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:484:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:485:          
+      'X509Certificate'
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:486:          
+  );
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:487:
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:488:        
+$x509CertificateNode->appendChild(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:489:          
+  $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:490:          
+      $certificateBase64
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:491:          
+  )
+  app\Modules\Dte\Infrastructure\Sii\SiiSeedXmlSignerService.php:492:        );
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:15:    
+public function __construct(
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:16:      
+  private readonly SiiRequestThrottleService $requestThrottleService,
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:17:      
+  private readonly SiiSeedXmlSignerService $seedXmlSignerService,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:18:    ) 
+{
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:19:    }
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:20:    /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:21:     
+* ==========================================================
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:22:     
+* XMLDSIG
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:23:     
+* ==========================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:24:     
+*/
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:25:
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:26:    
+// private const XMLDSIG_NS =
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:27:    
+//     'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:28:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:29:    
+// private const C14N_ALGORITHM =
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:30:    
+//     'http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:31:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:32:    
+// private const SIGNATURE_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:33:    
+//     'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:34:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:35:    
+// private const DIGEST_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:36:    
+//     'http://www.w3.org/2000/09/xmldsig#sha1';
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:37:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:38:    
+// private const ENVELOPED_SIGNATURE_ALGORITHM =
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:39:    
+//     'http://www.w3.org/2000/09/xmldsig#enveloped-signature';
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:40:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:41:    
+// /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:42:    
+//  * ==========================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:43:    
+//  * SOAP
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:44:    
+//  * ==========================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:45:    
+//  */
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:46:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:47:    
+private const SOAP_NS =
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:90:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:91:      
+  /*
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:92:      
+   * 3. Firmar semilla utilizando XMLDSig.
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:93:      
+   */
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:94:      
+  // $signedSeedXml =
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:95:      
+  //     $this->buildSignedSeedXml(
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:96:      
+  //         seed:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:97:      
+  //             $seed,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:98:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:99:      
+  //         privateKeyPem:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:100:     
+   //             $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:110:     
+   //     );
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:111:$sign
+edSeedXml =
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:112:     
+   $this->seedXmlSignerService->sign(
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:113:     
+       seed:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:114:     
+           $seed,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:115:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:116:     
+       privateKeyPem:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:117:     
+           $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:118:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:119:     
+       certificateBase64:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:120:     
+           $certificateBase64,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:132:     
+       environment: $environment,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:133:     
+       tokenUrl: $tokenUrl,
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:134:     
+       signedSeedXml: $signedSeedXml,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:135:     
+   );
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:136:    }
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:137:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:138:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:139:    
+/*
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:140:     
+* ==========================================================
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:141:     
+* RESOLUCIÓN DE ENDPOINTS
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:142:     
+* ==========================================================
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:8:{
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:9:    private 
+const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:10:    // 
+private const XMLDSIG_NS =
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:11:    //     
+'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:12:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:13:    private 
+const XSI_NS =
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:14:        
+'http://www.w3.org/2001/XMLSchema-instance';
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:15:    public 
+function build(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:16:        array 
+$data
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:17:    ): string
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:18:    {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:19:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:30:        //    
+ 'http://www.w3.org/2000/xmlns/',
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:31:        //    
+ 'xmlns:ds',
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:32:        //    
+ self::XMLDSIG_NS
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:33:        // );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:34:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:35:        
+$dte->setAttributeNS(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:36:            
+'http://www.w3.org/2000/xmlns/',
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:37:            
+'xmlns:xsi',
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:38:            
+self::XSI_NS
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:39:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:40:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:3:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:4:use 
+App\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException;
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:5:use 
+App\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService;
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:6:use 
+DOMDocument;
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:7:use 
+DOMElement;
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:8:use DOMXPath;
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:9:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:10:class 
+DteXmlSignatureService
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:11:{
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:12:    private 
+const XMLDSIG_NS= 'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:13:    private 
+const C14N_ALGORITHM = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:14:    private 
+const SIGNATURE_ALGORITHM = 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:15:    private 
+const DIGEST_ALGORITHM = 'http://www.w3.org/2000/09/xmldsig#sha1';
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:16:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:17:    public 
+function __construct(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:18:        
+private readonly XmlDsigIntegrityService $integrityService
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:19:    ) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:20:    }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:21:    public 
+function signDte(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:22:        
+string $xmlWithTed,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:23:        
+string $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:24:        
+string $certificateBase64,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:25:        
+string $modulusBase64,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:26:        
+string $exponentBase64
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:86:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:87:        
+$existingSignature = $xpath->query(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:88:            
+"/*[local-name()='DTE']/*[local-name()='Signature' and 
+namespace-uri()='".self::XMLDSIG_NS."']"
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:89:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:90:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:91:        
+if($existingSignature !== false && $existingSignature->length > 0)
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:92:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:93:            
+throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:94:            
+    'El XML ya contiene una firma XMLDSig; no corresponde firmarlo nuevamente.'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:95:            
+);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:96:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:97:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:98:        
+$dteNamespace = $dteNode->namespaceURI;
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:99:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:100:        
+if($dteNamespace === null || trim($dteNamespace) === '')
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:101:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:102:           
+ throw InvalidSignatureXmlException::because(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:146:        
+$signatureNode =
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:147:           
+ $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:148:           
+     self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:149:           
+     'Signature'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:150:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:151:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:152:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:153:        /*
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:154:        * 
+============================================================
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:155:        * 
+Canonicalizar Documento con su contexto XML DEFINITIVO
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:156:        * 
+============================================================
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:186:           
+     )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:187:           
+ );
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:188:        
+$signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'SignedInfo');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:189:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:190:        
+$canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 
+'CanonicalizationMethod');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:191:        
+$canonicalizationMethodNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:192:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:193:        
+$signatureMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 
+'SignatureMethod');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:194:        
+$signatureMethodNode->setAttribute('Algorithm', self::SIGNATURE_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:195:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:196:        
+$referenceNode = $dom->createElementNS(self::XMLDSIG_NS, 'Reference');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:197:        
+$referenceNode->setAttribute('URI', "#{$documentXmlId}");
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:198:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:199:        
+//Transforms
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:200:        /*
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:201:        
+$transformsNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transforms');
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:202:        
+$transformNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transform');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:203:        
+$transformNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:204:        
+$transformsNode->appendChild($transformNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:205:        */
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:206:        
+$digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestMethod');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:207:        
+$digestMethodNode->setAttribute('Algorithm', self::DIGEST_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:208:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:209:        
+$digestValueNode = $dom->createElementNS(self::XMLDSIG_NS,'DigestValue');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:210:        
+$digestValueNode->appendChild($dom->createTextNode($digestValue));
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:211:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:212:        
+//$referenceNode->appendChild($transformsNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:213:        
+$referenceNode->appendChild($digestMethodNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:214:        
+$referenceNode->appendChild($digestValueNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:215:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:216:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:217:           
+ $canonicalizationMethodNode
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:218:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:219:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:220:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:221:           
+ $signatureMethodNode
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:222:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:223:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:224:        
+$signedInfoNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:225:           
+ $referenceNode
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:226:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:227:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:228:        
+$signatureNode->appendChild(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:229:           
+ $signedInfoNode
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:230:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:231:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:232:        
+$dteNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:233:           
+ $signatureNode
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:234:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:235:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:236:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:237:        
+$canonicalSignedInfo = $signedInfoNode->C14N(false, false);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:238:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:239:        
+if($canonicalSignedInfo === false || $canonicalSignedInfo === '')
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:240:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:241:           
+ throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:242:           
+     'No fue posible canonicalizar el nodo SignedInfo antes de firmarlo.'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:243:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:244:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:245:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:246:        
+$privateKey = openssl_pkey_get_private($privateKeyPem);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:247:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:248:        
+if($privateKey === false)
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:249:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:250:           
+ throw InvalidSignatureXmlException::because(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:256:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:257:        
+$signed = openssl_sign(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:258:           
+ $canonicalSignedInfo,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:259:           
+ $rawSignature,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:260:           
+ $privateKey,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:261:           
+ OPENSSL_ALGO_SHA1
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:262:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:263:        // 
+No es nesesario liverar la llave privada explícitamente, ya que desde la 
+version 8.1 de PHP, el manejo de recursos de claves ha sido mejorado y se 
+liberan automáticamente al finalizar su uso. Sin embargo, si se desea liberar 
+explícitamente, se puede hacer con openssl_free_key($privateKey), aunque no es 
+obligatorio.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:264:        // 
+openssl_free_key($privateKey);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:265:        
+if(!$signed)
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:266:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:267:           
+ throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:268:           
+     'OpenSSL no pudo firmar SignedInfo del DTE.'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:269:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:270:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:271:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:272:        
+$signatureValueNode =
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:273:           
+ $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:274:           
+     self::XMLDSIG_NS,
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:275:           
+     'SignatureValue'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:276:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:277:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:278:        
+$signatureValueNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:279:           
+ $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:280:           
+     $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:281:           
+         base64_encode(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:282:           
+             $rawSignature
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:283:           
+         )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:284:           
+     )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:285:           
+ )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:286:        );
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:287:        
+$signatureNode->appendChild($signatureValueNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:288:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:289:        
+$keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyInfo');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:290:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:291:        
+$keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'KeyValue');
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:292:        
+$rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'RSAKeyValue');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:293:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:294:        
+$modulusNode =
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:295:           
+ $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:296:           
+     self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:297:           
+     'Modulus'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:298:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:299:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:300:        
+$modulusNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:301:           
+ $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:302:           
+     $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:303:           
+         $modulusBase64
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:304:           
+     )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:306:        );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:307:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:308:        
+$ExponentNode = $dom->createElementNS(self::XMLDSIG_NS, 'Exponent');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:309:        
+$ExponentNode->appendChild($dom->createTextNode($exponentBase64));
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:310:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:311:        
+$rsaKeyValueNode->appendChild($modulusNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:312:        
+$rsaKeyValueNode->appendChild($ExponentNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:313:        
+$keyValueNode->appendChild($rsaKeyValueNode);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:314:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:315:        
+$x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'X509Data');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:316:        
+$x509CertificateNode = $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:317:           
+                         self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:318:           
+                         'X509Certificate'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:319:           
+                     );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:320:        
+$x509CertificateNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:321:           
+ $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:322:           
+     $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:323:           
+         $certificateBase64
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:324:           
+     )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:325:           
+ )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:345:        
+$signedXml = $dom->saveXML();
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:346:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:347:        
+if($signedXml === false || $signedXml === '')
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:348:        {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:349:           
+ throw InvalidSignatureXmlException::because(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:350:           
+     'No fue posible serializar el XML firmado del DTE.'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:351:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:352:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:353:        /*
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:354:        * 
+Verificamos el XML FINAL después de serializarlo.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:355:        *
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:357:        *
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:358:        * 
+1. DigestValue de Documento.
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:359:        * 
+2. SignatureValue de SignedInfo.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:360:        */
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:361:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:362:        if 
+(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:363:           
+ !hash_equals(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:364:           
+     $digestValue,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:365:           
+     $digestAntesDeSerializar
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:366:           
+ )
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:367:        ) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:380:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:381:        
+return [
+> app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:382:           
+ 'signed_xml' => $signedXml,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:383:           
+ 'tmst_firma' => $tmstFirma,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:384:           
+ 'document_xml_id' => $documentXmlId,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:385:        ];
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:386:    }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:387:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:388:    
+private function wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:389:        
+string $value,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService.php:390:        
+int $lineLength = 64
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:35: 
+       $signedDom->formatOutput = false;
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:36:
+> app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:37: 
+       $loaded = @$signedDom->loadXml($signedXml);
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:38:
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:39: 
+       if(!$loaded)
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:40: 
+       {
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:41: 
+           throw SiiBoletaSendException::because(
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:42: 
+               'No fue posible cargar el XML firmado de la boleta para 
+construir el sobre de envío.'
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:43: 
+           );
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:44: 
+       }
+  app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:45:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:5:use 
+App\Modules\Dte\Domain\Entities\DteDocument;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException;
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:7:use 
+App\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:8:use 
+DOMDocument;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:9:use 
+DOMElement;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:10:use 
+DOMXPath;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:11:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:12:
+  
+app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:13:class 
+EnvioDteEnvelopeBuilderService
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:14:{
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:15:    
+private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:16:    
+private const XMLDSIG_NS ='http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:17:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:18:    
+public function __construct(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:19:    
+    private readonly XmlDsigIntegrityService $integrityService
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:20:    
+) {}
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:21:    
+public function build(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:22:    
+    DteDocument $document,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:23:    
+    Company $company,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:24:    
+    string $signedDteXml
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:25:    
+):array
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:26:    
+{
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:27:    
+    $signedDteDom = new DOMDocument('1.0','ISO-8859-1');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:29:    
+    $signedDteDom->formatOutput = false;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:30:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:31:    
+    $loaded = @$signedDteDom->loadXML($signedDteXml);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:32:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:33:    
+    if(!$loaded)
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:34:    
+    {
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:35:    
+        throw InvalidSignatureXmlException::because(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:36:    
+            'No fue posible cargar el XML firmado del DTE para construir el 
+EnvioDTE.'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:37:    
+        );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:38:    
+    }
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:39:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:93:    
+    //     'http://www.w3.org/2000/xmlns/',
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:94:    
+    //     'xmlns:ds',
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:95:    
+    //     self::XMLDSIG_NS
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:96:    
+    // );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:97:    
+    $envioDte->setAttributeNS(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:98:    
+        'http://www.w3.org/2001/XMLSchema-instance',
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:99:    
+        'xsi:schemaLocation',
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:100:   
+         'http://www.sii.cl/SiiDte EnvioDTE_v10.xsd'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:101:   
+     );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:102:   
+     $envioDte->setAttribute('version', '1.0');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:103:   
+     $envioDom->appendChild($envioDte);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:132:   
+     
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:133:   
+     |
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:134:   
+     | El DTE ya contiene una firma XMLDSig válida.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:135:   
+     | No debemos importarlo a otro DOMDocument porque LIBXML puede
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:136:   
+     | reorganizar namespaces y alterar la canonicalización del Documento.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:137:   
+     |
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:138:   
+     */
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:139:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:140:   
+     $placeholder = 'SIGNED_DTE_XML_PLACEHOLDER';
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:141:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService.php:142:   
+     $setDte->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:3:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:4:use 
+App\Modules\Dte\Domain\Exceptions\InvalidSignatureXmlException;
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:5:use 
+App\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:6:use 
+DOMDocument;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:7:use 
+DOMElement;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:8:use 
+DOMXPath;
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:9:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:10:class 
+EnvioDteSignatureService
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:11:{
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:12:    
+private const XMLDSIG_NS = 'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:13:    
+private const C14N_ALGORITHM = 
+'http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:14:    
+private const SIGNATURE_ALGORITHM = 
+'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:15:    
+private const DIGEST_ALGORITHM = 'http://www.w3.org/2000/09/xmldsig#sha1';
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:16:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:17:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:18:    
+public function __construct(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:19:        
+private readonly XmlDsigIntegrityService $integrityService
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:20:    ) {
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:21:    }
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:22:    
+public function SignSetDte(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:23:        
+string $envioXml,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:24:        
+string $privateKeyPem,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:25:        
+string $certificateBase64,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:26:        
+string $modulusBase64,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:27:        
+string $exponentBase64
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:82:        
+$signatureNode =
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:83:          
+  $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:84:          
+      self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:85:          
+      'ds:Signature'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:86:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:87:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:88:        
+$envioNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:89:          
+  $signatureNode
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:90:        );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:91:        
+$canonicalSetDte = $setDteNode->C14N(false,false);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:92:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:106:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:107:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:108:        
+//$signatureNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Signature');
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:109:        
+$signedInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:SignedInfo');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:110:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:111:        
+$canonicalizationMethodNode = $dom->createElementNS(self::XMLDSIG_NS, 
+'ds:CanonicalizationMethod');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:112:        
+$canonicalizationMethodNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:113:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:114:        
+$signatureMethodNode = 
+$dom->createElementNS(self::XMLDSIG_NS,'ds:SignatureMethod');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:115:        
+$signatureMethodNode->setAttribute('Algorithm', self::SIGNATURE_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:116:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:117:        
+$referenceNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Reference');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:118:        
+$referenceNode->setAttribute('URI', '#'.$setDteId);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:119:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:120:        
+$transformsNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transforms');
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:121:        
+$transformNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Transform');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:122:        
+$transformNode->setAttribute('Algorithm', self::C14N_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:123:        
+$transformsNode->appendChild($transformNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:124:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:125:        
+$digestMethodNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:DigestMethod');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:126:        
+$digestMethodNode->setAttribute('Algorithm', self::DIGEST_ALGORITHM);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:127:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:128:        
+$digestValueNode = $dom->createElementNS(self::XMLDSIG_NS, 'ds:DigestValue');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:129:        
+$digestValueNode->appendChild($dom->createTextNode($digestValue));
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:130:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:131:        
+$referenceNode->appendChild($transformsNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:132:        
+$referenceNode->appendChild($digestMethodNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:133:        
+$referenceNode->appendChild($digestValueNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:134:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:135:        
+$signedInfoNode->appendChild($canonicalizationMethodNode);
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:136:        
+$signedInfoNode->appendChild($signatureMethodNode);
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:137:        
+$signedInfoNode->appendChild($referenceNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:138:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:139:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:140:        
+/*
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:141:        
+* Crear Signature antes de canonicalizar SetDTE.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:142:        *
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:143:        
+* Signature será hermano de SetDTE,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:144:        
+* por lo que no forma parte de su contenido firmado.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:145:        
+*/
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:148:        
+* hermano de SetDTE.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:149:        *
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:150:        
+* Aquí solamente debemos incorporar SignedInfo
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:151:        
+* dentro de ese Signature existente.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:152:        
+*/
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:153:        
+$signatureNode->appendChild(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:154:         
+   $signedInfoNode
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:155:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:156:        
+/* Ahora canonicalizamos SetDTE dentro del
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:157:        
+* contexto definitivo de EnvioDTE.
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:158:        
+*/
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:159:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:160:        
+$canonicalSignedInfo = $signedInfoNode->C14N(false,false);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:161:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:162:        
+if($canonicalSignedInfo === false || $canonicalSignedInfo === '')
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:163:        {
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:164:         
+   throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:165:         
+       'No fue posible canonicalizar SignedInfo de SetDTE.'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:166:         
+   );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:167:        }
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:168:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:169:        
+$privateKey = openssl_pkey_get_private($privateKeyPem);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:170:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:171:        
+if($privateKey === false)
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:172:        {
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:173:         
+   throw InvalidSignatureXmlException::because(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:178:        
+$rawSignature = '';
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:179:        
+$signed = openssl_sign(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:180:         
+   $canonicalSignedInfo,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:181:         
+   $rawSignature,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:182:         
+   $privateKey,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:183:         
+   OPENSSL_ALGO_SHA1
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:184:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:185:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:186:        
+if(!$signed)
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:187:        {
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:188:         
+   throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:189:         
+       'OpenSLL no pudo firmar SignedInfo del SetDTE.'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:190:         
+   );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:191:        }
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:192:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:193:        
+$signatureValueNode =
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:194:         
+           $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:195:         
+               self::XMLDSIG_NS,
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:196:         
+               'ds:SignatureValue'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:197:         
+           );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:198:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:199:        
+$signatureValueNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:200:         
+   $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:201:         
+       $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:202:         
+           base64_encode(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:203:         
+               $rawSignature
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:204:         
+           )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:205:         
+       )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:206:         
+   )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:207:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:208:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:209:        
+$signatureNode->appendChild($signatureValueNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:210:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:211:        
+$keyInfoNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyInfo');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:212:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:213:        
+$keyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:KeyValue');
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:214:        
+$rsaKeyValueNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:RSAKeyValue');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:215:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:216:        
+$modulusNode =
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:217:         
+   $dom->createElementNS(
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:218:         
+       self::XMLDSIG_NS,
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:219:         
+       'ds:Modulus'
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:220:         
+   );
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:221:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:222:        
+$modulusNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:223:         
+   $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:224:         
+       $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:225:         
+           $modulusBase64
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:226:         
+       )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:228:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:229:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:230:        
+$exponentNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:Exponent');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:231:        
+$exponentNode->appendChild($dom->createTextNode($exponentBase64));
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:232:
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:233:        
+$rsaKeyValueNode->appendChild($modulusNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:234:        
+$rsaKeyValueNode->appendChild($exponentNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:235:        
+$keyValueNode->appendChild($rsaKeyValueNode);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:236:
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:237:        
+$x509DataNode = $dom->createElementNS(self::XMLDSIG_NS,'ds:X509Data');
+> app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:238:        
+$x509CertificateNode = 
+$dom->createElementNS(self::XMLDSIG_NS,'ds:X509Certificate');
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:239:        
+$x509CertificateNode->appendChild(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:240:         
+   $dom->createTextNode(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:241:         
+       $this->wrapBase64(
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:242:         
+           $certificateBase64
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:243:         
+       )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:244:         
+   )
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:245:        
+);
+  app\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService.php:246:        
+$x509DataNode->appendChild($x509CertificateNode);
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:5:use 
+App\Modules\Dte\Domain\Exceptions\InvalidTedDataException;
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:6:
+> app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:7:class 
+TedSignatureService
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:8:{
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:9:    public 
+function singDdXml(string $ddXmlUtf8, string $privateKeyPem):string
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:10:    {
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:11:        /*
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:12:        
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:13:        | 
+Normalización DD exigida por SII
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:14:        
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:15:        |
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:9:use 
+DOMXPath;
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:10:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:11:final 
+class XmlDsigIntegrityService
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:12:{
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:13:    
+private const XMLDSIG_NS =
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:14:        
+'http://www.w3.org/2000/09/xmldsig#';
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:15:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:16:    public 
+function assertAllSignaturesValid(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:17:        
+string $xml
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:18:    ): 
+void {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:19:        
+$dom = new DOMDocument();
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:20:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:21:        
+$dom->preserveWhiteSpace = true;
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:22:        
+$dom->formatOutput = false;
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:40:           
+ "//*[local-name()='Signature' "
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:41:           
+ . "and namespace-uri()='"
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:42:           
+ . self::XMLDSIG_NS
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:43:           
+ . "']"
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:44:        );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:45:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:46:        if 
+(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:47:           
+ $signatures === false
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:48:           
+ || $signatures->length === 0
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:49:        ) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:50:           
+ throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:51:           
+     'El XML no contiene firmas XMLDSig para verificar.'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:52:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:53:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:54:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:55:        
+foreach ($signatures as $signatureNode) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:56:           
+ if (
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:57:           
+     !$signatureNode
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:58:           
+     instanceof DOMElement
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:59:           
+ ) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:74:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:75:         * 
+==================================================
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:76:         * 
+SignedInfo
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:77:         * 
+==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:78:         */
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:79:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:80:        
+$signedInfoNode =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:81:           
+ $this->firstElement(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:82:           
+     $xpath,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:83:           
+     "./*[local-name()='SignedInfo']",
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:84:           
+     $signatureNode,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:85:           
+     'SignedInfo'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:86:           
+ );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:87:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:88:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:89:         * 
+==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:90:         * 
+Reference
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:91:         * 
+==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:92:         */
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:93:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:95:           
+ $this->firstElement(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:96:           
+     $xpath,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:97:           
+     "./*[local-name()='SignedInfo']"
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:98:           
+     . "/*[local-name()='Reference']",
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:99:           
+     $signatureNode,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:100:          
+      'Reference'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:101:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:102:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:103:        
+$uri =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:104:          
+  trim(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:105:          
+      $referenceNode
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:115:        ) 
+{
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:116:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:117:          
+      "La firma contiene un Reference URI no soportado: {$uri}"
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:118:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:119:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:120:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:121:        
+$targetId =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:122:          
+  substr(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:123:          
+      $uri,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:124:          
+      1
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:125:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:146:          
+  $this->firstElement(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:147:          
+      $xpath,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:148:          
+      "./*[local-name()='SignedInfo']"
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:149:          
+      . "/*[local-name()='Reference']"
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:150:          
+      . "/*[local-name()='DigestValue']",
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:151:          
+      $signatureNode,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:152:          
+      'DigestValue'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:153:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:154:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:155:        
+$expectedDigest =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:156:          
+  trim(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:206:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:207:         
+* ==================================================
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:208:         
+* SignatureValue
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:209:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:210:         
+*/
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:211:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:212:        
+$signatureValueNode =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:213:          
+  $this->firstElement(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:214:          
+      $xpath,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:215:          
+      "./*[local-name()='SignatureValue']",
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:216:          
+      $signatureNode,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:217:          
+      'SignatureValue'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:218:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:219:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:220:        
+$signatureValue =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:221:          
+  base64_decode(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:222:          
+      preg_replace(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:223:          
+          '/\s+/',
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:224:          
+          '',
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:225:          
+          $signatureValueNode
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:226:          
+              ->textContent
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:227:          
+      ),
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:228:          
+      true
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:229:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:230:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:231:        
+if ($signatureValue === false) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:232:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:233:          
+      'SignatureValue no contiene Base64 válido.'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:234:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:235:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:236:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:237:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:238:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:239:         
+* Certificado X509
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:240:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:241:         
+*/
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:284:        
+if ($publicKey === false) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:285:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:286:          
+      'No fue posible obtener la llave pública del certificado XMLDSig.'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:287:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:288:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:289:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:290:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:291:         
+* ==================================================
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:292:         
+* Canonicalizar SignedInfo FINAL
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:293:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:294:         
+*/
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:295:
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:296:        
+$canonicalSignedInfo =
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:297:          
+  $signedInfoNode->C14N(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:298:          
+      false,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:299:          
+      false
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:300:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:301:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:302:        
+if (
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:303:          
+  $canonicalSignedInfo === false
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:304:          
+  || $canonicalSignedInfo === ''
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:305:        ) 
+{
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:306:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:307:          
+      'No fue posible canonicalizar SignedInfo durante la verificación.'
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:308:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:309:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:310:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:311:        /*
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:312:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:313:         
+* Verificación RSA-SHA1
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:314:         
+* ==================================================
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:315:         
+*/
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:317:        
+$verification =
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:318:          
+  openssl_verify(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:319:          
+      $canonicalSignedInfo,
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:320:          
+      $signatureValue,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:321:          
+      $publicKey,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:322:          
+      OPENSSL_ALGO_SHA1
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:323:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:324:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:325:        
+if ($verification !== 1) {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:326:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:327:          
+      "SignatureValue inválido para la referencia {$uri}."
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:328:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:329:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:330:    }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:331:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:332:    
+private function findElementById(
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:333:        
+DOMXPath $xpath,
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:334:        
+string $id
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:335:    ): 
+DOMElement {
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:377:        ) 
+{
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:378:          
+  throw InvalidSignatureXmlException::because(
+> app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:379:          
+      "No se encontró {$name} durante la validación XMLDSig."
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:380:          
+  );
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:381:        }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:382:
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:383:        
+return $node;
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:384:    }
+  app\Modules\Dte\Infrastructure\Xml\XmlDsigIntegrityService.php:385:}
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:37:  
+                  'cafId' => $result->cafId,
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:38:  
+                  'status' => $result->status,
+> app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:39:  
+                  'unsignedXmlPath' => $result->unsignedXmlPath,
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:40:  
+                  'tedXml' => $result->tedXml,
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:41:  
+              ]),
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:42:  
+          ],200);
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:43:
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:44:  
+      } catch (DomainException $e) {
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:45:  
+          return response()->json([
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:46:  
+              'message' => 'No fue posible construir el TED del documento.',
+  app\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController.php:47:  
+              'error' => $e->getMessage(),
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:38:  
+                  'status' => $result->status,
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:39:  
+                  'siiEnvironment' => $result->siiEnvironment,
+> app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:40:  
+                  'unsignedXmlPath' => $result->unsignedXmlPath,
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:41:  
+              ]),
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:42:  
+          ],200);
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:43:  
+      } catch (DomainException $e) {
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:44:  
+          return response()->json([
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:45:  
+              'message' => 'No fue posible construir el Xml del documento.',
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:46:  
+              'error' => $e->getMessage(),
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:47:  
+          ],422);
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController.php:48:  
+      }
+  
+app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:11:use 
+Laravel\SerializableClosure\Serializers\Signed;
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:12:
+> app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:13:cla
+ss DteXmlSignController extends Controller
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:14:{
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:15:   
+ public function __construct(
+> app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:16:   
+     private readonly SignDteXmlUseCase $signDteXmlUseCase,
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:17:   
+ )
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:18:   
+ {}
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:19:
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:20:   
+ public function sign(SignDteXmlRequest $request): JsonResponse
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:21:   
+ {
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:22:   
+     try{
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:23:   
+         $result= $this->signDteXmlUseCase->execute(
+  app\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController.php:24:   
+             new SignDteXmlInputDto(
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:4:use 
+Illuminate\Foundation\Http\FormRequest;
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:5:
+> app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:6:final 
+class AssignCafRangeRequest extends FormRequest
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:7:{
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:8:    
+public function authorize():bool
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:9:    {
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:10:     
+   return true;
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:11:    }
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:12:
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:13:    
+public function rules():array
+  app\Modules\Dte\Presentation\Http\Requests\AssignCafRangeRequest.php:14:    {
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:4
+:use Illuminate\Foundation\Http\FormRequest;
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:5:
+> app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:6
+:class SendSignedBoletaToSiiRequest extends FormRequest
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:7:{
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:8: 
+   public function  authorize():bool
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:9: 
+   {
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:1
+0:        return true;
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:1
+1:    }
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:12:
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:1
+3:    protected function prepareForValidation():void
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedBoletaToSiiRequest.php:1
+4:    {
+  
+app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:4:use 
+Illuminate\Foundation\Http\FormRequest;
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:5:
+> app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:6:cl
+ass SendSignedDteToSiiRequest extends FormRequest
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:7:{
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:8:  
+  public function authorize():bool
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:9:  
+  {
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:10: 
+       return true;
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:11: 
+   }
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:12:
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:13: 
+   protected function prepareForValidation():void
+  app\Modules\Dte\Presentation\Http\Requests\SendSignedDteToSiiRequest.php:14: 
+   {
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:3:
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:4:use 
+Illuminate\Foundation\Http\FormRequest;
+> app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:5:class 
+SignDteXmlRequest extends FormRequest
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:6:{
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:7:    
+public function authorize(): bool
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:8:    {
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:9:        
+return true;
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:10:    }
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:11:
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:12:    
+protected function prepareForValidation(): void
+  app\Modules\Dte\Presentation\Http\Requests\SignDteXmlRequest.php:13:    {
+  app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:18:      
+      'status' => $this->resource->status,
+  app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:19:      
+      'sii_environment' => $this->resource->siiEnvironment,
+> app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:20:      
+      'unsigned_xml_path' => $this->resource->unsignedXmlPath,
+  app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:21:      
+  ];
+  app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:22:    }
+  app\Modules\Dte\Presentation\Http\Resources\BuiltDteXmlResource.php:23:}
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:17:         
+   'caf_id' => $this->resource->cafId,
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:18:         
+   'status' => $this->resource->status,
+> app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:19:         
+   'unsigned_xml_path' => $this->resource->unsignedXmlPath,
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:20:         
+   'ted_xml' => $this->resource->tedXml,
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:21:        
+];
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:22:    }
+  app\Modules\Dte\Presentation\Http\Resources\BuiltTedResource.php:23:}
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:5:use 
+Illuminate\Http\Resources\Json\JsonResource;
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:6:
+> app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:7:class 
+SignedDteXmlResource extends JsonResource
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:8:{
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:9:    
+public function toArray(Request $request): array
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:10:    {
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:11:     
+   return [
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:12:     
+       'document_id' => $this->resource->documentId,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:13:     
+       'external_id' => $this->resource->externalId,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:14:     
+       'company_id' => $this->resource->companyId,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:15:     
+       'dte_type' => $this->resource->dteType,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:19:     
+       'tmst_firma' => $this->resource->tmstFirma,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:20:     
+       'status' => $this->resource->status,
+> app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:21:     
+       'signed_xml_path' => $this->resource->signedXmlPath,
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:22:     
+   ];
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:23:    }
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:24:
+  app\Modules\Dte\Presentation\Http\Resources\SignedDteXmlResource.php:25:}
+  app\Modules\Dte\Presentation\Http\Routes\api.php:11:use 
+App\Modules\Dte\Presentation\Http\Controllers\DteTedBuildController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:12:use 
+App\Modules\Dte\Presentation\Http\Controllers\DteXmlBuildController;
+> app\Modules\Dte\Presentation\Http\Routes\api.php:13:use 
+App\Modules\Dte\Presentation\Http\Controllers\DteXmlSignController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:14:use 
+App\Modules\Dte\Presentation\Http\Controllers\ExternalSystemController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:15:use 
+App\Modules\Dte\Presentation\Http\Controllers\FolioController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:16:use 
+App\Modules\Dte\Presentation\Http\Controllers\FolioReservationController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:17:use 
+App\Modules\Dte\Presentation\Http\Controllers\FolioStatusController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:18:use 
+App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:19:use 
+App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:20:use 
+App\Modules\Dte\Presentation\Http\Controllers\SiiDocumentStatusController;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:21:use 
+Illuminate\Support\Facades\Route;
+  app\Modules\Dte\Presentation\Http\Routes\api.php:41:    
+Route::post('/documents/{documentId}/build-xml', 
+[DteXmlBuildController::class, 'build']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:42:    
+Route::post('/documents/{documentId}/build-ted', 
+[DteTedBuildController::class, 'build']);
+> app\Modules\Dte\Presentation\Http\Routes\api.php:43:    
+Route::post('/documents/{documentId}/sign-xml', [DteXmlSignController::class, 
+'sign']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:44:
+  app\Modules\Dte\Presentation\Http\Routes\api.php:45:    
+Route::post('/documents/{documentId}/send-to-sii', 
+[SiiDispatchController::class, 'send']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:46:    
+Route::post('/documents/{documentId}/send-boleta-to-sii', 
+[SiiBoletaDispatchController::class, 'send']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:47:
+  app\Modules\Dte\Presentation\Http\Routes\api.php:48:    
+Route::post('/documents/{documentId}/query-sii-document-status', 
+[SiiDocumentStatusController::class, 'query']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:49:
+  app\Modules\Dte\Presentation\Http\Routes\api.php:50:    
+Route::post('/dispatches/{dispatchId}/poll-upload-status', 
+[SiiDispatchController::class, 'poll']);
+  app\Modules\Dte\Presentation\Http\Routes\api.php:51:    
+Route::post('/dispatches/{dispatchId}/poll-boleta-send-status', 
+[SiiBoletaDispatchController::class, 'poll']);
+
+

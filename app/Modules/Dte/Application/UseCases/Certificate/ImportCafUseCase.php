@@ -14,6 +14,8 @@ use App\Modules\Dte\Infrastructure\Crypto\SecretEncryptionService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\CafXmlParserService;
 use Illuminate\Support\Facades\DB;
+use App\Modules\Dte\Domain\Exceptions\InvalidCafException;
+use App\Modules\Dte\Infrastructure\Crypto\SiiCafSignatureVerifier;
 
 final class ImportCafUseCase
 {
@@ -25,6 +27,7 @@ final class ImportCafUseCase
         private readonly CafXmlParserService $cafXmlParserService,
         private readonly SecretEncryptionService $secretEncryptionService,
         private readonly ValidateExternalSystemAccessService $validateExternalSystemAccessService,
+        private readonly SiiCafSignatureVerifier $cafSignatureVerifier,
         )
     {}
     public function execute(ImportCafInputDto $input): ImportCafResultDto
@@ -33,6 +36,15 @@ final class ImportCafUseCase
             throw CompanyNotFoundException::withId($input->companyId);
         }
 
+        $company = $this->companyRepository->findById(
+            $input->companyId
+        );
+
+        if($company === null) {
+            throw CompanyNotFoundException::withId(
+                $input->companyId
+            );
+        }
         $xmlContents = file_get_contents($input->tempFilePath);
 
         if($xmlContents === false)
@@ -45,7 +57,37 @@ final class ImportCafUseCase
         );
 
         $parsed = $this->cafXmlParserService->parse($xmlContents);
+        $companyRut = strtoupper(
+            trim(
+                $company->rutBody()
+                    . '-'
+                    . $company->rutDv()
+            )
+        );
 
+        $cafIssuerRut = strtoupper(
+            trim(
+                (string) $parsed['issuer_rut']
+            )
+        );
+
+        if($cafIssuerRut !== $companyRut) {
+            throw InvalidCafException::because(
+                "El RUT emisor del CAF {$cafIssuerRut} no coincide con el RUT {$companyRut} de la empresa {$input->companyId}."
+            );
+        }
+        $isSignatureValid = $this->cafSignatureVerifier->verify(
+            daXml: $parsed['da_xml'],
+            frmaValue: $parsed['frma_value'],
+            algorithm: $parsed['frma_algorithm'],
+            siiKeyId: $parsed['sii_key_id'],
+        );
+
+        if (!$isSignatureValid) {
+            throw InvalidCafException::because(
+                'La firma FRMA del CAF no es válida.'
+            );
+        }
         if(
             $this->cafRepository->existsOverlappingRange(
                 companyId: $input->companyId,
@@ -99,7 +141,7 @@ final class ImportCafUseCase
                 lastAssignedFolio:null,
                 cafXmlPath: $relativePath,
                 privateKeyPemEncrypted: $encryptedPrivateMaterial,
-                publicKeyPem: $parsed['public_key_material'] ?? null,
+                publicKeyPem: $parsed['public_key_pem'] ?? null,
                 authorizedAt: $parsed['authorized_at'] ?? null,
                 isActive:true,
 

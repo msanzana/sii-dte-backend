@@ -90,6 +90,10 @@ final class DteDocumentPersistenceMapper
                     ? (int) $model->facility_number
                     : null,
             externalBranchCode: $model->external_branch_code,
+            queuedAt: $model->queued_at?->toDateTimeImmutable(),
+            sentAt: $model->sent_at?->toDateTimeImmutable(),
+            acceptedAt: $model->accepted_at?->toDateTimeImmutable(),
+            rejectedAt: $model->rejected_at?->toDateTimeImmutable(),
         );
     }
 }

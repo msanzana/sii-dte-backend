@@ -1,0 +1,697 @@
+﻿
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:5:use 
+App\Modules\Dte\Domain\Enums\DteStatus;
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:7:
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:8:final 
+class DteTedBuildDomainService
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:9:{
+> app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:10:    
+public function assertCanBuildTed(DteDocument $document): void
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:11:    {
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:12:      
+  if($document->status() !== DteStatus::XML_BUILT->value)
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:13:      
+  {
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:14:      
+      throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:15:      
+            "El documento {$document->id()} no está en estado xml_built."
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:16:      
+      );
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:17:      
+  }
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:18:
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:19:      
+  if($document->folio() === null)
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:20:      
+  {
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:21:      
+      throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:22:      
+          "El documento {$document->id()} no tiene folio asignado."
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:23:      
+      );
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:24:      
+  }
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:25:
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:26:      
+  if ($document->unsignedXmlPath() === null || 
+trim($document->unsignedXmlPath()) === "")
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:27:      
+  {
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:28:      
+      throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:29:      
+          "El documento {$document->id()} no tiene un XML base almacenado."
+  app\Modules\Dte\Application\Services\DteTedBuildDomainService.php:30:      
+      );
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:88:   
+             contents: $xml,
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:89:   
+             targetDirectory: 'xml',
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:90:   
+             targetFileName: $filename,
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:91:   
+         );
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:92:
+> app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:93:   
+         $updatedDocument = $document->withUnsignedXmlBuilt($relativePath);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:94:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:95:   
+         $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:96:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:97:   
+         $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:98:   
+             channel: 'xml_build',
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:99:   
+             message: 'XML base del DTE construido correctamente.',
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:100:  
+              context: [
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:101:  
+                  'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:102:  
+                  'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:103:  
+                  'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:104:  
+                  'unsigned_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:105:  
+                  'document_xml_id' => $xmlData['document_xml_id'],
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:106:  
+              ],
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:107:  
+              companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:108:  
+              documentId:$saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:109:  
+              code: 'DTE_XML_BUILT'
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:110:  
+          );
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:111:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:112:  
+          return new BuildDteXmlResultDto(
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:113:  
+              documentId: $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:45:      
+      if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:46:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:47:      
+          throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:48:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:49:
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:50:      
+      $this->tedBuildDomainService->assertCanBuildTed($document);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:51:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:52:      
+      $company = $this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:53:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:54:      
+      if (!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:55:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:56:      
+          throw CompanyNotFoundException::withId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:57:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:58:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:59:      
+      $caf = $this->cafRepository->findActiveContainingFolio(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:60:      
+          companyId: $document->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:61:      
+          dteType: $document->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:62:      
+          folio: (int) $document->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:63:      
+      );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:64:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:65:      
+      if(!$caf)
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:66:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:67:      
+          throw CafNotFoundForFolioException::forDocument(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:68:      
+              companyId: $document->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:69:      
+              dteType: $document->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:70:      
+              folio: (int) $document->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:126:     
+           contents: $xmlWithTed,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:127:     
+           targetDirectory: 'xml',
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:128:     
+           targetFileName: $filename,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:129:     
+       );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:130:
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:131:     
+       $updatedDocument = $document->withTedBuilt(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:132:     
+           tedXml: $tedXml,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:133:     
+           unsignedXmlPath: $relativePath
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:134:     
+       );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:135:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:136:     
+       $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:137:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:138:     
+       $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:139:     
+           channel: 'ted_build',
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:140:     
+           message: 'TED construido e incrustado correctamente en el Xml del 
+DTE..',
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:141:     
+           context: [
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:142:     
+               'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:143:     
+               'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:144:     
+               'dte_type' => $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:145:     
+               'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:146:     
+               'caf_id' => $caf->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:147:     
+               'unsigned_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:148:     
+           ],
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:149:     
+           companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:150:     
+           documentId:$saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:151:     
+           code: 'DTE_TED_BUILT'
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:46:            $reservedFolio = 
+$this->cafRepository->reserveNextAvailableFolio(
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:47:                companyId: $document->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:48:                dteType: $document->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:49:            );
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:50:
+> app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:51:            $preparedDocument = $document->withFolioAndStatus(
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:52:                folio: $reservedFolio->folio(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:53:                status: DteStatus::FOLIO_ASSIGNED->value,
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:54:                siiEnvironment: $company->siiEnvironment(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:55:            );
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:56:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:57:            $saved = 
+$this->documentRepository->update($preparedDocument);
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:58:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:59:            $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:60:                channel: 'document:workflow',
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:61:                message: 'Documento preparado para construccion de 
+XML con folio reservado.',
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:62:                context:[
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:63:                    'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:64:                    'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:65:                    'company_id'=> $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:66:                    'dte_type'=> $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:67:                    'caf_id' => $reservedFolio->cafId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:68:                    'folio' => $reservedFolio->folio(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:69:                ],
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:70:                companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:71:                documentId: $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:286:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:287:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:288:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:289:        if(in_array($normalized,['FNA','FAN','EMP'], true))
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:290:        {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:291:            return $document->withRejectedStatus(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:292:                code: $siiCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:293:                message: $siiMessage
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:294:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:295:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:296:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:297:        return $document;
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:298:    }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:299:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:300:    private function mapBoletaResultToDocument(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:301:        $document,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:302:        ?string $siiCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:303:        ?string $siiMessage,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:304:    )
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:305:    {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:306:        $normalizedCode = mb_strtolower(trim((string) $siiCode));
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:307:        $normalizedMessage = mb_strtolower(trim((string) 
+$siiMessage));
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:308:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:309:        if(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:310:            in_array(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:311:                $normalizedCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:352:        // if(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:353:        //     str_contains($normalizedMessage, 'rechaz')
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:354:        //     || 
+in_array($normalizedCode,['rechazado','rejected'],true)
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:355:        // )
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:356:        // {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:357:        //     return $document->withRejectedStatus(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:358:        //         code:$siiCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:359:        //         message: $siiMessage
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:360:        //     );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:361:        // }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:362:        if(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:363:            str_contains($normalizedMessage, 'rechaz')
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:364:            || in_array(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:365:                $normalizedCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:366:                [
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:367:                    'rechazado',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:368:                    'rejected',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:369:                    'fan',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:370:                    'fna',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:371:                    'emp',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:372:                ],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:373:                true
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:374:            )
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:375:        )
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:376:        {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:377:            return $document->withRejectedStatus(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:378:                code: $siiCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:379:                message: $siiMessage
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:380:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:381:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:382:        return $document;
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:383:    }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:384:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:385:    private function splitRut(string $rut):array
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:386:    {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:387:        $parts = explode('-', $rut);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:388:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:389:        if(count($parts) !== 2)
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:390:        {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:391:            throw new RuntimeException(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:392:                "El RUT '{$rut}' no tiene formato cuerpo-dv"
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:393:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:394:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:395:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:396:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:397:        return [trim($parts[0]), trim($parts[1])];
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:90:    
+            contents: $signatureResult['signed_xml'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:91:    
+            targetDirectory: 'signed',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:92:    
+            targetFileName: $filename,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:93:    
+        );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:94:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:95:    
+        $updatedDocument = $document->withSignedXml($relativePath);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:96:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:97:    
+        $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:98:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:99:    
+        $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:100:   
+             channel: 'xml_sign',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:101:   
+             message: 'DTE firmado correctamente con XMLDSig',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:102:   
+             context: [
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:103:   
+                 'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:104:   
+                 'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:105:   
+                 'company_id' => $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:106:   
+                 'dte_type' => $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:107:   
+                 'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:108:   
+                 //'certificate_id' => $certificate->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:109:   
+                 'certificate_id' => $certificateContext->certificateId,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:110:   
+                 'document_xml_id' => $signatureResult['document_xml_id'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:111:   
+                 'tmst_firma' => $signatureResult['tmst_firma'],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:112:   
+                 'signed_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:113:   
+             ],
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:114:   
+             companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:115:   
+             documentId: $saved->id(),
+  app\Modules\Dte\Domain\Entities\DteDocument.php:188:
+  app\Modules\Dte\Domain\Entities\DteDocument.php:189:    public function 
+rejectedAt(): ?DateTimeImmutable
+  app\Modules\Dte\Domain\Entities\DteDocument.php:190:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:191:        return 
+$this->rejectedAt;
+  app\Modules\Dte\Domain\Entities\DteDocument.php:192:    }
+> app\Modules\Dte\Domain\Entities\DteDocument.php:193:    public function 
+withFolioAndStatus(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:194:        int $folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:195:        string $status,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:196:        ?string 
+$siiEnvironment = null
+  app\Modules\Dte\Domain\Entities\DteDocument.php:197:    ): self {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:198:        return new 
+self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:199:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:200:            
+externalId: $this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:201:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:202:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:203:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:204:            status: 
+$status,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:205:            receiver: 
+$this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:206:            netAmount: 
+$this->netAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:207:            
+exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:208:            taxAmount: 
+$this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:209:            
+totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:210:            items: 
+$this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:211:            
+references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:212:            
+headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:213:            
+totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:230:            
+acceptedAt: $this->acceptedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:231:            
+rejectedAt: $this->rejectedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:232:        );
+  app\Modules\Dte\Domain\Entities\DteDocument.php:233:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:234:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:235:    public function 
+withUnsignedXmlBuilt(string $unsignedXmlPath): self
+  app\Modules\Dte\Domain\Entities\DteDocument.php:236:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:237:        return new 
+self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:238:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:239:            
+externalId: $this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:240:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:241:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:242:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:243:            status: 
+DteStatus::XML_BUILT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:244:            receiver: 
+$this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:245:            netAmount: 
+$this->netAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:246:            
+exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:247:            taxAmount: 
+$this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:248:            
+totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:249:            items: 
+$this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:250:            
+references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:251:            
+headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:252:            
+totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:253:            rawInput: 
+$this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:254:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:255:            
+siiEnvironment: $this->siiEnvironment,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:269:            
+acceptedAt: $this->acceptedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:270:            
+rejectedAt: $this->rejectedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:271:        );
+  app\Modules\Dte\Domain\Entities\DteDocument.php:272:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:273:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:274:    public function 
+withTedBuilt(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:275:        string $tedXml,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:276:        string 
+$unsignedXmlPath
+  app\Modules\Dte\Domain\Entities\DteDocument.php:277:    ): self {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:278:        return new 
+self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:279:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:280:            
+externalId: $this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:281:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:282:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:283:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:284:            status: 
+DteStatus::TED_BUILT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:285:            receiver: 
+$this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:286:            netAmount: 
+$this->netAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:287:            
+exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:288:            taxAmount: 
+$this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:289:            
+totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:290:            items: 
+$this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:291:            
+references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:292:            
+headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:293:            
+totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:294:            rawInput: 
+$this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:310:            
+acceptedAt: $this->acceptedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:311:            
+rejectedAt: $this->rejectedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:312:        );
+  app\Modules\Dte\Domain\Entities\DteDocument.php:313:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:314:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:315:    public function 
+withSignedXml(string $signedXmlPath): self
+  app\Modules\Dte\Domain\Entities\DteDocument.php:316:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:317:        return new 
+self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:318:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:319:            
+externalId: $this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:320:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:321:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:322:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:323:            status: 
+DteStatus::SIGNED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:324:            receiver: 
+$this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:325:            netAmount: 
+$this->netAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:326:            
+exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:327:            taxAmount: 
+$this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:328:            
+totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:329:            items: 
+$this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:330:            
+references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:331:            
+headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:332:            
+totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:333:            rawInput: 
+$this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:334:            folio: 
+$this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:335:            
+siiEnvironment: $this->siiEnvironment,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:503:            
+acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
+  app\Modules\Dte\Domain\Entities\DteDocument.php:504:            
+rejectedAt: $this->rejectedAt,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:505:        );
+  app\Modules\Dte\Domain\Entities\DteDocument.php:506:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:507:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:508:    public function 
+withRejectedStatus(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:509:    ?string $code = 
+null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:510:    ?string $message = 
+null
+  app\Modules\Dte\Domain\Entities\DteDocument.php:511:    ): self {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:512:        return new 
+self(
+  app\Modules\Dte\Domain\Entities\DteDocument.php:513:            id: 
+$this->id,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:514:            
+externalId: $this->externalId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:515:            companyId: 
+$this->companyId,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:516:            dteType: 
+$this->dteType,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:517:            issueDate: 
+$this->issueDate,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:518:            status: 
+DteStatus::REJECTED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:519:            receiver: 
+$this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:520:            netAmount: 
+$this->netAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:521:            
+exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:522:            taxAmount: 
+$this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:523:            
+totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:524:            items: 
+$this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:525:            
+references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:526:            
+headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:527:            
+totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:528:            rawInput: 
+$this->rawInput,
+  app\Modules\Dte\Domain\Enums\DteStatus.php:12:    case SENDING = 'sending';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:13:    case SENT = 'sent';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:14:    case ACCEPTED = 
+'accepted';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:15:    case 
+ACCEPTED_WITH_REPAROS = 'accepted_with_reparos';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:16:    case REJECTED = 
+'rejected';
+> app\Modules\Dte\Domain\Enums\DteStatus.php:17:    case NEEDS_RESEND = 
+'needs_resend';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:18:    case FAILED = 'failed';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:19:    case CANCELLED = 
+'cancelled';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:20:}
+
+

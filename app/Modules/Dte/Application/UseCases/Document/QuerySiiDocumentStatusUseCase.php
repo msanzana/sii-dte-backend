@@ -11,13 +11,19 @@ use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteSiiDocumentStatusDomainService;
-use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiAuthenticationService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiDocumentStatusService;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaDocumentStatusService;
-use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
+use App\Modules\Dte\Infrastructure\Sii\SiiTokenProviderService;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailEventRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioDetailRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\FolioStatusRepositoryInterface;
+//use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
+use App\Modules\Dte\Application\Services\RecalculateCafCountersService;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use App\Modules\Dte\Infrastructure\Sii\SiiBoletaTokenProviderService;
+
 
 final class QuerySiiDocumentStatusUseCase
 {
@@ -26,11 +32,16 @@ final class QuerySiiDocumentStatusUseCase
         private readonly CompanyRepositoryInterface $companyRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
         private readonly DteSiiDocumentStatusDomainService $documentStatusDomainService,
-        private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
+       // private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
+        private readonly SiiTokenProviderService $siiTokenProviderService,
         private readonly SiiFacturaDocumentStatusService $siiFacturaDocumentStatusService,
-        private readonly SiiBoletaApiAuthenticationService $siiBoletaApiAuthenticationService,
         private readonly SiiBoletaApiDocumentStatusService $siiBoletaApiDocumentStatusService,
+        private readonly SiiBoletaTokenProviderService $siiBoletaTokenProviderService,
         private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+        private readonly FolioDetailRepositoryInterface $folioDetailRepository,
+        private readonly FolioStatusRepositoryInterface $folioStatusRepository,
+        private readonly FolioDetailEventRepositoryInterface $folioDetailEventRepository,
+        private readonly RecalculateCafCountersService $recalculateCafCountersService,
         // private readonly SiiCertificateRepositoryInterface $certificateRepository,
         // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
@@ -84,13 +95,17 @@ final class QuerySiiDocumentStatusUseCase
     {
         $environment = $document->siiEnvironment() ?? config('dte.default_environment');
 
-        $token = $this->siiSoapAuthenticationService->authenticate(
+        $tokenContext = $this->siiTokenProviderService->get(
             environment: $environment,
+            companyId: $document->companyId(),
+            certificateId: $certificateContext->certificateId,
             privateKeyPem: $certificateContext->privateKeyPem,
             certificateBase64: $certificateContext->certificateBase64,
             modulusBase64: $certificateContext->modulusBase64,
             exponentBase64: $certificateContext->exponentBase64,
         );
+
+        $token = $tokenContext['token'];
 
         [$consultantRutBody, $consultantRutDv] = $this->splitConfiguredSenderRut();
         [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());
@@ -118,7 +133,15 @@ final class QuerySiiDocumentStatusUseCase
         );
 
         $savedDocument = $this->documentRepository->update($updateDocument);
-
+        $this->syncAcceptedFolioWithSii(
+            document: $savedDocument
+        );
+        $this->syncCancelledFolioWithSii(
+            document: $savedDocument,
+            siiCode: $result['estado'],
+            siiMessage: $result['glosa_err'] ?? $result['glosa'],
+            attentionNumber: $result['num_atencion'] ?? null
+        );
         $this->logRepository->info(
             channel: 'sii_document_status',
             message: 'Consulta QueryEstDte ejecutada.',
@@ -156,12 +179,17 @@ final class QuerySiiDocumentStatusUseCase
     {
         $environment = $document->siiEnvironment() ?? config('dte.default_environment');
 
-        $token = $this->siiBoletaApiAuthenticationService->authenticate(
+        $tokenContext = $this->siiBoletaTokenProviderService->get(
             environment: $environment,
+            companyId: $certificateContext->companyId,
+            certificateId: $certificateContext->certificateId,
             privateKeyPem: $certificateContext->privateKeyPem,
             certificateBase64: $certificateContext->certificateBase64,
-            modulusBase64: $certificateContext->modulusBase64
+            modulusBase64: $certificateContext->modulusBase64,
+            exponentBase64: $certificateContext->exponentBase64,
         );
+
+        $token = $tokenContext['token'];
 
         [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());
         [$receiverRutBody, $receiverRutDv] = $this->splitRut($document->receiver()->document());
@@ -191,6 +219,17 @@ final class QuerySiiDocumentStatusUseCase
         );
 
         $savedDocument = $this->documentRepository->update($updatedDocument);
+
+        $this->syncAcceptedFolioWithSii(
+            document: $savedDocument
+        );
+
+        $this->syncCancelledFolioWithSii(
+            document: $savedDocument,
+            siiCode: $result['status_code'],
+            siiMessage: $result['status_message']
+        );
+
         $this->logRepository->info(
             channel: 'sii_document_status',
             message: 'Consulta REST de boleta ejecutada.',
@@ -213,7 +252,7 @@ final class QuerySiiDocumentStatusUseCase
             folio: (int) $savedDocument->folio(),
             queriedVia: 'boleta_rest_api',
             siiStatusCode: $result['status_code'],
-            siiStatusMessage: $result['status_code'],
+            siiStatusMessage: $result['status_message'],
             attentionNumber: null,
             internalStatus: $savedDocument->status(),
             rawBody: $result['raw_body'],
@@ -231,7 +270,7 @@ final class QuerySiiDocumentStatusUseCase
             return $document->withAcceptedStatus();
         }
 
-        if(in_array($normalized, ['DNK','TMD','TMC','MMD'], true))
+        if(in_array($normalized, ['DNK','TMD','TMC','MMD','MMC','AND','ANC'], true))
         {
             return $document->withAcceptedWithReparosStatus(
                 code: $siiCode,
@@ -239,7 +278,15 @@ final class QuerySiiDocumentStatusUseCase
             );
         }
 
-        if(in_array($normalized,['FAU','FNA','FAN','EMP'], true))
+        if($normalized === 'FAU')
+        {
+            return $document->withSentStatus(
+                code: $siiCode,
+                message: $siiMessage
+            );
+        }
+
+        if(in_array($normalized,['FNA','FAN','EMP'], true))
         {
             return $document->withRejectedStatus(
                 code: $siiCode,
@@ -260,7 +307,11 @@ final class QuerySiiDocumentStatusUseCase
         $normalizedMessage = mb_strtolower(trim((string) $siiMessage));
 
         if(
-            in_array($normalizedCode,['0','ok','aceptado','accepted'], true)
+            in_array(
+                $normalizedCode,
+                ['0','ok','aceptado','accepted','dok'],
+                true
+            )
             || str_contains($normalizedMessage,'accepted')
         )
         {
@@ -269,26 +320,65 @@ final class QuerySiiDocumentStatusUseCase
 
         if(
             str_contains($normalizedMessage,'reparo')
-            || in_array($normalizedCode,['reparo','accepted_with_reparos'],true)
+            || in_array(
+                $normalizedCode,
+                [
+                    'reparo',
+                    'accepted_with_reparos',
+                    'dnk',
+                    'tmd',
+                    'tmc',
+                    'mmd',
+                    'mmc',
+                    'and',
+                    'anc',
+                ],
+                true
+            )
         )
         {
             return $document->withAcceptedWithReparosStatus(
-                code:$siiCode,
+                code: $siiCode,
                 message: $siiMessage
             );
         }
-
+        if($normalizedCode === 'fau')
+        {
+            return $document->withSentStatus(
+                code: $siiCode,
+                message: $siiMessage
+            );
+        }
+        // if(
+        //     str_contains($normalizedMessage, 'rechaz')
+        //     || in_array($normalizedCode,['rechazado','rejected'],true)
+        // )
+        // {
+        //     return $document->withRejectedStatus(
+        //         code:$siiCode,
+        //         message: $siiMessage
+        //     );
+        // }
         if(
             str_contains($normalizedMessage, 'rechaz')
-            || in_array($normalizedCode,['rechazado','rejected'],true)
+            || in_array(
+                $normalizedCode,
+                [
+                    'rechazado',
+                    'rejected',
+                    'fan',
+                    'fna',
+                    'emp',
+                ],
+                true
+            )
         )
         {
             return $document->withRejectedStatus(
-                code:$siiCode,
+                code: $siiCode,
                 message: $siiMessage
             );
         }
-
         return $document;
     }
 
@@ -320,6 +410,150 @@ final class QuerySiiDocumentStatusUseCase
         }
 
         return [$rutBody, $rutDv];
+    }
+    private function syncAcceptedFolioWithSii($document): void
+    {
+        if (!in_array(
+            $document->status(),
+            ['accepted', 'accepted_with_reparos'],
+            true
+        )) {
+            return;
+        }
+
+        $folioDetail = $this->folioDetailRepository
+            ->findByDocumentIdForUpdate(
+                $document->id()
+            );
+
+        if (!$folioDetail) {
+            throw new RuntimeException(
+                "No existe detalle de folio asociado al documento {$document->id()}."
+            );
+        }
+
+        if ($folioDetail->folioStatusCode() === 'accepted_by_sii') {
+            return;
+        }
+
+        $acceptedStatus = $this->folioStatusRepository
+            ->findByCode('accepted_by_sii');
+
+        if (!$acceptedStatus) {
+            throw new RuntimeException(
+                'No existe el estado de folio accepted_by_sii.'
+            );
+        }
+
+        $usedAt = now()->format('Y-m-d H:i:s');
+
+        $this->folioDetailRepository->updateReservationState(
+            folioDetailId: $folioDetail->id(),
+            folioStatusId: $acceptedStatus->id(),
+            reserved: false,
+            reservedAt: $folioDetail->reservedAt(),
+            releasedAt: $folioDetail->releasedAt(),
+            usedAt: $usedAt
+        );
+
+        $this->folioDetailEventRepository->create(
+            folioDetailId: $folioDetail->id(),
+            companyId: $folioDetail->companyId(),
+            externalSystemId: $folioDetail->externalSystemId(),
+            branchOfficeNumber: $folioDetail->branchOfficeNumber(),
+            facilityNumber: $folioDetail->facilityNumber(),
+            eventCode: 'accepted_by_sii',
+            fromStatusCode: $folioDetail->folioStatusCode(),
+            toStatusCode: 'accepted_by_sii',
+            message: 'Folio aceptado por el SII.',
+            userId: null,
+            payloadJson: json_encode([
+                'dte_document_id' => $document->id(),
+                'folio' => $folioDetail->folioNumber(),
+                'caf_id' => $folioDetail->cafId(),
+            ], JSON_UNESCAPED_UNICODE)
+        );
+
+        $this->recalculateCafCountersService->execute(
+            $folioDetail->cafId()
+        );
+    }
+    private function syncCancelledFolioWithSii(
+        $document,
+        ?string $siiCode,
+        ?string $siiMessage,
+        ?string $attentionNumber = null
+    ): void
+    {
+        $normalizedCode = strtoupper(
+            trim((string) $siiCode)
+        );
+
+        if ($normalizedCode !== 'FAN') {
+            return;
+        }
+
+        $folioDetail = $this->folioDetailRepository
+            ->findByDocumentIdForUpdate(
+                $document->id()
+            );
+
+        if (!$folioDetail) {
+            throw new RuntimeException(
+                "No existe detalle de folio asociado al documento {$document->id()}."
+            );
+        }
+
+        if ($folioDetail->folioStatusCode() === 'cancelled') {
+            return;
+        }
+
+        $cancelledStatus = $this->folioStatusRepository
+            ->findByCode('cancelled');
+
+        if (!$cancelledStatus) {
+            throw new RuntimeException(
+                'No existe el estado de folio cancelled.'
+            );
+        }
+
+        $this->folioDetailRepository->updateReservationState(
+            folioDetailId: $folioDetail->id(),
+            folioStatusId: $cancelledStatus->id(),
+            reserved: false,
+            reservedAt: $folioDetail->reservedAt(),
+            releasedAt: $folioDetail->releasedAt(),
+            usedAt: null
+        );
+
+        $this->folioDetailEventRepository->create(
+            folioDetailId: $folioDetail->id(),
+            companyId: $folioDetail->companyId(),
+            externalSystemId: $folioDetail->externalSystemId(),
+            branchOfficeNumber: $folioDetail->branchOfficeNumber(),
+            facilityNumber: $folioDetail->facilityNumber(),
+            eventCode: 'cancelled_by_sii_reconciliation',
+            fromStatusCode: $folioDetail->folioStatusCode(),
+            toStatusCode: 'cancelled',
+            message: 'Folio marcado como cancelado tras conciliación con SII: '
+                . $normalizedCode
+                . ' / '
+                . trim((string) $siiMessage)
+                . '.',
+            userId: null,
+            payloadJson: json_encode([
+                'dte_document_id' => $document->id(),
+                'folio' => $folioDetail->folioNumber(),
+                'caf_id' => $folioDetail->cafId(),
+                'sii_status_code' => $normalizedCode,
+                'sii_status_message' => $siiMessage,
+                'attention_number' => $attentionNumber,
+            ], JSON_UNESCAPED_UNICODE)
+        );
+
+        $this->recalculateCafCountersService->execute(
+            $folioDetail->cafId()
+        );
     }
 
 }

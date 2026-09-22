@@ -12,7 +12,13 @@ use DOMXPath;
 class EnvioBoletaEnvelopeBuilderService
 {
     private const NS_SII_DTE = 'http://www.sii.cl/SiiDte';
-
+    private const NS_XSI = 'http://www.w3.org/2001/XMLSchema-instance';
+    private const NS_XMLNS = 'http://www.w3.org/2000/xmlns/';
+    private const ENVIO_BOLETA_SCHEMA_LOCATION =
+        'http://www.sii.cl/SiiDte EnvioBOLETA_v11.xsd';
+    public function __construct(
+        private readonly XmlDsigIntegrityService $integrityService
+    ) {}
     public function build(
         DteDocument $document,
         Company $company,
@@ -66,9 +72,31 @@ class EnvioBoletaEnvelopeBuilderService
         $envioDom->preserveWhiteSpace = false;
         $envioDom->formatOutput = true;
 
-        $envioNode = $envioDom->createElementNS(self::NS_SII_DTE, 'EnvioBOLETA');
-        $envioNode->setAttribute('version', '1.0');
-        $envioDom->appendChild($envioNode);
+        $envioNode = $envioDom->createElementNS(
+            self::NS_SII_DTE,
+            'EnvioBOLETA'
+        );
+
+        $envioNode->setAttributeNS(
+            self::NS_XMLNS,
+            'xmlns:xsi',
+            self::NS_XSI
+        );
+
+        $envioNode->setAttributeNS(
+            self::NS_XSI,
+            'xsi:schemaLocation',
+            self::ENVIO_BOLETA_SCHEMA_LOCATION
+        );
+
+        $envioNode->setAttribute(
+            'version',
+            '1.0'
+        );
+
+        $envioDom->appendChild(
+            $envioNode
+        );
 
         $setBoletaId = 'SetBoleta_'.$document->id();
 
@@ -92,17 +120,120 @@ class EnvioBoletaEnvelopeBuilderService
         $this->appendElement($envioDom, $SubTotDte, 'NroDTE', '1');
         $caratula->appendChild($SubTotDte);
 
-        $importedDte = $envioDom->importNode($dteNode, true);
-        $setNode->appendChild($importedDte);
+        /*
+        |--------------------------------------------------------------------------
+        | Incorporar el DTE firmado sin importNode()
+        |--------------------------------------------------------------------------
+        |
+        | El DTE ya contiene una firma XMLDSig válida.
+        | No debemos importarlo a otro DOMDocument porque LIBXML puede
+        | reorganizar namespaces y alterar la canonicalización del Documento.
+        |
+        */
 
-        $xml = $envioDom->saveXML();
+        $placeholder =
+            'SIGNED_DTE_XML_PLACEHOLDER';
 
-        if($xml === false || $xml === '')
-        {
+        $setNode->appendChild(
+            $envioDom->createComment(
+                $placeholder
+            )
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Serializar primero la estructura base de EnvioBOLETA
+        |--------------------------------------------------------------------------
+        */
+
+        $xml =
+            $envioDom->saveXML();
+
+        if (
+            $xml === false
+            || trim($xml) === ''
+        ) {
             throw SiiBoletaSendException::because(
                 'No fue posible serializar el payload XML de EnvioBOLETA.'
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Quitar únicamente la declaración XML del DTE firmado
+        |--------------------------------------------------------------------------
+        */
+
+        $signedDteBody =
+            preg_replace(
+                '/^\s*<\?xml[^?]*\?>\s*/i',
+                '',
+                $signedXml,
+                1
+            );
+
+        if (
+            $signedDteBody === null
+            || trim($signedDteBody) === ''
+        ) {
+            throw SiiBoletaSendException::because(
+                'No fue posible preparar el DTE firmado para incorporarlo al EnvioBOLETA.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Localizar el placeholder
+        |--------------------------------------------------------------------------
+        */
+
+        $marker =
+            '<!--'
+            . $placeholder
+            . '-->';
+
+        if (
+            !str_contains(
+                $xml,
+                $marker
+            )
+        ) {
+            throw SiiBoletaSendException::because(
+                'No fue posible localizar el marcador del DTE firmado en EnvioBOLETA.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Insertar textualmente el DTE firmado
+        |--------------------------------------------------------------------------
+        |
+        | No usamos importNode().
+        | De esta forma conservamos exactamente la serialización y namespaces
+        | con los que fue calculado el DigestValue del Documento.
+        |
+        */
+
+        $xml =
+            str_replace(
+                $marker,
+                $signedDteBody,
+                $xml
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verificar que la firma interna haya sobrevivido al wrapping
+        |--------------------------------------------------------------------------
+        |
+        | En este punto todavía no existe la firma externa de SetDTE.
+        |
+        */
+
+        $this->integrityService
+    ->assertAllSignaturesValid(
+        $xml
+    );
 
         return [
             'request_identifier' => $setBoletaId,

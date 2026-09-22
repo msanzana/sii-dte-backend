@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
 use Throwable;
 
+
 final class SiiTokenProviderService
 {
     public function __construct(
@@ -92,11 +93,11 @@ final class SiiTokenProviderService
         */
 
         try {
-           return $lockStore->lock(
-                $cacheKey. ':lock',
-                30
-           )
-           ->block(
+            return $lockStore->lock(
+                $cacheKey . ':lock',
+                90
+            )
+            ->block(
                 30,
                 function () use (
                     $cache,
@@ -107,6 +108,16 @@ final class SiiTokenProviderService
                     $modulusBase64,
                     $exponentBase64,
                 ): array{
+                    $cachedToken = $this->readCachedToken(
+                        $cache->get($cacheKey)
+                    );
+
+                    if ($cachedToken !== null) {
+                        return [
+                            'token' => $cachedToken,
+                            'source' => 'cache',
+                        ];
+                    }
                     $token = $this->authenticationService
                     ->authenticate(
                         environment: $environment,
@@ -118,8 +129,8 @@ final class SiiTokenProviderService
                     $ttlMinutes = max(
                         1,
                         (int) config(
-                            'dte.sii.transport.token_ttl_minutes',
-                            55
+                            'dte.sii.transport.token_cache_ttl_minutes',
+                            50
                         )
                     );
 
@@ -135,22 +146,24 @@ final class SiiTokenProviderService
                     ];
                 }
            );
-        } catch (LockTimeoutException) {
-            $token = $this->authenticationService->authenticate(
-                environment: $environment,
-                privateKeyPem: $privateKeyPem,
-                certificateBase64: $certificateBase64,
-                modulusBase64: $modulusBase64,
-                exponentBase64: $exponentBase64,
+       } catch (LockTimeoutException) {
+            $cachedToken = $this->readCachedToken(
+                $cache->get($cacheKey)
             );
 
-            return [
-                'token' => $token,
-                'source' => 'fresh',
-            ];
+            if ($cachedToken !== null) {
+                return [
+                    'token' => $cachedToken,
+                    'source' => 'cache',
+                ];
+            }
+
+            throw new RuntimeException(
+                'No fue posible obtener el lock para generar el TOKEN SII.'
+            );
         }
     }
-        
+
     public function forget
     (
         string $environment,
@@ -174,10 +187,10 @@ final class SiiTokenProviderService
         string $environment,
         int $companyId,
         int $certificateId,
-    ):string {
-        return printf(
-            'sii:token:%s:company:$d:certificate:%d',
-            $environment,
+    ): string {
+        return sprintf(
+            'sii:token:%s:company:%d:certificate:%d',
+            strtolower(trim($environment)),
             $companyId,
             $certificateId,
         );

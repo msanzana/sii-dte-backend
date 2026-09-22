@@ -3,11 +3,16 @@
 namespace App\Modules\Dte\Infrastructure\Sii;
 
 use App\Modules\Dte\Domain\Exceptions\SiiUploadException;
+use App\Modules\Dte\Infrastructure\Sii\SiiRequestThrottleService;
 use Illuminate\Support\Facades\Http;
 
 class SiiFacturaUploadStatusService
 {
-    public function query(
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
+        public function query(
         string $environment,
         string $token,
         string $companyRutBody,
@@ -59,6 +64,7 @@ class SiiFacturaUploadStatusService
 </SOAP-ENV:Envelope>
 XML;
 
+        $this->requestThrottleService->wait($environment);
         $response = Http::withHeaders([
             'Content-Type' => 'text/xml; charset=UTF-8',
             'SOAPAction' => '',
@@ -68,6 +74,13 @@ XML;
                 'text/xml; charset=UTF-8'
             )
             ->post($url);
+
+        if (!$response->successful()) {
+            throw SiiUploadException::because(
+                'La consulta QueryEstUp respondió con HTTP '
+                . $response->status()
+            );
+        }
 
         $body = (string) $response->body();
 

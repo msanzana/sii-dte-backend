@@ -7,26 +7,40 @@ use Illuminate\Support\Facades\Http;
 
 class SiiBoletaApiSendStatusService
 {
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     public function query(
         string $environment,
         string $token,
+        string $rutBody,
+        string $rutDv,
         string $trackId
     ):array
     {
-        $url = $this->resolveConfig($environment, 'sent_status_url');
-        $httpMethod = strtoupper($this->resolveConfig($environment, 'status_http_method'));
-        $trackIdField = $this->resolveConfig($environment, 'status_track_id_field');
-        $headerName = $this->resolveConfig($environment, 'token_header_name');
-        $headerPrefix = (string) config("dte.sii.boleta.{$environment}.token_header_prefix", 'Bearer ');
+        $baseUrl = rtrim(
+        $this->resolveConfig(
+            $environment,
+            'send_status_url'
+        ),
+        '/'
+        );
 
+        $url = sprintf(
+            '%s/%s-%s-%s',
+            $baseUrl,
+            trim($rutBody),
+            trim($rutDv),
+            trim($trackId)
+        );
+        $this->requestThrottleService->wait($environment);
         $response = Http::withHeaders([
-            $headerName => $headerPrefix.$token,
-            'Accept' => 'Aplication/json, application/xml, text/plain',
-        ])->send($httpMethod, $url, [
-            'json' => [
-                $trackIdField => $trackId,
-            ],
-        ]);
+            'Cookie' => 'TOKEN=' . $token,
+            'Accept' => 'application/json, application/xml, text/plain',
+        ])->get(
+            $url
+        );
 
         if(!$response->successful())
         {
@@ -62,7 +76,7 @@ class SiiBoletaApiSendStatusService
 
     private function extractFlexibleValue(string $body, array $possibleKeys): ?string
     {
-      $json = json_decode($body, true);
+        $json = json_decode($body, true);
 
         if (is_array($json)) {
             foreach ($possibleKeys as $key) {

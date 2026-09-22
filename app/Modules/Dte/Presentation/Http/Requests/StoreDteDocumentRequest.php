@@ -52,7 +52,11 @@ class StoreDteDocumentRequest extends FormRequest
             'referenced.*.extra_payload' => ['nullable','array'],
 
             'header_payload' => ['nullable','array'],
-
+            'header_payload.ind_servicio' => [
+                'required_if:dte_type,39,41',
+                'integer',
+                Rule::in([1, 2, 3, 4]),
+            ],
         ];
     }
 }

@@ -1,0 +1,183 @@
+﻿===== BuildDteXmlInputDto =====
+===== BuildDteXmlResultDto =====
+===== TEST USE CASE DE REFERENCIA =====
+<?php
+
+namespace Tests\Unit;
+
+use App\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase;
+use ReflectionMethod;
+use Tests\TestCase;
+use App\Modules\Dte\Infrastructure\Sii\SiiBoletaTokenProviderService;
+use ReflectionClass;
+
+final class PollBoletaDispatchStatusUseCaseTest extends TestCase
+{
+    public function test_el_polling_de_boleta_entrega_el_exponente_rsa_a_la_autenticacion(): void
+    {
+        $method = new ReflectionMethod(
+            PollBoletaDispatchStatusUseCase::class,
+            'execute'
+        );
+
+        $lines = file(
+            $method->getFileName()
+        );
+
+        $this->assertIsArray(
+            $lines
+        );
+
+        $methodSource = implode(
+            '',
+            array_slice(
+                $lines,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertStringContainsString(
+            'exponentBase64: $certificateContext->exponentBase64',
+            $methodSource,
+            'PollBoletaDispatchStatusUseCase debe enviar exponentBase64 al servicio de autenticaciÃ³n de boletas.'
+        );
+    }
+    public function test_processed_at_solo_se_asigna_a_estados_terminales_usando_comparacion_estricta(): void
+    {
+        $method = new ReflectionMethod(
+            PollBoletaDispatchStatusUseCase::class,
+            'execute'
+        );
+
+        $lines = file(
+            $method->getFileName()
+        );
+
+        $this->assertIsArray(
+            $lines
+        );
+
+        $methodSource = implode(
+            '',
+            array_slice(
+                $lines,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/in_array\\(\\s*\\\$internalStatus\\s*,\\s*\\[\\s*['\"]processed['\"]\\s*,\\s*['\"]rejected['\"]\\s*,?\\s*\\]\\s*,\\s*true\\s*\\)/",
+            $methodSource,
+            'processedAt debe considerar solamente processed y rejected usando in_array en modo estricto.'
+        );
+    }
+    public function test_un_dispatch_rejected_guarda_el_mensaje_de_error_del_sii(): void
+    {
+        $method = new ReflectionMethod(
+            PollBoletaDispatchStatusUseCase::class,
+            'execute'
+        );
+
+        $lines = file(
+            $method->getFileName()
+        );
+
+        $this->assertIsArray(
+            $lines
+        );
+
+        $methodSource = implode(
+            '',
+            array_slice(
+                $lines,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertStringContainsString(
+            "\$internalStatus === 'rejected'",
+            $methodSource,
+            'Un dispatch rejected debe conservar el mensaje del SII en errorMessage.'
+        );
+
+        $this->assertStringNotContainsString(
+            "\$internalStatus === 'regected'",
+            $methodSource,
+            'No debe existir el typo regected.'
+        );
+    }
+    public function test_el_polling_de_boleta_usa_el_proveedor_compartido_de_token(): void
+    {
+        $reflection = new ReflectionClass(
+            PollBoletaDispatchStatusUseCase::class
+        );
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull(
+            $constructor
+        );
+
+        $constructorTypes = [];
+
+        foreach ($constructor->getParameters() as $parameter) {
+            $type = $parameter->getType();
+
+            if ($type instanceof \ReflectionNamedType) {
+                $constructorTypes[] = $type->getName();
+            }
+        }
+
+        $this->assertContains(
+            SiiBoletaTokenProviderService::class,
+            $constructorTypes,
+            'PollBoletaDispatchStatusUseCase debe recibir SiiBoletaTokenProviderService.'
+        );
+
+        $method = $reflection->getMethod(
+            'execute'
+        );
+
+        $lines = file(
+            $method->getFileName()
+        );
+
+        $this->assertIsArray(
+            $lines
+        );
+
+        $methodSource = implode(
+            '',
+            array_slice(
+                $lines,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertStringContainsString(
+            '$this->siiBoletaTokenProviderService->get(',
+            $methodSource,
+            'El polling de boleta debe obtener el token mediante SiiBoletaTokenProviderService.'
+        );
+
+        $this->assertStringNotContainsString(
+            '$this->siiBoletaApiAuthenticationService->authenticate(',
+            $methodSource,
+            'El polling de boleta no debe autenticarse directamente contra el SII.'
+        );
+
+        $this->assertStringContainsString(
+            'companyId: $certificateContext->companyId',
+            $methodSource
+        );
+
+        $this->assertStringContainsString(
+            'certificateId: $certificateContext->certificateId',
+            $methodSource
+        );
+    }
+    public function test_el_polling_de_boleta_entrega_el_rut_de_la_empresa_a_la_consulta_del_envio(): void

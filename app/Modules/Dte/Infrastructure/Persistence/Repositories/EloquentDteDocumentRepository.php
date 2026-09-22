@@ -46,6 +46,10 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'ted_xml' => $document->tedXml(),
             'last_error_code' => $document->lastErrorCode(),
             'last_error_message' => $document->lastErrorMessage(),
+            'queued_at' => $document->queuedAt(),
+            'sent_at' => $document->sentAt(),
+            'accepted_at' => $document->acceptedAt(),
+            'rejected_at' => $document->rejectedAt(),
             'external_system_id' => $document->externalSystemId(),
             'caf_id' => $document->cafId(),
             'folio_reservation_id' => $document->folioReservationId(),
@@ -111,6 +115,10 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'ted_xml' => $document->tedXml(),
             'last_error_code' => $document->lastErrorCode(),
             'last_error_message' => $document->lastErrorMessage(),
+            'queued_at' => $document->queuedAt(),
+            'sent_at' => $document->sentAt(),
+            'accepted_at' => $document->acceptedAt(),
+            'rejected_at' => $document->rejectedAt(),
         ]);
 
         $model->save();

@@ -35,8 +35,15 @@ class PumpPendingDispatchPollingJob implements ShouldQueue
         Context::add('job','pumpPendingDispatchPollingJob');
 
         $ids = $dispatchRepository->findIdsByStatusesAndTransportTypes(
-            statuses: ['send','polling'],
-            transportTypes: ['soap_upload_factura','soap_upload_boleta'],
+            statuses: [
+                'upload_ok',
+                'sent',
+                'polling',
+            ],
+            transportTypes: [
+                'soap_upload_factura',
+                'rest_upload_boleta',
+            ],
             limit: (int) config('dte.automation.limits.dispatches_per_pump', 50)
         );
 

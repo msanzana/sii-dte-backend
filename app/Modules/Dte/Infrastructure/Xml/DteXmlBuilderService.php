@@ -46,10 +46,33 @@ class DteXmlBuilderService
 
         $encabezado = $this->appendElement($dom,$documento,'Encabezado');
 
+        $isBoleta =
+        in_array(
+            (int) $data['id_doc']['tipo_dte'],
+            [39, 41],
+            true
+        );
         $this->buildIdDoc($dom, $encabezado, $data['id_doc']);
-        $this->buildEmitter($dom, $encabezado, $data['emitter']);
-        $this->buildReceiver($dom, $encabezado, $data['receiver']);
-        $this->buildTotals($dom, $encabezado, $data['totals']);
+        $this->buildEmitter(
+            $dom,
+            $encabezado,
+            $data['emitter'],
+            $isBoleta
+        );
+
+        $this->buildReceiver(
+            $dom,
+            $encabezado,
+            $data['receiver'],
+            $isBoleta
+        );
+
+        $this->buildTotals(
+            $dom,
+            $encabezado,
+            $data['totals'],
+            $isBoleta
+        );
 
         foreach ($data['details'] as $detail)
         {
@@ -69,72 +92,155 @@ class DteXmlBuilderService
         return $xml;
     }
 
-    private function buildIdDoc(DOMDocument $dom, DOMElement $encabezado, array $idDoc): void
-    {
+    private function buildIdDoc(
+        DOMDocument $dom,
+        DOMElement $encabezado,
+        array $idDoc
+    ): void {
         $idDocNode = $this->appendElement($dom, $encabezado, 'IdDoc');
 
-        $this->appendElement($dom, $idDocNode, 'TipoDTE', (string) $idDoc['tipo_dte']);
-        $this->appendElement($dom, $idDocNode, 'Folio', (string) $idDoc['folio']);
-        $this->appendElement($dom, $idDocNode, 'FchEmis', (string) $idDoc['fecha_emision']);
-    }
+        $this->appendElement(
+            $dom,
+            $idDocNode,
+            'TipoDTE',
+            (string) $idDoc['tipo_dte']
+        );
 
-    private function buildEmitter(DOMDocument $dom, DOMElement $encabezado, array $emitter): void
-    {
-        $emisor = $this->appendElement($dom, $encabezado, 'Emisor');
+        $this->appendElement(
+            $dom,
+            $idDocNode,
+            'Folio',
+            (string) $idDoc['folio']
+        );
 
-        $this->appendElement($dom, $emisor, 'RUTEmisor', (string) $emitter['rut']);
-        $this->appendElement($dom, $emisor, 'RznSoc', (string) $emitter['razon_social']);
+        $this->appendElement(
+            $dom,
+            $idDocNode,
+            'FchEmis',
+            (string) $idDoc['fecha_emision']
+        );
 
-        if (!empty($emitter['giro'])) {
-            $this->appendElement($dom, $emisor, 'GiroEmis', (string) $emitter['giro']);
-        }
-
-        /*
-        * Correo del emisor.
-        *
-        * Debe ir antes de Acteco/DirOrigen.
-        */
-        if (!empty($emitter['email'])) {
+        if (array_key_exists('ind_servicio', $idDoc)) {
             $this->appendElement(
                 $dom,
-                $emisor,
-                'CorreoEmisor',
-                (string) $emitter['email']
+                $idDocNode,
+                'IndServicio',
+                (string) $idDoc['ind_servicio']
             );
         }
 
         /*
-        * Actividad económica SII.
-        *
-        * Es la pieza que actualmente falta.
+        |--------------------------------------------------------------------------
+        | Indicador de montos netos para Boleta Electrónica
+        |--------------------------------------------------------------------------
+        |
+        | IndMntNeto=2 indica que PrcItem y MontoItem están expresados como
+        | montos netos. Este indicador corresponde a Boleta Electrónica 39.
+        |
+        | El builder no decide cuándo utilizarlo: sólo lo serializa cuando
+        | viene explícitamente informado en los datos ensamblados.
+        |
         */
+
         if (
-            empty($emitter['acteco'])
+            (int) $idDoc['tipo_dte'] === 39
+            && array_key_exists('ind_mnt_neto', $idDoc)
         ) {
-            throw new RuntimeException(
-                'La empresa no tiene configurado el código de actividad económica SII requerido para generar el DTE.'
+            $this->appendElement(
+                $dom,
+                $idDocNode,
+                'IndMntNeto',
+                (string) $idDoc['ind_mnt_neto']
             );
         }
+    }
+
+    private function buildEmitter(
+        DOMDocument $dom,
+        DOMElement $encabezado,
+        array $emitter,
+        bool $isBoleta): void
+    {
+        $emisor = $this->appendElement($dom, $encabezado, 'Emisor');
 
         $this->appendElement(
             $dom,
             $emisor,
-            'Acteco',
-            (string) $emitter['acteco']
+            'RUTEmisor',
+            (string) $emitter['rut']
         );
+
+        $this->appendElement(
+            $dom,
+            $emisor,
+            $isBoleta
+                ? 'RznSocEmisor'
+                : 'RznSoc',
+            (string) $emitter['razon_social']
+        );
+
+        if (!empty($emitter['giro'])) {
+            $this->appendElement(
+                $dom,
+                $emisor,
+                $isBoleta
+                    ? 'GiroEmisor'
+                    : 'GiroEmis',
+                (string) $emitter['giro']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Campos propios de Factura
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$isBoleta) {
+            if (!empty($emitter['email'])) {
+                $this->appendElement(
+                    $dom,
+                    $emisor,
+                    'CorreoEmisor',
+                    (string) $emitter['email']
+                );
+            }
+
+            if (empty($emitter['acteco'])) {
+                throw new RuntimeException(
+                    'La empresa no tiene configurado el código de actividad económica SII requerido para generar el DTE.'
+                );
+            }
+
+            $this->appendElement(
+                $dom,
+                $emisor,
+                'Acteco',
+                (string) $emitter['acteco']
+            );
+        }
+
         $this->appendElement($dom, $emisor, 'DirOrigen', (string) $emitter['direccion']);
         $this->appendElement($dom, $emisor, 'CmnaOrigen', (string) $emitter['commune']);
         $this->appendElement($dom, $emisor, 'CiudadOrigen', (string) $emitter['city']);
     }
 
-    private function buildReceiver(DOMDocument $dom, DOMElement $encabezado, array $receiver): void
+    private function buildReceiver(
+        DOMDocument $dom,
+        DOMElement $encabezado,
+        array $receiver,
+        bool $isBoleta
+    ): void
     {
         $receptor = $this->appendElement($dom, $encabezado, 'Receptor');
 
         $this->appendElement($dom, $receptor, 'RUTRecep', (string) $receiver['rut']);
         $this->appendElement($dom, $receptor, 'RznSocRecep', (string) $receiver['razon_social']);
 
-        if (!empty($receiver['giro'])) {
+        if (
+            !$isBoleta
+            && !empty($receiver['giro'])
+        ) {
             $this->appendElement($dom, $receptor, 'GiroRecep', (string) $receiver['giro']);
         }
 
@@ -151,7 +257,12 @@ class DteXmlBuilderService
         }
     }
 
-    private function buildTotals(DOMDocument $dom, DOMElement $encabezado, array $totals): void
+    private function buildTotals(
+        DOMDocument $dom,
+        DOMElement $encabezado,
+        array $totals,
+        bool $isBoleta
+    ): void
     {
         $totales = $this->appendElement($dom, $encabezado, 'Totales');
 
@@ -163,7 +274,10 @@ class DteXmlBuilderService
             $this->appendElement($dom, $totales, 'MntExe', (string) $totals['exempt_amount']);
         }
 
-        if ($totals['tax_rate'] !== null) {
+        if (
+            !$isBoleta
+            && $totals['tax_rate'] !== null
+        ) {
             $this->appendElement($dom, $totales, 'TasaIVA', (string) $totals['tax_rate']);
         }
 

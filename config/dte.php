@@ -64,7 +64,33 @@ return [
         'max_boletas_per_batch' => 500,
     ],
     'sii' => [
-        'receiver_rut' => env('DTE_SII_RECEIVER_RUT', '60803000-K'),
+            /*
+        |--------------------------------------------------------------------------
+        | Llaves públicas SII para validar FRMA del CAF
+        |--------------------------------------------------------------------------
+        |
+        | IDK identifica la llave pública utilizada por el SII para firmar
+        | el nodo DA del CAF.
+        |
+        | IMPORTANTE:
+        | Estas NO son RSAPK ni RSAPUBK del contribuyente.
+        |
+        */
+        'caf_signature_keys' => [
+
+        '100' => <<<'PEM'
+-----BEGIN PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAMj78A3LIaVQAKWFUixd5SinPgzhbMA6
+seXqfeSyooER41L6743LfVHjSavUsQXc1PZ8+eExFQWMnwFUKRuMcVMCAwEAAQ==
+-----END PUBLIC KEY-----
+PEM,
+
+        ],
+
+        'receiver_rut' => env(
+            'DTE_SII_RECEIVER_RUT',
+            '14222620-0'
+        ),
         /*
         |--------------------------------------------------------------------------
         | Transporte / sesión SII
@@ -133,14 +159,10 @@ return [
                 'send_url' => env('DTE_SII_BOLETA_CERT_SEND_URL', ''),
                 'send_status_url' => env('DTE_SII_BOLETA_CERT_SEND_STATUS_URL', ''),
                 'document_status_url' => env('DTE_SII_BOLETA_CERT_DOCUMENT_STATUS_URL', ''),
-                'token_header_name' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_NAME', 'Authorization'),
-                'token_header_prefix' => env('DTE_SII_BOLETA_CERT_TOKEN_HEADER_PREFIX', 'Bearer '),
                 'send_http_method' => env('DTE_SII_BOLETA_CERT_SEND_HTTP_METHOD', 'POST'),
-                'send_mode' => env('DTE_SII_BOLETA_CERT_SEND_MODE', 'raw_xml'),
+                'send_mode' => env('DTE_SII_BOLETA_CERT_SEND_MODE', 'multipart_xml'),
                 'send_content_type' => env('DTE_SII_BOLETA_CERT_SEND_CONTENT_TYPE', 'application/xml; charset=UTF-8'),
-                'send_body_field' => env('DTE_SII_BOLETA_CERT_SEND_BODY_FIELD', 'xml'),
-                'status_http_method' => env('DTE_SII_BOLETA_CERT_STATUS_HTTP_METHOD', 'POST'),
-                'status_track_id_field' => env('DTE_SII_BOLETA_CERT_STATUS_TRACK_ID_FIELD', 'track_id'),
+                'send_body_field' => env('DTE_SII_BOLETA_CERT_SEND_BODY_FIELD', 'archivo'),
             ],
 
             'prod' => [
@@ -149,14 +171,9 @@ return [
                 'send_url' => env('DTE_SII_BOLETA_PROD_SEND_URL', ''),
                 'send_status_url' => env('DTE_SII_BOLETA_PROD_SEND_STATUS_URL', ''),
                 'document_status_url' => env('DTE_SII_BOLETA_PROD_DOCUMENT_STATUS_URL', ''),
-                'token_header_name' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_NAME', 'Authorization'),
-                'token_header_prefix' => env('DTE_SII_BOLETA_PROD_TOKEN_HEADER_PREFIX', 'Bearer '),
-                'send_http_method' => env('DTE_SII_BOLETA_PROD_SEND_HTTP_METHOD', 'POST'),
-                'send_mode' => env('DTE_SII_BOLETA_PROD_SEND_MODE', 'raw_xml'),
+                'send_mode' => env('DTE_SII_BOLETA_PROD_SEND_MODE', 'multipart_xml'),
                 'send_content_type' => env('DTE_SII_BOLETA_PROD_SEND_CONTENT_TYPE', 'application/xml; charset=UTF-8'),
-                'send_body_field' => env('DTE_SII_BOLETA_PROD_SEND_BODY_FIELD', 'xml'),
-                'status_http_method' => env('DTE_SII_BOLETA_PROD_STATUS_HTTP_METHOD', 'POST'),
-                'status_track_id_field' => env('DTE_SII_BOLETA_PROD_STATUS_TRACK_ID_FIELD', 'track_id'),
+                'send_body_field' => env('DTE_SII_BOLETA_PROD_SEND_BODY_FIELD', 'archivo'),
             ],
         ],
     ],

@@ -9,7 +9,8 @@ use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadStatusService;
-use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
+use App\Modules\Dte\Infrastructure\Sii\SiiTokenProviderService;
+//use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -19,10 +20,10 @@ final class PollSiiUploadStatusUseCase
         private readonly SiiDispatchRepositoryInterface $dispatchRepository,
         private readonly CompanyRepositoryInterface $companyRepository,
         private readonly IntegrationLogRepositoryInterface $logRepository,
-        private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
+        //private readonly SiiSoapAuthenticationService $siiSoapAuthenticationService,
         private readonly SiiFacturaUploadStatusService $siiFacturaUploadStatusService,
         private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
-
+        private readonly SiiTokenProviderService $siiTokenProviderService,
         // private readonly SiiCertificateRepositoryInterface $certificateRepository,
         // private readonly CertificateMaterialExtractorService $certificateMaterialExtractorService,
     )
@@ -57,15 +58,17 @@ final class PollSiiUploadStatusUseCase
 
             $certificateContext = $this->loadCertificateMaterialForEmisionService->execute($dispatch->companyId());
 
-            $token = $this->siiSoapAuthenticationService->authenticate(
+            $tokenContext = $this->siiTokenProviderService->get(
                 environment: $dispatch->environment(),
+                companyId: $dispatch->companyId(),
+                certificateId: $certificateContext->certificateId,
                 privateKeyPem: $certificateContext->privateKeyPem,
                 certificateBase64: $certificateContext->certificateBase64,
                 modulusBase64: $certificateContext->modulusBase64,
-                exponentBase64: $certificateContext->exponentBase64
-
+                exponentBase64: $certificateContext->exponentBase64,
             );
 
+            $token = $tokenContext['token'];
             [$companyRutBody, $companyRutDv] = $this->splitRut($company->rut());
 
             $queryResult= $this->siiFacturaUploadStatusService->query(

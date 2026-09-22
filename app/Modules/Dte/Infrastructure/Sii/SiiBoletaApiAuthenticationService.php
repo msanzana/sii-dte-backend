@@ -7,15 +7,23 @@ use Illuminate\Support\Facades\Http;
 
 class SiiBoletaApiAuthenticationService
 {
+    public function __construct(
+        private readonly SiiSeedXmlSignerService $seedXmlSignerService,
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     public function authenticate(
         string $environment,
         string $privateKeyPem,
         string $certificateBase64,
-        string $modulusBase64
+        string $modulusBase64,
+        string $exponentBase64
     ): string
     {
         $seedUrl = $this->resolveConfig($environment, 'seed_url');
         $tokenUrl = $this->resolveConfig($environment, 'token_url');
+
+        $this->requestThrottleService->wait($environment);
 
         $seedResponse = Http::get($seedUrl);
 
@@ -38,13 +46,16 @@ class SiiBoletaApiAuthenticationService
             );
         }
 
-        $signedSeedXml = $this->buildSignedSeedXml(
-            $seed,
-            $privateKeyPem,
-            $certificateBase64,
-            $modulusBase64
+        $signedSeedXml = $this->seedXmlSignerService->sign(
+            seed: $seed,
+            privateKeyPem: $privateKeyPem,
+            certificateBase64: $certificateBase64,
+            modulusBase64: $modulusBase64,
+            exponentBase64: $exponentBase64
         );
 
+        $this->requestThrottleService->wait($environment);
+        
         $tokenResponse = Http::withHeaders([
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Accept' => 'application/json, application/xml, text/plain'
@@ -72,75 +83,6 @@ class SiiBoletaApiAuthenticationService
         return trim($token);
     }
 
-    private function buildSignedSeedXml(
-        string $seed,
-        string $privateKeyPem,
-        string $certificateBase64,
-        string $modulusBase64
-    ):string
-    {
-        $seedPayload = '<?xml version="1.0" encoding="ISO-8859-1"?><getToken><item><Semilla>' . $seed . '</Semilla></item></getToken>';
-
-        $privateKey = openssl_pkey_get_private($privateKeyPem);
-
-        if($privateKey === false)
-        {
-            throw SiiBoletaApiException::because(
-                'No fue posible cargar la llave private para firmar la semilla de boleta.'
-            );
-        }
-
-        $signature = '';
-
-        $signed = openssl_sign(
-            $seedPayload,
-            $signature,
-            $privateKey,
-            OPENSSL_ALGO_SHA1
-        );
-
-        if(!$signed)
-        {
-            throw SiiBoletaApiException::because(
-                'OpenSSL no pudo firmar la semilla de la boleta.'
-            );
-        }
-
-        $signatureBase64 = base64_encode($signature);
-
-        return <<<XML
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<getToken>
-    <item>
-        <Semilla>{$seed}</Semilla>
-        <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
-            <SignedInfo>
-                <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
-                <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
-                <Reference URI="">
-                    <Transforms>
-                        <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
-                    </Transforms>
-                    <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-                    <DigestValue></DigestValue>
-                </Reference>
-            </SignedInfo>
-            <SignatureValue>{$signatureBase64}</SignatureValue>
-            <KeyInfo>
-                <KeyValue>
-                    <RSAKeyValue>
-                        <Modulus>{$modulusBase64}</Modulus>
-                    </RSAKeyValue>
-                </KeyValue>
-                <X509Data>
-                    <X509Certificate>{$certificateBase64}</X509Certificate>
-                </X509Data>
-            </KeyInfo>
-        </Signature>
-    </item>
-</getToken>
-XML;
-    }
     private function resolveConfig(string $environment, string $key): string
     {
         $value = (string) config("dte.sii.boleta.{$environment}.{$key}");
@@ -153,7 +95,7 @@ XML;
     }
     private function extractFlexibleValue(string $body, array $possibleKeys): ?string
     {
-        $json = json_encode($body, true);
+        $json = json_decode($body, true);
 
         if(is_array($json))
         {

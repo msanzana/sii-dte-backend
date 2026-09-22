@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Http;
 
 class SiiBoletaApiDocumentStatusService
 {
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     public function query(
         string $environment,
         string $token,
@@ -14,13 +18,30 @@ class SiiBoletaApiDocumentStatusService
     ):array
     {
         $url = $this->resolveConfig($environment, 'document_status_url');
-        $headerName = $this->resolveConfig($environment, 'token_header_name');
-        $headerPrefix = (string) config("dto.sii.boleta.{$environment}.token.header.prefix", 'Bearer ');
+        $documentStatusUrl = rtrim($url, '/')
+            . '/'
+            . rawurlencode((string) $payload['rut_emisor'])
+            . '-'
+            . rawurlencode((string) $payload['dv_emisor'])
+            . '-'
+            . rawurlencode((string) $payload['tipo_dte'])
+            . '-'
+            . rawurlencode((string) $payload['folio'])
+            . '/estado';
 
+        $this->requestThrottleService->wait($environment);
         $response = Http::withHeaders([
-            $headerName => $headerName . $token,
+            'Cookie' => 'TOKEN=' . $token,
             'Accept' => 'application/json, application/xml, text/plain',
-        ])->post($url, $payload);
+        ])->get($documentStatusUrl, [
+            'rut_receptor' => (string) $payload['rut_receptor'],
+            'dv_receptor' => (string) $payload['dv_receptor'],
+            'monto' => (string) $payload['monto_total'],
+            'fechaEmision' => (new \DateTimeImmutable(
+                (string) $payload['fecha_emision']
+            ))->format('d-m-Y'),
+        ]);
+
 
         if(!$response->successful())
         {
@@ -52,7 +73,7 @@ class SiiBoletaApiDocumentStatusService
 
     private function resolveConfig(string $environment, string $key):string
     {
-        $value = (string) config("dte.sii.{$environment}.{$key}");
+        $value = (string) config("dte.sii.boleta.{$environment}.{$key}");
 
         if(trim($value) === '')
         {
@@ -64,7 +85,7 @@ class SiiBoletaApiDocumentStatusService
 
     public function extractFlexibleValue(string $body, array $possibleKeys): ?string
     {
-        $json = json_encode($body, true);
+        $json = json_decode($body, true);
 
         if(is_array($json))
         {

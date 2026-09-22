@@ -1,0 +1,880 @@
+﻿===== DteDocument.php =====
+<?php
+
+namespace App\Modules\Dte\Domain\Entities;
+
+use App\Modules\Dte\Domain\Enums\DteStatus;
+use App\Modules\Dte\Domain\Enums\DteType;
+use App\Modules\Dte\Domain\ValueObjects\ReceiverData;
+use DateTimeImmutable;
+
+final class DteDocument
+{
+    /**
+     * @param DteLineItem[] $items
+     * @param DteReference[] $references
+     */
+    public function __construct(
+        private readonly ?int $id,
+        private readonly string $externalId,
+        private readonly int $companyId,
+        private readonly DteType $dteType,
+        private readonly string $issueDate,
+        private readonly string $status,
+        private readonly ReceiverData $receiver,
+        private readonly float $netAmount,
+        private readonly float $exemptAmount,
+        private readonly float $taxAmount,
+        private readonly float $totalAmount,
+        private readonly array $items,
+        private readonly array $references = [],
+        private readonly ?array $headerPayload = null,
+        private readonly ?array $totalsPayload = null,
+        private readonly ?array $rawInput = null,
+        private readonly ?int $folio = null,
+        private readonly ?string $siiEnvironment = null,
+        private readonly ?string $unsignedXmlPath = null,
+        private readonly ?string $signedXmlPath = null,
+        private readonly ?string $tedXml = null,
+        private readonly ?string $lastErrorCode = null,
+        private readonly ?string $lastErrorMessage = null,
+        private readonly ?int $externalSystemId = null,
+        private readonly ?int $cafId = null,
+        private readonly ?int $folioReservationId = null,
+        private readonly ?int $branchOfficeNumber = null,
+        private readonly ?int $facilityNumber = null,
+        private readonly ?string $externalBranchCode = null,
+        private readonly ?DateTimeImmutable $queuedAt = null,
+        private readonly ?DateTimeImmutable $sentAt = null,
+        private readonly ?DateTimeImmutable $acceptedAt = null,
+        private readonly ?DateTimeImmutable $rejectedAt = null,
+    ) {
+    }
+
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+
+    public function externalId(): string
+    {
+        return $this->externalId;
+    }
+
+    public function companyId(): int
+    {
+        return $this->companyId;
+    }
+
+    public function dteType(): DteType
+    {
+        return $this->dteType;
+    }
+
+    public function issueDate(): string
+    {
+        return $this->issueDate;
+    }
+
+    public function status(): string
+    {
+        return $this->status;
+    }
+
+    public function receiver(): ReceiverData
+    {
+        return $this->receiver;
+    }
+
+    public function netAmount(): float
+    {
+        return $this->netAmount;
+    }
+
+    public function exemptAmount(): float
+    {
+        return $this->exemptAmount;
+    }
+
+    public function taxAmount(): float
+    {
+        return $this->taxAmount;
+    }
+
+    public function totalAmount(): float
+    {
+        return $this->totalAmount;
+    }
+
+    /**
+     * @return DteLineItem[]
+     */
+    public function items(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * @return DteReference[]
+     */
+    public function references(): array
+    {
+        return $this->references;
+    }
+
+    public function headerPayload(): ?array
+    {
+        return $this->headerPayload;
+    }
+
+    public function totalsPayload(): ?array
+    {
+        return $this->totalsPayload;
+    }
+
+    public function rawInput(): ?array
+    {
+        return $this->rawInput;
+    }
+
+    public function folio(): ?int
+    {
+        return $this->folio;
+    }
+
+    public function siiEnvironment(): ?string
+    {
+        return $this->siiEnvironment;
+    }
+
+    public function unsignedXmlPath(): ?string
+    {
+        return $this->unsignedXmlPath;
+    }
+
+    public function signedXmlPath(): ?string
+    {
+        return $this->signedXmlPath;
+    }
+
+    public function tedXml(): ?string
+    {
+        return $this->tedXml;
+    }
+
+    public function lastErrorCode(): ?string
+    {
+        return $this->lastErrorCode;
+    }
+
+    public function lastErrorMessage(): ?string
+    {
+        return $this->lastErrorMessage;
+    }
+
+    public function queuedAt(): ?DateTimeImmutable
+    {
+        return $this->queuedAt;
+    }
+
+    public function sentAt(): ?DateTimeImmutable
+    {
+        return $this->sentAt;
+    }
+
+    public function acceptedAt(): ?DateTimeImmutable
+    {
+        return $this->acceptedAt;
+    }
+
+    public function rejectedAt(): ?DateTimeImmutable
+    {
+        return $this->rejectedAt;
+    }
+    public function withFolioAndStatus(
+        int $folio,
+        string $status,
+        ?string $siiEnvironment = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: $status,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $folio,
+            siiEnvironment: $siiEnvironment ?? $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+
+    public function withUnsignedXmlBuilt(string $unsignedXmlPath): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::XML_BUILT->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+
+    public function withTedBuilt(
+        string $tedXml,
+        string $unsignedXmlPath
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::TED_BUILT->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+
+    public function withSignedXml(string $signedXmlPath): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SIGNED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+        );
+    }
+    public function withSendingStatus(): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SENDING->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $this->lastErrorCode,
+            lastErrorMessage: $this->lastErrorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+    public function withSentStatus(
+            ?string $code = null,
+            ?string $message = null
+    ): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::SENT->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt ?? new DateTimeImmutable(),
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+    public function withAcceptedStatus(): self
+    {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::ACCEPTED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: null,
+            lastErrorMessage: null,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+
+    public function withAcceptedWithReparosStatus(
+        ?string $code = null,
+        ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::ACCEPTED_WITH_REPAROS->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
+            rejectedAt: $this->rejectedAt,
+        );
+    }
+
+    public function withRejectedStatus(
+    ?string $code = null,
+    ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::REJECTED->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt ?? new DateTimeImmutable(),
+        );
+    }
+    public function externalSystemId(): ?int
+    {
+        return $this->externalSystemId;
+    }
+
+    public function cafId(): ?int
+    {
+        return $this->cafId;
+    }
+
+    public function folioReservationId(): ?int
+    {
+        return $this->folioReservationId;
+    }
+
+    public function branchOfficeNumber(): ?int
+    {
+        return $this->branchOfficeNumber;
+    }
+
+    public function facilityNumber(): ?int
+    {
+        return $this->facilityNumber;
+    }
+
+    public function externalBranchCode(): ?string
+    {
+        return $this->externalBranchCode;
+    }
+}
+===== TESTS RELACIONADOS =====
+
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:78:            id: 
+1,
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:79:            
+batchUuid: 'test-batch-uuid',
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:80:            
+companyId: 1,
+> tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:81:            
+dteDocumentId: 1,
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:82:            
+environment: 'cert',
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:83:            
+transportType: 'rest_upload_boleta',
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:84:            
+status: $status,
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:85:            
+trackId: $trackId,
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:86:        );
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:87:    }
+  tests\Unit\DteBoletaDispatchStatusDomainServiceTest.php:88:}
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:4:
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:5:use 
+App\Modules\Dte\Application\Services\DteXmlDataAssemblerService;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:6:use 
+App\Modules\Dte\Domain\Entities\Company;
+> tests\Unit\DteXmlDataAssemblerServiceTest.php:7:use 
+App\Modules\Dte\Domain\Entities\DteDocument;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:8:use 
+App\Modules\Dte\Domain\Enums\DteType;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:9:use 
+App\Modules\Dte\Domain\ValueObjects\LocationSummary;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:10:use 
+App\Modules\Dte\Domain\ValueObjects\ReceiverData;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:11:use Tests\TestCase;
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:12:
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:13:class 
+DteXmlDataAssemblerServiceTest extends TestCase
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:14:{
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:15:    public function 
+test_boleta_propaga_ind_servicio_desde_header_payload(): void
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:16:    {
+> tests\Unit\DteXmlDataAssemblerServiceTest.php:17:        $document = new 
+DteDocument(
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:18:            id: 39,
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:19:            externalId: 
+'test-boleta-39',
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:20:            companyId: 1,
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:21:            dteType: 
+DteType::BOLETA_ELECTRONICA,
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:22:            issueDate: 
+'2026-09-18',
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:23:            status: 
+'folio_assigned',
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:24:            receiver: new 
+ReceiverData(
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:25:                document: 
+'11111111-1',
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:26:                name: 
+'Cliente prueba',
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:27:                giro: 
+null,
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:28:                address: 
+null,
+  tests\Unit\DteXmlDataAssemblerServiceTest.php:29:                cityId: 
+null,
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:3:namespace 
+Tests\Unit;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:4:
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:5:use 
+App\Modules\Dte\Domain\Entities\Company;
+> tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:6:use 
+App\Modules\Dte\Domain\Entities\DteDocument;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:7:use 
+App\Modules\Dte\Domain\Enums\DteType;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:8:use 
+App\Modules\Dte\Domain\ValueObjects\ReceiverData;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:9:use 
+App\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:10:use DOMDocument;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:11:use Tests\TestCase;
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:12:
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:13:class 
+EnvioBoletaEnvelopeBuilderServiceTest extends TestCase
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:14:{
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:15:    public 
+function test_envio_boleta_declara_schema_location_oficial_del_sii(): void
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:16:    {
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:17:        
+config()->set('dte.sii.boleta.wrap_in_envio', true);
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:18:        
+config()->set('dte.sii.sender.rut_body', '15259615');
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:19:        
+config()->set('dte.sii.sender.rut_dv', '4');
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:20:        
+config()->set('dte.sii.receiver_rut', '60803000-K');
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:21:
+> tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:22:        $document 
+= new DteDocument(
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:23:            id: 39,
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:24:            
+externalId: 'test-boleta-39',
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:25:            
+companyId: 1,
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:26:            
+dteType: DteType::BOLETA_ELECTRONICA,
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:27:            
+issueDate: '2026-09-17',
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:28:            
+status: 'signed',
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:29:            
+receiver: new ReceiverData(
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:30:                
+document: '11111111-1',
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:31:                
+name: 'Cliente prueba'
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:32:            ),
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:33:            
+netAmount: 40000,
+  tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest.php:34:            
+exemptAmount: 0,
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:461:    public function 
+test_with_sent_status_permite_guardar_el_diagnostico_sii(): void
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:462:    {
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:463:        $method = new 
+\ReflectionMethod(
+> tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:464:            
+\App\Modules\Dte\Domain\Entities\DteDocument::class,
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:465:            
+'withSentStatus'
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:466:        );
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:467:
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:468:        
+$this->assertSame(
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:469:            2,
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:470:            
+$method->getNumberOfParameters()
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:471:        );
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:472:
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:473:        
+$this->assertSame(
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:474:            0,
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:475:            
+$method->getNumberOfRequiredParameters()
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:476:        );
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:477:
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:478:        $source = 
+file_get_contents(
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:479:            app_path(
+> tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:480:                
+'Modules/Dte/Domain/Entities/DteDocument.php'
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:481:            )
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:482:        );
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:483:
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:484:        
+$this->assertMatchesRegularExpression(
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:485:            '/public 
+function withSentStatus\s*\(\s*\?string \$code = null\s*,\s*\?string 
+\$message = null\s*\)/s',
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:486:            $source
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:487:        );
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:488:
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:489:        
+$this->assertMatchesRegularExpression(
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:490:            
+'/lastErrorCode\s*:\s*\$code/',
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:491:            $source
+  tests\Unit\QuerySiiDocumentStatusUseCaseTest.php:492:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:2:
+  tests\Unit\StoreDteDocumentRequestTest.php:3:namespace Tests\Unit;
+  tests\Unit\StoreDteDocumentRequestTest.php:4:
+> tests\Unit\StoreDteDocumentRequestTest.php:5:use 
+App\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest;
+  tests\Unit\StoreDteDocumentRequestTest.php:6:use 
+Illuminate\Support\Facades\Validator;
+  tests\Unit\StoreDteDocumentRequestTest.php:7:use Tests\TestCase;
+  tests\Unit\StoreDteDocumentRequestTest.php:8:
+> tests\Unit\StoreDteDocumentRequestTest.php:9:class 
+StoreDteDocumentRequestTest extends TestCase
+  tests\Unit\StoreDteDocumentRequestTest.php:10:{
+  tests\Unit\StoreDteDocumentRequestTest.php:11:    public function 
+test_boleta_39_exige_ind_servicio(): void
+  tests\Unit\StoreDteDocumentRequestTest.php:12:    {
+  tests\Unit\StoreDteDocumentRequestTest.php:13:        $data = [
+  tests\Unit\StoreDteDocumentRequestTest.php:14:            'dte_type' => 39,
+  tests\Unit\StoreDteDocumentRequestTest.php:15:            'issue_date' => 
+'2026-09-18',
+  tests\Unit\StoreDteDocumentRequestTest.php:16:
+  tests\Unit\StoreDteDocumentRequestTest.php:17:            'receiver' => [
+  tests\Unit\StoreDteDocumentRequestTest.php:18:                'document' 
+=> '11111111-1',
+  tests\Unit\StoreDteDocumentRequestTest.php:19:                'name' => 
+'Cliente prueba',
+  tests\Unit\StoreDteDocumentRequestTest.php:20:            ],
+  tests\Unit\StoreDteDocumentRequestTest.php:21:
+  tests\Unit\StoreDteDocumentRequestTest.php:30:            'header_payload' 
+=> [],
+  tests\Unit\StoreDteDocumentRequestTest.php:31:        ];
+  tests\Unit\StoreDteDocumentRequestTest.php:32:
+> tests\Unit\StoreDteDocumentRequestTest.php:33:        $request = 
+StoreDteDocumentRequest::create(
+  tests\Unit\StoreDteDocumentRequestTest.php:34:            
+'/api/internal/dte/documents',
+  tests\Unit\StoreDteDocumentRequestTest.php:35:            'POST',
+  tests\Unit\StoreDteDocumentRequestTest.php:36:            $data
+  tests\Unit\StoreDteDocumentRequestTest.php:37:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:38:
+  tests\Unit\StoreDteDocumentRequestTest.php:39:        $validator = 
+Validator::make(
+  tests\Unit\StoreDteDocumentRequestTest.php:40:            $request->all(),
+  tests\Unit\StoreDteDocumentRequestTest.php:41:            $request->rules()
+  tests\Unit\StoreDteDocumentRequestTest.php:42:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:43:
+  tests\Unit\StoreDteDocumentRequestTest.php:44:        $this->assertTrue(
+  tests\Unit\StoreDteDocumentRequestTest.php:45:            
+$validator->fails()
+  tests\Unit\StoreDteDocumentRequestTest.php:75:            ],
+  tests\Unit\StoreDteDocumentRequestTest.php:76:        ];
+  tests\Unit\StoreDteDocumentRequestTest.php:77:
+> tests\Unit\StoreDteDocumentRequestTest.php:78:        $request = 
+StoreDteDocumentRequest::create(
+  tests\Unit\StoreDteDocumentRequestTest.php:79:            
+'/api/internal/dte/documents',
+  tests\Unit\StoreDteDocumentRequestTest.php:80:            'POST',
+  tests\Unit\StoreDteDocumentRequestTest.php:81:            $data
+  tests\Unit\StoreDteDocumentRequestTest.php:82:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:83:
+  tests\Unit\StoreDteDocumentRequestTest.php:84:        $validator = 
+Validator::make(
+  tests\Unit\StoreDteDocumentRequestTest.php:85:            $request->all(),
+  tests\Unit\StoreDteDocumentRequestTest.php:86:            $request->rules()
+  tests\Unit\StoreDteDocumentRequestTest.php:87:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:88:
+  tests\Unit\StoreDteDocumentRequestTest.php:89:        $this->assertFalse(
+  tests\Unit\StoreDteDocumentRequestTest.php:90:            
+$validator->fails(),
+  tests\Unit\StoreDteDocumentRequestTest.php:119:            ],
+  tests\Unit\StoreDteDocumentRequestTest.php:120:        ];
+  tests\Unit\StoreDteDocumentRequestTest.php:121:
+> tests\Unit\StoreDteDocumentRequestTest.php:122:        $request = 
+StoreDteDocumentRequest::create(
+  tests\Unit\StoreDteDocumentRequestTest.php:123:            
+'/api/internal/dte/documents',
+  tests\Unit\StoreDteDocumentRequestTest.php:124:            'POST',
+  tests\Unit\StoreDteDocumentRequestTest.php:125:            $data
+  tests\Unit\StoreDteDocumentRequestTest.php:126:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:127:
+  tests\Unit\StoreDteDocumentRequestTest.php:128:        $validator = 
+Validator::make(
+  tests\Unit\StoreDteDocumentRequestTest.php:129:            $request->all(),
+  tests\Unit\StoreDteDocumentRequestTest.php:130:            
+$request->rules()
+  tests\Unit\StoreDteDocumentRequestTest.php:131:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:132:
+  tests\Unit\StoreDteDocumentRequestTest.php:133:        $this->assertTrue(
+  tests\Unit\StoreDteDocumentRequestTest.php:134:            
+$validator->fails()
+  tests\Unit\StoreDteDocumentRequestTest.php:161:            
+'header_payload' => [],
+  tests\Unit\StoreDteDocumentRequestTest.php:162:        ];
+  tests\Unit\StoreDteDocumentRequestTest.php:163:
+> tests\Unit\StoreDteDocumentRequestTest.php:164:        $request = 
+StoreDteDocumentRequest::create(
+  tests\Unit\StoreDteDocumentRequestTest.php:165:            
+'/api/internal/dte/documents',
+  tests\Unit\StoreDteDocumentRequestTest.php:166:            'POST',
+  tests\Unit\StoreDteDocumentRequestTest.php:167:            $data
+  tests\Unit\StoreDteDocumentRequestTest.php:168:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:169:
+  tests\Unit\StoreDteDocumentRequestTest.php:170:        $validator = 
+Validator::make(
+  tests\Unit\StoreDteDocumentRequestTest.php:171:            $request->all(),
+  tests\Unit\StoreDteDocumentRequestTest.php:172:            
+$request->rules()
+  tests\Unit\StoreDteDocumentRequestTest.php:173:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:174:
+  tests\Unit\StoreDteDocumentRequestTest.php:175:        $this->assertTrue(
+  tests\Unit\StoreDteDocumentRequestTest.php:176:            
+$validator->fails()
+  tests\Unit\StoreDteDocumentRequestTest.php:203:            ],
+  tests\Unit\StoreDteDocumentRequestTest.php:204:        ];
+  tests\Unit\StoreDteDocumentRequestTest.php:205:
+> tests\Unit\StoreDteDocumentRequestTest.php:206:        $request = 
+StoreDteDocumentRequest::create(
+  tests\Unit\StoreDteDocumentRequestTest.php:207:            
+'/api/internal/dte/documents',
+  tests\Unit\StoreDteDocumentRequestTest.php:208:            'POST',
+  tests\Unit\StoreDteDocumentRequestTest.php:209:            $data
+  tests\Unit\StoreDteDocumentRequestTest.php:210:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:211:
+  tests\Unit\StoreDteDocumentRequestTest.php:212:        $validator = 
+Validator::make(
+  tests\Unit\StoreDteDocumentRequestTest.php:213:            $request->all(),
+  tests\Unit\StoreDteDocumentRequestTest.php:214:            
+$request->rules()
+  tests\Unit\StoreDteDocumentRequestTest.php:215:        );
+  tests\Unit\StoreDteDocumentRequestTest.php:216:
+  tests\Unit\StoreDteDocumentRequestTest.php:217:        $this->assertFalse(
+  tests\Unit\StoreDteDocumentRequestTest.php:218:            
+$validator->fails(),
+
+

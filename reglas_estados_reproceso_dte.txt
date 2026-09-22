@@ -1,0 +1,204 @@
+﻿
+  app\Modules\Dte\Domain\Enums\DteStatus.php:1:<?php
+  app\Modules\Dte\Domain\Enums\DteStatus.php:2:namespace 
+App\Modules\Dte\Domain\Enums;
+> app\Modules\Dte\Domain\Enums\DteStatus.php:3:enum DteStatus: string
+  app\Modules\Dte\Domain\Enums\DteStatus.php:4:{
+  app\Modules\Dte\Domain\Enums\DteStatus.php:5:    case DRAFT = 'draft';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:6:    case READY_FOR_XML = 
+'ready_for_xml';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:7:    case FOLIO_ASSIGNED = 
+'folio_assigned';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:8:    case XML_BUILT = 
+'xml_built';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:9:    case TED_BUILT = 
+'ted_built';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:10:    case SIGNED = 'signed';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:11:    case QUEUED = 'queued';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:12:    case SENDING = 'sending';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:13:    case SENT = 'sent';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:14:    case ACCEPTED = 
+'accepted';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:15:    case 
+ACCEPTED_WITH_REPAROS = 'accepted_with_reparos';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:16:    case REJECTED = 
+'rejected';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:17:    case NEEDS_RESEND = 
+'needs_resend';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:18:    case FAILED = 'failed';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:19:    case CANCELLED = 
+'cancelled';
+  app\Modules\Dte\Domain\Enums\DteStatus.php:20:}
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:7:use 
+App\Modules\Dte\Domain\Exceptions\UnsupportedSiiTransportException;
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:8:
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:9:final 
+class DteBoletaSendDomainService
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:10:{
+> app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:11:    
+public function assertCanSend(DteDocument $document): void{
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:12:        
+if(!$document->dteType()->isBoletaFamily())
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:13:        {
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:14:         
+   throw UnsupportedSiiTransportException::forDteType(
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:15:         
+       $document->dteType()->value
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:16:         
+   );
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:17:        }
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:18:
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:19:        
+if($document->status() !== DteStatus::SIGNED->value)
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:20:        {
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:21:         
+   throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:22:         
+       "El documento {$document->id()} no esta en estado signed."
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:23:         
+   );
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:24:        }
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:25:
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:26:        
+if($document->signedXmlPath() === null || trim($document->signedXmlPath()) 
+=== '')
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:27:        {
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:28:         
+   throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:29:         
+       "El documento {$document->id()} no tiene Xml firmado para enviar."
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:30:         
+   );
+  app\Modules\Dte\Domain\Services\DteBoletaSendDomainService.php:31:        }
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:7:use 
+App\Modules\Dte\Domain\Exceptions\UnsupportedSiiTransportException;
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:8:
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:9:final class 
+DteSiiSendDomainService
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:10:{
+> app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:11:    public 
+function assertCanSend(DteDocument $document):void
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:12:    {
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:13:        
+if($document->status() !== DteStatus::SIGNED->value)
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:14:        {
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:15:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:16:            
+    "El documento {$document->id()} no está en estado signed."
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:17:            
+);
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:18:        }
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:19:
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:20:        
+if($document->signedXmlPath() === null || trim($document->signedXmlPath()) 
+=== '')
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:21:        {
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:22:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:23:            
+    "El documento {$document->id()} no tiene XML firmado para enviar."
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:24:            
+);
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:25:        }
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:26:
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:27:        
+if($document->dteType()->isBoletaFamily())
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:28:        {
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:29:            
+throw UnsupportedSiiTransportException::forDteType(
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:30:            
+    $document->dteType()->value
+  app\Modules\Dte\Domain\Services\DteSiiSendDomainService.php:31:            
+);
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:5:use 
+App\Modules\Dte\Domain\Enums\DteStatus;
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:7:
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:8:final class 
+DteXmlBuildDomainService
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:9:{
+> app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:10:    public 
+function assertCanBuildXml(DteDocument $document): void
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:11:    {
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:12:        
+if($document->status() !== DteStatus::FOLIO_ASSIGNED->value)
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:13:        {
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:14:           
+ throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:15:           
+     "El documento {$document->id()} no está en estado folio_assigned."
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:16:           
+ );
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:17:        }
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:18:
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:19:        
+if($document->folio() === null)
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:20:        {
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:21:           
+ throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:22:           
+     "El documento {$document->id()} no tiene folio asignado."
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:23:           
+ );
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:24:        }
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:25:
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:26:        
+if($document->unsignedXmlPath() !== null)
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:27:        {
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:28:           
+ throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:29:           
+     "El documento {$document->id()} ya tiene un XML base generado."
+  app\Modules\Dte\Domain\Services\DteXmlBuildDomainService.php:30:           
+ );
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:5:use 
+App\Modules\Dte\Domain\Enums\DteStatus;
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:6:use 
+App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:7:
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:8:final class 
+DteXmlSignDomainService
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:9:{
+> app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:10:    public 
+function assertCanSignXml(DteDocument $document): void
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:11:    {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:12:        
+if($document->status() !== DteStatus::TED_BUILT->value)
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:13:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:14:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:15:            
+    "El documento {$document->id()} no está en estado ted_built."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:16:            
+);
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:17:        }
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:18:
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:19:        
+if($document->unsignedXmlPath() === null || 
+trim($document->unsignedXmlPath()) === '')
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:20:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:21:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:22:            
+    "El documento {$document->id()} no tiene XML unsigned para firmar."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:23:            
+);
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:24:        }
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:25:
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:26:        
+if($document->tedXml() === null || trim($document->tedXml()) === '')
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:27:        {
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:28:            
+throw InvalidDocumentStateException::because(
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:29:            
+    "El documento {$document->id()} no tiene TED persistido."
+  app\Modules\Dte\Domain\Services\DteXmlSignDomainService.php:30:            
+);
+
+

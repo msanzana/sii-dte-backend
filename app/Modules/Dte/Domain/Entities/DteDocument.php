@@ -190,6 +190,68 @@ final class DteDocument
     {
         return $this->rejectedAt;
     }
+    public function withNeedsResend(
+    array $headerPayloadPatch,
+    ?string $code = null,
+    ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: DteStatus::NEEDS_RESEND->value,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: array_replace(
+                $this->headerPayload ?? [],
+                $headerPayloadPatch
+            ),
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+
+            /*
+            * Cualquier cambio semántico invalida todos los
+            * artefactos XML derivados del ciclo anterior.
+            */
+            unsignedXmlPath: null,
+            signedXmlPath: null,
+            tedXml: null,
+
+            /*
+            * Conservamos la causa que originó el reproceso.
+            */
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+
+            /*
+            * Se conservan las asociaciones tributarias.
+            */
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+
+            /*
+            * Comienza un nuevo ciclo operativo.
+            * La historia anterior permanece en sii_dispatches.
+            */
+            queuedAt: null,
+            sentAt: null,
+            acceptedAt: null,
+            rejectedAt: null,
+        );
+    }
     public function withFolioAndStatus(
         int $folio,
         string $status,
@@ -384,7 +446,10 @@ final class DteDocument
             rejectedAt: $this->rejectedAt,
         );
     }
-    public function withSentStatus(): self
+    public function withSentStatus(
+            ?string $code = null,
+            ?string $message = null
+    ): self
     {
         return new self(
             id: $this->id,
@@ -408,8 +473,8 @@ final class DteDocument
             unsignedXmlPath: $this->unsignedXmlPath,
             signedXmlPath: $this->signedXmlPath,
             tedXml: $this->tedXml,
-            lastErrorCode: $this->lastErrorCode,
-            lastErrorMessage: $this->lastErrorMessage,
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
             externalSystemId: $this->externalSystemId,
             cafId: $this->cafId,
             folioReservationId: $this->folioReservationId,
@@ -455,8 +520,8 @@ final class DteDocument
             facilityNumber: $this->facilityNumber,
             externalBranchCode: $this->externalBranchCode,
             queuedAt: $this->queuedAt,
-            sentAt: $this->sentAt ?? new DateTimeImmutable(),
-            acceptedAt: $this->acceptedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
             rejectedAt: $this->rejectedAt,
         );
     }

@@ -1,0 +1,771 @@
+﻿===== DteDocumentRepositoryInterface =====
+<?php
+namespace App\Modules\Dte\Domain\RepositoryContracts;
+
+use App\Modules\Dte\Domain\Entities\DteDocument;
+
+
+interface DteDocumentRepositoryInterface
+{
+    public function create(DteDocument $document): DteDocument;
+
+    public function update(DteDocument $document): DteDocument;
+
+    public function findById(int $id): ?DteDocument;
+
+    public function findByIdForUpdate(int $id): ?DteDocument;
+
+    public function findByExternalId(string $externalId): ?DteDocument;
+
+    /**
+     * @return DteDocument[]
+     */
+    public function findPendingForDispatch(int $limit = 100): array;
+
+        /**
+     * @param string[] $statuses
+     * @return int[]
+     */
+    public function findIdsByStatuses(array $statuses, int $limit = 100): array;
+}
+===== SiiDispatchRepositoryInterface =====
+<?php
+namespace App\Modules\Dte\Domain\RepositoryContracts;
+
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
+
+
+interface SiiDispatchRepositoryInterface
+{
+    public function create(SiiDispatch $dispatch): SiiDispatch;
+    public function update(SiiDispatch $dispatch): SiiDispatch;
+    public function findById(int $id): ?SiiDispatch;
+    public function findByIdForUpdate(int $id): ?SiiDispatch;
+    public function findLatestByDocumentId(int $documentId): ?SiiDispatch;
+        /**
+     * @param string[] $statuses
+     * @param string[] $transportTypes
+     * @return int[]
+     */
+    public function findIdsByStatusesAndTransportTypes(
+        array $statuses,
+        array $transportTypes = [],
+        int $limit = 100
+    ): array;
+}
+===== USOS findLatestByDocumentId / findByIdForUpdate =====
+
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:127:                $dispatch,
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:128:                $result
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:129:            ): PollBoletaDispatchStatusResultDto {
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:130:                $lockedDispatch =
+> app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:131:                    $this->dispatchRepository->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:132:                        (int) $dispatch->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:133:                    );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:134:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:135:                if (!$lockedDispatch) {
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:136:                    throw DispatchNotFoundException::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:137:                        (int) $dispatch->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:138:                    );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:139:                }
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:140:                
+$this->boletaDispatchStatusDomainService->assertCanPoll(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:141:                    $lockedDispatch
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:142:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCa
+se.php:143:                $internalStatus =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:63:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:64:        $prepared = DB::transaction(function () use ($input): array {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:65:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:66:            $document = $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:67:                ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:68:                    $input->documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:69:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:70:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:71:            if (!$document) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:72:                throw DocumentNotFoundException::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:73:                    $input->documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:74:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:75:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:76:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:77:            $this->boletaSendDomainService
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:78:                ->assertCanSend(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:79:                    $document
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:599:                        */
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:600:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:601:                        $lockedDocument =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:602:                            $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:603:                                ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:604:                                    (int) $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:605:                                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:606:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:607:                        if (!$lockedDocument) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:608:                            throw DocumentNotFoundException::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:609:                                (int) $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:610:                            );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:611:                        }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:612:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:613:                        /*
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:614:                        
+|--------------------------------------------------------------------------
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:615:                        | Mantener documento en SENDING
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:917:    ): void
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:918:    {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:919:        $latestDispatch =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:920:            $this->dispatchRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:921:                ->findLatestByDocumentId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:922:                    $documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:923:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:924:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:925:        if (!$latestDispatch) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:926:            return;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:927:        }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:928:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:929:        $blockingStatuses = [
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:930:            DispatchStatus::PENDING->value,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:931:            DispatchStatus::SENDING->value,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:932:            DispatchStatus::UPLOAD_OK->value,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.
+php:933:            DispatchStatus::DELIVERY_UNKNOWN->value,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:60:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:61:        $prepared = DB::transaction(function () use ($input): array {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:62:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:63:            $document = $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:64:                ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:65:                    $input->documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:66:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:67:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:68:            if (!$document) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:69:                throw DocumentNotFoundException::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:70:                    $input->documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:71:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:72:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:73:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:74:            $this->sendDomainService
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:75:                ->assertCanSend(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:76:                    $document
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:686:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:687:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:688:                        $lockedDocument =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:689:                            $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:690:                                ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:691:                                    $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:692:                                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:693:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:694:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:695:                        if (!$lockedDocument) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:696:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:697:                            throw DocumentNotFoundException
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:698:                                ::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:699:                                    $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:700:                                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:701:                        }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:702:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:847:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:848:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:849:                        $lockedDocument =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:850:                            $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:851:                                ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:852:                                    $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:853:                                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:854:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:855:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:856:                        if (!$lockedDocument) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:857:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:858:                            throw DocumentNotFoundException
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:859:                                ::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:860:                                    $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:861:                                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:862:                        }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:863:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1073:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1074:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1075:                    $lockedDocument =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1076:                        $this->documentRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1077:                            ->findByIdForUpdate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1078:                                $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1079:                            );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1080:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1081:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1082:                    if (!$lockedDocument) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1083:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1084:                        throw DocumentNotFoundException
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1085:                            ::withId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1086:                                $document->id()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1087:                            );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1088:                    }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1089:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1196:    ): void {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1197:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1198:        $latestDispatch =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1199:            $this->dispatchRepository
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1200:                ->findLatestByDocumentId(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1201:                    $documentId
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1202:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1203:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1204:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1205:        if (!$latestDispatch) {
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1206:            return;
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1207:        }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1208:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1209:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1210:        $blockingStatuses = [
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1211:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php
+:1212:            DispatchStatus::PENDING
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:32:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:33:   
+ public function execute(BuildDteXmlInputDto $input): BuildDteXmlResultDto
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:34:   
+ {
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:35:   
+     return DB::transaction( function () use ($input){
+> app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:36:   
+         $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:37:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:38:   
+         if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:39:   
+         {
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:40:   
+             throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:41:   
+         }
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:42:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:43:   
+         $this->xmlBuildDomainService->assertCanBuildXml($document);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:44:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:45:   
+         $company = 
+$this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:46:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:47:   
+         if(!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:48:   
+         {
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:91:   
+         );
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:92:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:93:   
+         $updatedDocument = $document->withUnsignedXmlBuilt($relativePath);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:94:
+> app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:95:   
+         $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:96:
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:97:   
+         $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:98:   
+             channel: 'xml_build',
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:99:   
+             message: 'XML base del DTE construido correctamente.',
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:100:  
+              context: [
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:101:  
+                  'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:102:  
+                  'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:103:  
+                  'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:104:  
+                  'unsigned_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:105:  
+                  'document_xml_id' => $xmlData['document_xml_id'],
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:106:  
+              ],
+  app\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase.php:107:  
+              companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:39:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:40:    
+public function execute(BuildTedInputDto $input): BuildTedResultDto
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:41:    {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:42:      
+  return DB::transaction(function () use ($input): BuildTedResultDto {
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:43:      
+      $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:44:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:45:      
+      if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:46:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:47:      
+          throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:48:      
+      }
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:49:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:50:      
+      $this->tedBuildDomainService->assertCanBuildTed($document);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:51:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:52:      
+      $company = $this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:53:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:54:      
+      if (!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:55:      
+      {
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:132:     
+           tedXml: $tedXml,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:133:     
+           unsignedXmlPath: $relativePath
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:134:     
+       );
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:135:
+> app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:136:     
+       $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:137:
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:138:     
+       $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:139:     
+           channel: 'ted_build',
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:140:     
+           message: 'TED construido e incrustado correctamente en el Xml del 
+DTE..',
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:141:     
+           context: [
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:142:     
+               'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:143:     
+               'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:144:     
+               'dte_type' => $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:145:     
+               'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:146:     
+               'caf_id' => $caf->id(),
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:147:     
+               'unsigned_xml_path' => $relativePath,
+  app\Modules\Dte\Application\UseCases\Document\BuildTedUseCase.php:148:     
+           ],
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:28:    public function execute(
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:29:        PrepareDteDocumentForXmlInputDto $input
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:30:    ): PrepareDteDocumentForXmlResultDto{
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:31:        return DB::transaction(function () use ($input) {
+> app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:32:            $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:33:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:34:            if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:35:            {
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:36:                throw 
+DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:37:            }
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:38:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:39:            
+$this->preparationDomainService->assertCanPrepareForXml($document);
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:40:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:41:            $company = 
+$this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:42:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:43:            if (!$company || !$company->isActive()) {
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:44:                throw 
+CompanyNotFoundException::withId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:53:                status: DteStatus::FOLIO_ASSIGNED->value,
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:54:                siiEnvironment: $company->siiEnvironment(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:55:            );
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:56:
+> app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:57:            $saved = 
+$this->documentRepository->update($preparedDocument);
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:58:
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:59:            $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:60:                channel: 'document:workflow',
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:61:                message: 'Documento preparado para construccion de 
+XML con folio reservado.',
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:62:                context:[
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:63:                    'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:64:                    'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:65:                    'company_id'=> $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:66:                    'dte_type'=> $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:67:                    'caf_id' => $reservedFolio->cafId(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:68:                    'folio' => $reservedFolio->folio(),
+  app\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCa
+se.php:69:                ],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:52:    ): QuerySiiDocumentStatusResultDto
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:53:    {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:54:        return DB::transaction(function () use($input)
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:55:        {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:56:            $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:57:            if (!$document)
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:58:            {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:59:                throw 
+DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:60:            }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:61:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:62:            
+$this->documentStatusDomainService->assertCanQueryStatus($document);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:63:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:64:            $company = 
+$this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:65:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:66:            if(!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:67:            {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:68:                throw 
+CompanyNotFoundException::withId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:131:            siiCode: $result['estado'],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:132:            siiMessage: $result['glosa_err'] ?? $result['glosa']
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:133:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:134:
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:135:        $savedDocument = 
+$this->documentRepository->update($updateDocument);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:136:        $this->syncAcceptedFolioWithSii(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:137:            document: $savedDocument
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:138:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:139:        $this->syncCancelledFolioWithSii(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:140:            document: $savedDocument,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:141:            siiCode: $result['estado'],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:142:            siiMessage: $result['glosa_err'] ?? $result['glosa'],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:143:            attentionNumber: $result['num_atencion'] ?? null
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:144:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:145:        $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:146:            channel: 'sii_document_status',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:147:            message: 'Consulta QueryEstDte ejecutada.',
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:217:            siiCode: $result['status_code'],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:218:            siiMessage: $result['status_message']
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:219:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:220:
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:221:        $savedDocument = 
+$this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:222:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:223:        $this->syncAcceptedFolioWithSii(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:224:            document: $savedDocument
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:225:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:226:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:227:        $this->syncCancelledFolioWithSii(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:228:            document: $savedDocument,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:229:            siiCode: $result['status_code'],
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:230:            siiMessage: $result['status_message']
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:231:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:232:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase
+.php:233:        $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:31:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:32:    
+public function execute(SignDteXmlInputDto $input): SignDteXmlResultDto
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:33:    
+{
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:34:    
+    return DB::transaction(function () use ($input){
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:35:    
+        $document = 
+$this->documentRepository->findByIdForUpdate($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:36:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:37:    
+        if(!$document)
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:38:    
+        {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:39:    
+            throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:40:    
+        }
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:41:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:42:    
+        $this->xmlSignDomainService->assertCanSignXml($document);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:43:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:44:    
+        $company = 
+$this->companyRepository->findById($document->companyId());
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:45:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:46:    
+        if(!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:47:    
+        {
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:93:    
+        );
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:94:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:95:    
+        $updatedDocument = $document->withSignedXml($relativePath);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:96:
+> app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:97:    
+        $saved = $this->documentRepository->update($updatedDocument);
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:98:
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:99:    
+        $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:100:   
+             channel: 'xml_sign',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:101:   
+             message: 'DTE firmado correctamente con XMLDSig',
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:102:   
+             context: [
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:103:   
+                 'document_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:104:   
+                 'external_id' => $saved->externalId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:105:   
+                 'company_id' => $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:106:   
+                 'dte_type' => $saved->dteType()->value,
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:107:   
+                 'folio' => $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:108:   
+                 //'certificate_id' => $certificate->id(),
+  app\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase.php:109:   
+                 'certificate_id' => $certificateContext->certificateId,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:44:   
+         companyId: $input->companyId,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:45:   
+         externalSystemId: $input->externalSystemId,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:46:   
+     );
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:47:   
+     return DB::transaction(function () use ($input) {
+> app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:48:   
+         $caf = $this->cafRepository->findByIdForUpdate($input->cafId);
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:49:   
+         if(!$caf){
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:50:   
+             throw CafRangeAssignmentException::cafNotFount($input->cafId);
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:51:   
+         }
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:52:   
+         if($caf->companyId() !== $input->companyId)
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:53:   
+         {
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:54:   
+             throw CafRangeAssignmentException::companyMismatch(
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:55:   
+                 cafId: $input->cafId,
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:56:   
+                 companyId: $input->companyId
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:57:   
+             );
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:58:   
+         }
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:59:   
+         if(!$caf->isActive())
+  app\Modules\Dte\Application\UseCases\Folio\AssignCafRangeUseCase.php:60:   
+         {
+
+

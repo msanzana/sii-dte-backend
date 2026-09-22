@@ -1,0 +1,1456 @@
+﻿
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:10:        public readonly string $issueDate,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:11:        public readonly ?int $receiverCityId,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:12:        public readonly float $netAmount,
+> app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:13:        public readonly float $exemptAmount,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:14:        public readonly float $taxAmount,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:15:        public readonly float $totalAmount,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:16:
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:17:        public readonly ?int $externalSystemId,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:18:        public readonly ?int $folio,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:19:        public readonly ?int $cafId,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:20:        public readonly ?int $folioReservationId,
+  app\Modules\Dte\Application\DTOs\CreateDteDocumentResultDto.php:21:        public readonly ?int $branchOfficeNumber,
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:11:        public readonly float $unitPrice,
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:12:        public readonly float $discountPercent,
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:13:        public readonly float $discountAmount,
+> app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:14:        public readonly bool $taxExempt,
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:15:        public readonly ?array $extraPayload = null,
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:16:
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:17:    ) {}
+  app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:18:}
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:6:        public readonly int $companyId,
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:7:        public readonly int $externalSystemId,
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:8:        public readonly string $originalFilename,
+> app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:9:        public readonly string $tempFilePath,
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:10:        public readonly bool $isActive = true,
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:11:    )
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:12:    {}
+  app\Modules\Dte\Application\DTOs\ImportCafInputDto.php:13:}
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:6:        public readonly int $companyId,
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:7:        public readonly string $alias,
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:8:        public readonly string $originalFilename,
+> app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:9:        public readonly string $tempFilepath,
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:10:        public readonly string $pfxPassword,
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:11:        public readonly bool $isActive = true,
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:12:    ){}
+  app\Modules\Dte\Application\DTOs\ImportCertificateInputDto.php:13:}
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:13:        public readonly ?string $issuerName,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:14:        public readonly ?string $validFrom,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:15:        public readonly ?string $validTo,
+> app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:16:        public readonly bool $isDefault,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:17:        public readonly bool $isActive,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:18:        public readonly ?string $currentValidityStatus = null,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:19:        public readonly bool $hasPrivateKey = true,
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:20:    )
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:21:    {}
+  app\Modules\Dte\Application\DTOs\ImportCertificateResultDto.php:22:}
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:14:            companyId: (int) $request->validated('company_id'),
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:15:            alias: (string) $request->validated('alias'),
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:16:            originalFilename: (string) $file->getClientOriginalName(),
+> app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:17:            tempFilepath: (string) $file->getRealPath(),
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:18:            pfxPassword: (string) $request->validated('pfx_password'),
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:19:            isActive: (bool) ($request->validated('is_active') ?? true)
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:20:        );
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:21:    }
+  app\Modules\Dte\Application\Mappers\CertificateRequestMapper.php:22:}
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:36:                unitPrice: $itemDto->unitPrice,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:37:                discountPercent: $itemDto->discountPercent,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:38:                discountAmount: $effectiveDiscount,
+> app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:39:                taxExempt: $itemDto->taxExempt,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:40:                lineAmount: $lineAmount,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:41:                extraPayload: $itemDto->extraPayload,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:42:            );
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:43:        }
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:44:        $references = [];
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:45:        foreach($dto->references as $index => $referenceDto){
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:46:            $references[] = new DteReference(
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:47:                lineNumber: $index +1,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:74:                email: $dto->receiver->email,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:75:            ),
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:76:            netAmount: $calculatedTotals['net'],
+> app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:77:            exemptAmount: $calculatedTotals['exempt'],
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:78:            taxAmount: $calculatedTotals['tax'],
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:79:            totalAmount: $calculatedTotals['total'],
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:80:            items: $items,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:81:            references: $references,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:82:            headerPayload: $dto->headerPayload,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:83:            totalsPayload: $calculatedTotals,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:84:            rawInput: $dto->rawInput,
+  app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:85:            folio: $resolvedFolio?->folioNumber,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:39:                unitPrice: $itemDto->unitPrice,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:40:                discountPercent: $itemDto->discountPercent,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:41:                discountAmount: $effectiveDiscount,
+> app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:42:                taxExempt: $itemDto->taxExempt,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:43:                lineAmount: $lineAmount,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:44:                extraPayload: $itemDto->extraPayload,
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:45:            );
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:46:        }
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:47:        $totals = $this->totalsDomainService->calculate($items);
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:48:
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:49:        return $this->dtoMapper->toDomain(
+  app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:50:            dto: $dto,
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:28:                'line_number' => $item->lineNumber(),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:29:                'item_code_type' => $item->itemCodeType(),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:30:                'item_code' => $item->itemCode(),
+> app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:31:                'tax_exempt' => $item->taxExempt(),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:32:                'name' => $item->name(),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:33:                'description' => $item->description(),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:34:                'quantity' => $this->formatDecimal($item->quantity()),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:35:                'unit_price' => $this->formatDecimal($item->unitPrice()),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:36:                'line_amount' => $this->formatDecimal($item->lineAmount()),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:37:            ];
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:38:        }
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:39:
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:87:                'net_amount' => $document->netAmount() > 0
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:88:                    ? $this->formatIntegerAmount($document->netAmount())
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:89:                    : null,
+> app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:90:                'exempt_amount' => $document->exemptAmount() > 0
+> app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:91:                    ? $this->formatIntegerAmount($document->exemptAmount())
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:92:                    : null,
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:93:                'tax_rate' => $document->taxAmount() > 0 ? '19' : null,
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:94:                'tax_amount' => $document->taxAmount() > 0
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:95:                    ? $this->formatIntegerAmount($document->taxAmount())
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:96:                    : null,
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:97:                'total_amount' => $this->formatIntegerAmount($document->totalAmount()),
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:98:            ],
+  app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:99:
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:37:                code: 'CERTIFICATE_PFX_NOT_READABLE',
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:38:            );
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:39:            throw new RuntimeException(
+> app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:40:                'No fue posible leer el archivo del certificado digital de la empresa.'
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:41:            );
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:42:        }
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:43:
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:44:        $decryptedPassword = $this->secretEncryptionService->decrypt(
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:45:            $certificate->pfxPasswordEncrypted()
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:46:        );
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:47:
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:48:        if ($decryptedPassword === null || $decryptedPassword ==='')
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:59:            );
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:60:
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:61:            throw new RuntimeException(
+> app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:62:                'No fue posible descifrar la clave del certificado digital de la empresa.'
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:63:            );
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:64:        }
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:65:
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:66:        $this->logRepository->info(
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:67:            channel: 'certificate',
+> app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:68:            message: 'Certificado de emisión cargvado correctamente para la empresa.',
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:69:            context: [
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:70:                'company_id' => $companyId,
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:71:                'certificate_id' => $certificate->id(),
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:72:                'serial_number' => $certificate->serialNumber(),
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:73:                'current_validity_status' => $certificate->currentValidityStatus(),
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:74:            ],
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:75:            companyId: $companyId,
+  app\Modules\Dte\Application\Services\LoadCertificateForEmisionService.php:76:            code: 'CERTIFICATE_LOADED_FOR_EMISSION',
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:24:        if($exists)
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:25:        {
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:26:            throw new RuntimeException(
+> app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:27:                'Ya existe un certificado igual registrado para esta empresa.'
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:28:            );
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:29:        }
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:30:    }
+  app\Modules\Dte\Application\Services\PreventDuplicateCertificateService.php:31:}
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:57:                    reservedQuantity: 0,
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:58:                    availableQuantityAfter: 0,
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:59:                    folios: [],
+> app\Modules\Dte\Application\Services\ReserveFoliosService.php:60:                    status: 'empty',
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:61:                    warning: 'No existen folios disponibles para los filtros solicitados.'
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:62:                );
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:63:            }
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:64:
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:65:            $reservedFolios = [];
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:66:            $affectedCafIds = [];
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:67:            $now = now()->format('Y-m-d H:i:s');
+  app\Modules\Dte\Application\Services\ReserveFoliosService.php:68:
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:15:
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:16:    public function execute(int $companyId): SiiCertificate
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:17:    {
+> app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:18:        $certificate = $this->siiCertificateRepository->findDefaultValidByCompanyId($companyId);
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:19:
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:20:        if(!$certificate)
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:21:        {
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:22:            $this->emitCertificateNoticeService->automatic(
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:23:                companyId: $companyId,
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:24:                certificateId: null,
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:25:                type: 'error',
+> app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:26:                code: 'default_certificate_missing_for_emission',
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:27:                title: 'No existe un certificado vigente',
+> app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:28:                message: 'No es posible generar o firmar DTE porque la empresa no tiene un certificado vigente.'
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:29:            );
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:30:
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:31:            throw new RuntimeException(
+> app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:32:                'No existe un certificado vigente pata la empresa seleccionada.'
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:33:            );
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:34:        }
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:35:        return $certificate;
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:36:    }
+  app\Modules\Dte\Application\Services\ResolveCertificateForEmisionService.php:37:}
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:5:use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:6:use Carbon\CarbonImmutable;
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:7:
+> app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:8:final class SyncDefaultCertificateForCompanyService
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:9:{
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:10:    public function __construct(
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:11:        private readonly SiiCertificateRepositoryInterface $siiCertificateRepository,
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:12:    )
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:13:    {}
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:14:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:15:    public function execute(int $companyId, ?int $preferredCertificateId = null): ?SiiCertificate
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:16:    {
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:29:            fn(SiiCertificate $certificate) => $certificate->isCurrentlyValid()
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:30:        ));
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:31:
+> app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:32:        $this->siiCertificateRepository->clearDefaultByCompanyId($companyId);
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:33:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:34:        if($validCertificates ===[]){
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:35:            return null;
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:36:        }
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:37:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:38:        $selected = $this->resolvePreferredCertificate(
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:39:            $validCertificates,
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:40:            $preferredCertificateId
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:41:        );
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:42:
+> app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:43:        $this->siiCertificateRepository->setDefaultById($selected->id(), true);
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:44:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:45:        return $this->siiCertificateRepository->findById($selected->id());
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:46:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:47:    }
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:48:
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:49:    private function resolvePreferredCertificate(array $validCertificates, ?int $preferredCertificateId):SiiCertificate
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:50:    {
+  app\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService.php:51:        if($preferredCertificateId !== null)
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:18:        );
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:19:
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:20:        if(!$externalSystem) {
+> app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:21:            throw new RuntimeException('El sistema externo no existe o no pertenece a la empresa seleccionada.');
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:22:        }
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:23:    
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:24:        if(!$externalSystem->isActive())
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:25:        {
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:26:            throw new RuntimeException('El sistema externo está inactivo y no puede operar con folios.');
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:27:        }
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:28:
+  app\Modules\Dte\Application\Services\ValidateExternalSystemAccessService.php:29:        return $externalSystem;
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:90:                    documentId: $input->documentId
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:91:                )
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:92:            ),
+> app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:93:            default => null,
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:94:
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:95:        };
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:96:
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:97:        $updatedDocument = $this->documentRepository->findById($input->documentId);
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:98:
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:99:        if(!$updatedDocument)
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:100:        {
+  app\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase.php:101:            throw DocumentNotFoundException::withId($input->documentId);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:33:            throw CompanyNotFoundException::withId($input->companyId);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:34:        }
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:35:
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:36:        $xmlContents = file_get_contents($input->tempFilePath);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:37:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:38:        if($xmlContents === false)
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:39:        {
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:40:            throw new \RuntimeException('No fue posible leer el archivo temporal del CAF.');
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:41:        }
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:42:        $this->validateExternalSystemAccessService->execute(
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:43:            companyId: $input->companyId,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:44:            externalSystemId: $input->externalSystemId,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:45:        );
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:46:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:47:        $parsed = $this->cafXmlParserService->parse($xmlContents);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCafUseCase.php:48:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:4:use App\Modules\Dte\Application\DTOs\ImportCertificateInputDto;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:5:use App\Modules\Dte\Application\DTOs\ImportCertificateResultDto;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:6:use App\Modules\Dte\Application\Services\PreventDuplicateCertificateService;
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:7:use App\Modules\Dte\Application\Services\SyncDefaultCertificateForCompanyService;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:8:use App\Modules\Dte\Domain\Entities\SiiCertificate;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:9:use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:10:use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:11:use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:12:use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:13:use App\Modules\Dte\Infrastructure\Crypto\PfxInspectorService;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:14:use App\Modules\Dte\Infrastructure\Crypto\SecretEncryptionService;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:15:use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:28:        private readonly SecretEncryptionService $secretEncryptionService,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:29:        private readonly LegacyPfxConverter $legacyPfxConverter,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:30:        private readonly PreventDuplicateCertificateService $preventDuplicateCertificateService,
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:31:        private readonly SyncDefaultCertificateForCompanyService $syncDefaultCertificateForCompanyService,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:32:    )
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:33:    {}
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:34:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:35:    public function execute(ImportCertificateInputDto $input): ImportCertificateResultDto
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:36:    {
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:37:        if (!$this->companyRepository->existsActiveById($input->companyId)) {
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:38:            throw CompanyNotFoundException::withId($input->companyId);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:39:        }
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:40:
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:41:        $pfxContents = file_get_contents($input->tempFilepath);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:42:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:43:        if ($pfxContents === false || $pfxContents === '') {
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:44:            throw new \RuntimeException('No fue posible leer el archivo temporal del certificado.');
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:45:        }
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:46:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:47:        $pfxToStore = $pfxContents;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:48:        $wasConverted = false;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:49:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:50:        try {
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:51:            $metadata = $this->pfxInspectorService->inspect(
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:52:                pfxContents: $pfxContents,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:131:                metadataHash: $metadataHash,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:132:                certificateFingerprintSha1: $metadata['certificate_fingerprint_sha1'] ?? null,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:133:                hasPrivateKey: (bool) ($metadata['has_private_key'] ?? true),
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:134:                isDefault: false,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:135:                isActive: $input->isActive,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:136:                lastValidityCheckAt: now()->format('Y-m-d H:i:s'),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:137:                lastValidityStatus: null,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:138:            );
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:139:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:140:            $saved = $this->certificateRepository->create($certificate);
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:141:
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:142:            $selectedDefault = $this->syncDefaultCertificateForCompanyService->execute(
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:143:                $input->companyId,
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:144:                $saved->id()
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:145:            );
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:146:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:147:            $saved = $this->certificateRepository->findById((int) $saved->id()) ?? $saved;
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:148:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:149:            $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:150:                channel: 'certificate',
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:158:                    'pfx_sha256' => $saved->pfxSha256(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:159:                    'metadata_hash' => $saved->metadataHash(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:160:                    'current_validity_status' => $saved->currentValidityStatus(),
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:161:                    'selected_default_certificate_id' => $selectedDefault?->id(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:162:                ],
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:163:                companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:164:                code: 'CERTIFICATE_IMPORTED'
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:165:            );
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:166:
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:167:            return new ImportCertificateResultDto(
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:168:                id: (int) $saved->id(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:169:                companyId: $saved->companyId(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:174:                issuerName: $saved->issuerName(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:175:                validFrom: $saved->validFrom(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:176:                validTo: $saved->validTo(),
+> app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:177:                isDefault: $saved->isDefault(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:178:                isActive: $saved->isActive(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:179:                currentValidityStatus: $saved->currentValidityStatus(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:180:                hasPrivateKey: $saved->hasPrivateKey(),
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:181:            );
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:182:        });
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:183:    }
+  app\Modules\Dte\Application\UseCases\Certificate\ImportCertificateUseCase.php:184:}
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:54:
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:55:            $this->logRepository->info(
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:56:                channel: 'company',
+> app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:57:                message: 'Empresa registrada correctamente.',
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:58:                context: [
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:59:                    'company_id' => $saved->id(),
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:60:                    'rut' => $saved->rut(),
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:61:                ],
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:62:                companyId: $saved->id(),
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:63:                code: 'COMPANY_CREATED'
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:64:            );
+  app\Modules\Dte\Application\UseCases\Company\CreateCompanyUseCase.php:65:            return new CreateCompanyResultDto(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:50:                throw CompanyNotFoundException::withId($dispatch->companyId());
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:51:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:52:
+> app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:53:            // $certificate = $this->certificateRepository->findDefaultByCompanyId(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:54:            //     $dispatch->companyId()
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:55:            // );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:56:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:57:            // if(!$certificate)
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:58:            // {
+> app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:59:            //     throw CertificateNotFoundException::defaultFromCompany(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:60:            //         $dispatch->companyId()
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:61:            //     );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:62:            // }
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:63:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:64:            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:65:            //     $certificate
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:66:            // );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollBoletaDispatchStatusUseCase.php:67:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:51:            if(!$company || !$company->isActive())
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:52:            {
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:53:                throw new RuntimeException(
+> app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:54:                    "La empresa {$dispatch->companyId()} asociada al dispatch no existe o está inactiva"
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:55:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:56:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:57:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:58:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:59:            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute($dispatch->companyId());
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:60:
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:61:            $tokenContext = $this->siiTokenProviderService->get(
+  app\Modules\Dte\Application\UseCases\Dispatch\PollSiiUploadStatusUseCase.php:62:                environment: $dispatch->environment(),
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:59:                throw CompanyNotFoundException::withId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:60:            }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:61:
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:62:            // $certificate = $this->certificateRepository->findDefaultByCompanyId($document->companyId());
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:63:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:64:            // if(!$certificate)
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:65:            // {
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:66:            //     throw CertificateNotFoundException::defaultFromCompany($document->companyId());
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:67:            // }
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:68:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:69:            // $certificateMaterial = $this->certificateMaterialExtractorService->extract(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:70:            //     $certificate
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:71:            // );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:72:            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:73:                $document->companyId()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:74:            );
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:75:            $environment = $document->siiEnvironment() ?? config('dte.default_environment');
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:76:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:77:            $token = $this->siiBoletaApiAuthenticationService->authenticate(
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:78:                environment: $environment,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:79:                privateKeyPem: $certificateContext->privateKeyPem,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:80:                certificateBase64: $certificateContext->certificateBase64,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:81:                modulusBase64: $certificateContext->modulusBase64,
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:82:            );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:83:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:201:            $environment =
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:202:                $document->siiEnvironment()
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:203:                ?? config(
+> app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:204:                    'dte.default_environment'
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:205:                );
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:206:
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:207:            /*
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:208:            |--------------------------------------------------------------------------
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:209:            | Crear dispatch ANTES del POST
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:210:            |--------------------------------------------------------------------------
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:211:            */
+  app\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase.php:212:
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:172:                issueDate: $saved->issueDate(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:173:                receiverCityId: $saved->receiver()->cityId(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:174:                netAmount: $saved->netAmount(),
+> app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:175:                exemptAmount: $saved->exemptAmount(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:176:                taxAmount: $saved->taxAmount(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:177:                totalAmount: $saved->totalAmount(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:178:                externalSystemId: $saved->externalSystemId(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:179:                folio: $saved->folio(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:180:                cafId: $saved->cafId(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:181:                folioReservationId: $saved->folioReservationId(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:182:                branchOfficeNumber: $saved->branchOfficeNumber(),
+  app\Modules\Dte\Application\UseCases\Document\CreateDteDocumentUseCase.php:183:                facilityNumber: $saved->facilityNumber(),
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:92:        EmissionCertificateMaterialContextDto $certificateContext
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:93:    ): QuerySiiDocumentStatusResultDto
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:94:    {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:95:        $environment = $document->siiEnvironment() ?? config('dte.default_environment');
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:96:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:97:        $tokenContext = $this->siiTokenProviderService->get(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:98:            environment: $environment,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:99:            companyId: $document->companyId(),
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:100:            certificateId: $certificateContext->certificateId,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:101:            privateKeyPem: $certificateContext->privateKeyPem,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:102:            certificateBase64: $certificateContext->certificateBase64,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:103:            modulusBase64: $certificateContext->modulusBase64,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:170:        EmissionCertificateMaterialContextDto $certificateContext
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:171:    ): QuerySiiDocumentStatusResultDto
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:172:    {
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:173:        $environment = $document->siiEnvironment() ?? config('dte.default_environment');
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:174:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:175:        $token = $this->siiBoletaApiAuthenticationService->authenticate(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:176:            environment: $environment,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:177:            privateKeyPem: $certificateContext->privateKeyPem,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:178:            certificateBase64: $certificateContext->certificateBase64,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:179:            modulusBase64: $certificateContext->modulusBase64
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:180:        );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:181:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:255:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:256:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:257:
+> app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:258:        if(in_array($normalized,['FAU','FNA','FAN','EMP'], true))
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:259:        {
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:260:            return $document->withRejectedStatus(
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:261:                code: $siiCode,
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:262:                message: $siiMessage
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:263:            );
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:264:        }
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:265:
+  app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php:266:        return $document;
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:22:
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:23:        if($existing)
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:24:        {
+> app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:25:            throw new RuntimeException('Ya existe un sistema externo con ese código en la empresa.');
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:26:        }
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:27:
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:28:        $created = $this->externalSysteRepository->create(
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:29:            new ExternalSystem(
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:30:                id:null,
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:31:                companyId: $input->companyId,
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:32:                code: $input->code,
+  app\Modules\Dte\Application\UseCases\ExternalSystem\CreateExternalSystemUseCase.php:33:                name: $input->name,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:22:        private readonly string $status,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:23:        private readonly ReceiverData $receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:24:        private readonly float $netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:25:        private readonly float $exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:26:        private readonly float $taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:27:        private readonly float $totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:28:        private readonly array $items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:29:        private readonly array $references = [],
+  app\Modules\Dte\Domain\Entities\DteDocument.php:30:        private readonly ?array $headerPayload = null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:31:        private readonly ?array $totalsPayload = null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:32:        private readonly ?array $rawInput = null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:33:        private readonly ?int $folio = null,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:90:        return $this->netAmount;
+  app\Modules\Dte\Domain\Entities\DteDocument.php:91:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:92:
+> app\Modules\Dte\Domain\Entities\DteDocument.php:93:    public function exemptAmount(): float
+  app\Modules\Dte\Domain\Entities\DteDocument.php:94:    {
+> app\Modules\Dte\Domain\Entities\DteDocument.php:95:        return $this->exemptAmount;
+  app\Modules\Dte\Domain\Entities\DteDocument.php:96:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:97:
+  app\Modules\Dte\Domain\Entities\DteDocument.php:98:    public function taxAmount(): float
+  app\Modules\Dte\Domain\Entities\DteDocument.php:99:    {
+  app\Modules\Dte\Domain\Entities\DteDocument.php:100:        return $this->taxAmount;
+  app\Modules\Dte\Domain\Entities\DteDocument.php:101:    }
+  app\Modules\Dte\Domain\Entities\DteDocument.php:102:
+  app\Modules\Dte\Domain\Entities\DteDocument.php:103:    public function totalAmount(): float
+  app\Modules\Dte\Domain\Entities\DteDocument.php:204:            status: $status,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:205:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:206:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:207:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:208:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:209:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:210:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:211:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:212:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:213:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:214:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:215:            folio: $folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:243:            status: DteStatus::XML_BUILT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:244:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:245:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:246:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:247:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:248:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:249:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:250:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:251:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:252:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:253:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:254:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:284:            status: DteStatus::TED_BUILT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:285:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:286:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:287:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:288:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:289:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:290:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:291:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:292:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:293:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:294:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:295:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:323:            status: DteStatus::SIGNED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:324:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:325:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:326:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:327:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:328:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:329:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:330:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:331:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:332:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:333:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:334:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:357:            status: DteStatus::SENDING->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:358:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:359:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:360:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:361:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:362:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:363:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:364:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:365:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:366:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:367:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:368:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:395:            status: DteStatus::SENT->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:396:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:397:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:398:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:399:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:400:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:401:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:402:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:403:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:404:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:405:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:406:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:433:            status: DteStatus::ACCEPTED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:434:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:435:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:436:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:437:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:438:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:439:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:440:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:441:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:442:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:443:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:444:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:474:            status: DteStatus::ACCEPTED_WITH_REPAROS->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:475:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:476:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:477:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:478:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:479:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:480:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:481:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:482:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:483:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:484:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:485:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:515:            status: DteStatus::REJECTED->value,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:516:            receiver: $this->receiver,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:517:            netAmount: $this->netAmount,
+> app\Modules\Dte\Domain\Entities\DteDocument.php:518:            exemptAmount: $this->exemptAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:519:            taxAmount: $this->taxAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:520:            totalAmount: $this->totalAmount,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:521:            items: $this->items,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:522:            references: $this->references,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:523:            headerPayload: $this->headerPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:524:            totalsPayload: $this->totalsPayload,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:525:            rawInput: $this->rawInput,
+  app\Modules\Dte\Domain\Entities\DteDocument.php:526:            folio: $this->folio,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:12:        private readonly float $unitPrice,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:13:        private readonly float $discountPercent,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:14:        private readonly float $discountAmount,
+> app\Modules\Dte\Domain\Entities\DteLineItem.php:15:        private readonly bool $taxExempt,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:16:        private readonly float $lineAmount,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:17:        private readonly ?array $extraPayload = null,
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:18:    )
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:19:    {}
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:20:    public function lineNumber(): int
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:21:    {
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:22:        return $this->lineNumber;
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:23:    }
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:53:    {
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:54:        return $this->discountAmount;
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:55:    }
+> app\Modules\Dte\Domain\Entities\DteLineItem.php:56:    public function taxExempt(): bool
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:57:    {
+> app\Modules\Dte\Domain\Entities\DteLineItem.php:58:        return $this->taxExempt;
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:59:    }
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:60:    public function lineAmount(): float
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:61:    {
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:62:        return $this->lineAmount;
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:63:    }
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:64:    public function extraPayload(): ?array
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:65:    {
+  app\Modules\Dte\Domain\Entities\DteLineItem.php:66:        return $this->extraPayload;
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:21:        private readonly ?string $metadataHash = null,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:22:        private readonly ?string $certificateFingerprintSha1 = null,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:23:        private readonly bool $hasPrivateKey = true,
+> app\Modules\Dte\Domain\Entities\SiiCertificate.php:24:        private readonly bool $isDefault = false,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:25:        private readonly bool $isActive = true,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:26:        private readonly ?string $lastValidityCheckAt = null,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:27:        private readonly ?string $lastValidityStatus = null,
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:28:    ) {
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:29:    }
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:30:
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:31:    public function id(): ?int
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:32:    {
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:93:        return $this->isActive;
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:94:    }
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:95:
+> app\Modules\Dte\Domain\Entities\SiiCertificate.php:96:    public function isDefault(): bool
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:97:    {
+> app\Modules\Dte\Domain\Entities\SiiCertificate.php:98:        return $this->isDefault;
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:99:    }
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:100:
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:101:    public function lastValidityCheckAt(): ?string
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:102:    {
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:103:        return $this->lastValidityCheckAt;
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:104:    }
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:105:
+  app\Modules\Dte\Domain\Entities\SiiCertificate.php:106:    public function lastValidityStatus(): ?string
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:12:    ): self
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:13:    {
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:14:        return new self(
+> app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:15:            "No existe un CAF activo que contenga el folio {$folio} para la empresa {$companyId} y el tipo DTE {$dteType}"
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:16:        );
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:17:    }
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:18:
+  app\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException.php:19:}
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:18:    ):self
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:19:    {
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:20:        return new self(
+> app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:21:            "El CAF {$cafId} no pertenece a la empresa {$companyId}"
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:22:        );
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:23:    }
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:24:
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:25:    public static function inactive(int $cafId): self
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:26:    {
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:27:        return new self(
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:28:            "El CAF {$cafId} está inactivo y no permite asignar rangos."
+  app\Modules\Dte\Domain\Exceptions\CafRangeAssignmentException.php:29:        );
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:5:
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:6:class CertificateNotFoundException extends DomainException
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:7:{
+> app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:8:    public static function defaultFromCompany(int $companyId): self
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:9:    {
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:10:        return new self(
+> app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:11:            "No existe un certificado digital por defecto para la empresa {$companyId}."
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:12:        );
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:13:    }
+  app\Modules\Dte\Domain\Exceptions\CertificateNotFoundException.php:14:}
+  app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:4:{
+  app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:5:    public static function withId(int $companyId): self
+  app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:6:    {
+> app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:7:        return new self("No existe una empresa activa con Id {$companyId}.");
+  app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:8:    }
+  app\Modules\Dte\Domain\Exceptions\CompanyNotFoundException.php:9:}
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:8:    public static function because(int $companyId, int $dteType, int $folioStart, int $folioEnd): self
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:9:    {
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:10:        return new self(
+> app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:11:             "Ya existe un CAF traslapado para la empresa {$companyId}, tipo {$dteType}, rango {$folioStart} - {$folioEnd}."
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:12:        );
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:13:    }
+  app\Modules\Dte\Domain\Exceptions\DuplicateCafRangeException.php:14:}
+  app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:7:{
+  app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:8:    public static function withAlias(string $alias): self
+  app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:9:    {
+> app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:10:         return new self("Ya existe un certificado con el alias '{$alias}' para esa empresa.");
+  app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:11:    }
+  app\Modules\Dte\Domain\Exceptions\DuplicateCertificateAliasException.php:12:}
+  app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:7:{
+  app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:8:    public static function withRut(string $rut): self
+  app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:9:    {
+> app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:10:        return new self("Ya existe una empresa registrada con el RUT '($rut)'.");
+  app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:11:    }
+  app\Modules\Dte\Domain\Exceptions\DuplicateCompanyRutException.php:12:}
+  app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:7:{
+  app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:8:    public static function withId(int $reservationId): self
+  app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:9:    {
+> app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:10:        return new self("No existe una asignación del rango {$reservationId} para la empresa seleccionada");    
+  app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:11:    }
+  app\Modules\Dte\Domain\Exceptions\FolioReservationNotFoundException.php:12:}
+  app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:4:{
+  app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:5:    public static function forCompanyAndType(int $companyId, int $dteType): self
+  app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:6:    {
+> app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:7:        return new self("No existe un CAF activo con folios disponibles para la empresa {$companyId} y tipo de DTE {$dteType}.");
+  app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:8:    }
+  app\Modules\Dte\Domain\Exceptions\NoAvailableCafException.php:9:}
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:10:    public function findById(int $id): ?SiiCertificate;
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:11:
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:12:    public function findByCompanyId(int $companyId): array;
+> app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:13:    public function hasDefaultForCompany(int $companyId): bool;
+> app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:14:    public function findDefaultByCompanyId(int $companyId): ?SiiCertificate;
+> app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:15:    public function findDefaultValidByCompanyId(int $companyId): ?SiiCertificate;
+> app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:16:    public function clearDefaultByCompanyId(int $companyId): void;
+> app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:17:    public function setDefaultById(int $certificateId, bool $isDefault): void;
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:18:    public function existsDuplicateByCompanyAndHashes(
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:19:        int $companyId,
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:20:        ?string $pfxSha256,
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:21:        ?string $metadataHash
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:22:    ): bool;
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:23:    public function updateValiditySnapshot(
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:24:        int $certificateId,
+  app\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface.php:25:        string $lastValidityStatus,
+  app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:2:namespace App\Modules\Dte\Domain\RepositoryContracts;
+  app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:3:interface SystemSettingRepositoryInterface
+  app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:4:{
+> app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:5:    public function get(string $key, mixed $default = null): mixed;
+  app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:6:    public function set(string $key, mixed $value, ?string $description = null): void;
+  app\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface.php:7:}
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:16:            DteStatus::SIGNED->value => $document->dteType()->isFacturaFamily()
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:17:                ? 'send_factura'
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:18:                : 'send_boleta',
+> app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:19:            default => null,
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:20:        };
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:21:    }
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:22:
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:23:    public function shouldRequeueImmediately(?string $action, string $currentStatus): bool
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:24:    {
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:25:        if($action === null)
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:26:        {
+  app\Modules\Dte\Domain\Services\DteAutomationPlannerService.php:27:            return false;
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:5:    public function calculate(array $items): array
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:6:    {
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:7:        $net = 0.0;
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:8:        $exempt = 0.0;
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:9:        foreach ($items as $item) {
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:10:            if($item->taxExempt()){
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:11:                $exempt += $item->lineAmount();
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:12:                continue;
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:13:            }
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:14:            $net += $item->lineAmount();
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:15:        }
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:16:        $net = round($net, 2);
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:17:        $exempt = round($exempt, 2);
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:18:        $tax = round($net * 0.19, 2);
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:19:        $total = round($net + $exempt + $tax, 2);
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:20:        return [
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:21:            'net' => $net,
+> app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:22:            'exempt' => $exempt,
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:23:            'tax' => $tax,
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:24:            'total' => $total,
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:25:        ];
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:26:    }
+  app\Modules\Dte\Domain\Services\DteTotalsDomainService.php:27:}
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:21:        $id = bin2hex(random_bytes(16));
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:22:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:23:        $legacyPath = $baseDir . DIRECTORY_SEPARATOR . $id . '_legacy.pfx';
+> app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:24:        $pemPath = $baseDir . DIRECTORY_SEPARATOR . $id . '_temp.pem';
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:25:        $modernPath = $baseDir . DIRECTORY_SEPARATOR . $id . '_modern.pfx';
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:26:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:27:        file_put_contents($legacyPath, $legacyPfxContents);
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:28:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:29:        try {
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:30:            $opensslBinary = config('dte.openssl_binary', 'openssl');
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:31:            $opensslModules = config('dte.openssl_modules');
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:32:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:40:                '-in',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:41:                $legacyPath,
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:42:                '-out',
+> app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:43:                $pemPath,
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:44:                '-nodes',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:45:                '-passin',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:46:                'env:PFX_OLD_PASSWORD',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:47:            ]);
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:48:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:49:            $extract = new Process($extractCommand);
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:50:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:51:            $extract->setEnv($this->buildProcessEnvironment([
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:72:            ], $providerArguments, [
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:73:                '-export',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:74:                '-in',
+> app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:75:                $pemPath,
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:76:                '-out',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:77:                $modernPath,
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:78:                '-certpbe',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:79:                'AES-256-CBC',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:80:                '-keypbe',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:81:                'AES-256-CBC',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:82:                '-macalg',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:83:                'sha256',
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:113:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:114:            return $modernPfxContents;
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:115:        } finally {
+> app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:116:            foreach ([$legacyPath, $pemPath, $modernPath] as $path) {
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:117:                if (is_file($path)) {
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:118:                    @unlink($path);
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:119:                }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:120:            }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:121:        }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:122:    }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:123:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:124:    private function buildProviderArguments(?string $opensslModules): array
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:131:        }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:132:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:133:        $arguments[] = '-provider';
+> app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:134:        $arguments[] = 'default';
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:135:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:136:        $arguments[] = '-provider';
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:137:        $arguments[] = 'legacy';
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:138:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:139:        return $arguments;
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:140:    }
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:141:
+  app\Modules\Dte\Infrastructure\Crypto\LegacyPfxConverter.php:142:    private function buildProcessEnvironment(array $extra): array
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:41:        'receiver_email',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:42:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:43:        'net_amount',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:44:        'exempt_amount',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:45:        'tax_amount',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:46:        'total_amount',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:47:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:48:        'header_payload',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:49:        'totals_payload',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:50:        'raw_input',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:51:        'validation_warnings',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:52:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:72:        'issue_date' => 'date',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:73:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:74:        'net_amount' => 'decimal:2',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:75:        'exempt_amount' => 'decimal:2',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:76:        'tax_amount' => 'decimal:2',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:77:        'total_amount' => 'decimal:2',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:78:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:79:        'header_payload' => 'array',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:80:        'totals_payload' => 'array',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:81:        'raw_input' => 'array',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:82:        'validation_warnings' => 'array',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteDocumentEloquentModel.php:83:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:16:        'quantity',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:17:        'unit_price',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:18:        'discount_percent',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:19:        'tax_exempt',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:20:        'line_amount',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:21:        'extra_payload',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:22:    ];
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:23:    protected $cast = [
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:24:        'extra_payload' => 'array',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:25:        'tax_exempt'    => 'boolean',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:26:    ];
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:27:
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:28:}
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:22:        'metadata_hash',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:23:        'certificate_fingerprint_sha1',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:24:        'has_private_key',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:25:        'is_default',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:26:        'is_active',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:27:        'last_validity_check_at',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:28:        'last_validity_status',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:29:    ];
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:30:    protected $casts = [
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:31:        'has_private_key' => 'boolean',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:32:        'is_active' => 'boolean',
+> app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:33:        'is_default' => 'boolean',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:34:        'valid_from' => 'datetime',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:35:        'valid_to' => 'datetime',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:36:        'last_validity_check_at' => 'datetime',
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:37:    ];
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:38:    public function company():BelongsTo
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:39:    {
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:40:        return $this->belongsTo(CompanyEloquentModel::class, 'company_id');
+  app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:41:    }
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:30:            email: $model->receiver_email,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:31:        ),
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:32:        netAmount: (float) $model->net_amount,
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:33:        exemptAmount: (float) $model->exempt_amount,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:34:        taxAmount: (float) $model->tax_amount,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:35:        totalAmount: (float) $model->total_amount,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:36:        items: $model->items
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:37:            ->map(function ($item) {
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:38:                return new DteLineItem(
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:39:                    lineNumber: (int) $item->line_number,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:40:                    itemCodeType: $item->item_code_type,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:41:                    itemCode: $item->item_code,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:45:                    unitPrice: (float) $item->unit_price,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:46:                    discountPercent: (float) $item->discount_percent,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:47:                    discountAmount: (float) $item->discount_amount,
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:48:                    taxExempt: (bool) $item->tax_exempt,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:49:                    lineAmount: (float) $item->line_amount,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:50:                    extraPayload: $item->extra_payload,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:51:                );
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:52:            })->all(),
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:53:            references: $model->references
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:54:                ->map(function ($reference) {
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:55:                    return new DteReference(
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:56:                        lineNumber: (int) $reference->line_number,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:4:use App\Modules\Dte\Domain\Entities\ExternalSystem;
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:5:use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\ExternalSystemEloquentModel;
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:6:
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:7:final class ExternalSystemPersistenceMapper
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:8:{
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:9:    public function toDomain(
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:10:        ExternalSystemEloquentModel $model
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:11:    ): ExternalSystem
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:12:    {
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:13:        return new ExternalSystem(
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:14:            id: (int) $model->id,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper.php:15:            companyId: (int) $model->company_id,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:19:            issuerName: $model->issuer_name,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:20:            validFrom: $model->valid_from?->format('Y-m-d H:i:s'),
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:21:            validTo: $model->valid_to?->format('Y-m-d H:i:s'),
+> app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:22:            isDefault: (bool) $model->is_default,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:23:            isActive: (bool) $model->is_active,
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:24:        );
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:25:    }
+  app\Modules\Dte\Infrastructure\Persistence\Mappers\SiiCertificatePersistenceMapper.php:26:}
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:27:            'folio' => $document->folio(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:28:            'issue_date' => $document->issueDate(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:29:            'status' => $document->status(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:30:            'sii_environment' => $document->siiEnvironment() ?? config('dte.default_environment'),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:31:            'receiver_document' => $document->receiver()->document(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:32:            'receiver_name' => $document->receiver()->name(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:33:            'receiver_giro' => $document->receiver()->giro(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:34:            'receiver_address' => $document->receiver()->address(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:35:            'receiver_city_id' => $document->receiver()->cityId(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:36:            'receiver_email' => $document->receiver()->email(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:37:            'net_amount' => $document->netAmount(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:38:            'exempt_amount' => $document->exemptAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:39:            'tax_amount' => $document->taxAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:40:            'total_amount' => $document->totalAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:41:            'header_payload' => $document->headerPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:42:            'totals_payload' => $document->totalsPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:43:            'raw_input' => $document->rawInput(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:44:            'unsigned_xml_path' => $document->unsignedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:45:            'signed_xml_path' => $document->signedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:46:            'ted_xml' => $document->tedXml(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:72:                'unit_price' => $item->unitPrice(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:73:                'discount_percent' => $item->discountPercent(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:74:                'discount_amount' => $item->discountAmount(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:75:                'tax_exempt' => $item->taxExempt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:76:                'line_amount' => $item->lineAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:77:                'extra_payload' => $item->extraPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:78:            ]);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:79:        }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:80:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:81:        foreach ($document->references() as $reference) {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:82:            DteReferenceEloquentModel::query()->create([
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:83:                'dte_document_id' => $model->id,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:101:        $model->fill([
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:102:            'folio' => $document->folio(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:103:            'status' => $document->status(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:104:            'sii_environment' => $document->siiEnvironment() ?? config('dte.default_environment'),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:105:            'receiver_city_id' => $document->receiver()->cityId(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:106:            'net_amount' => $document->netAmount(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:107:            'exempt_amount' => $document->exemptAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:108:            'tax_amount' => $document->taxAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:109:            'total_amount' => $document->totalAmount(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:110:            'header_payload' => $document->headerPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:111:            'totals_payload' => $document->totalsPayload(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:112:            'raw_input' => $document->rawInput(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:113:            'unsigned_xml_path' => $document->unsignedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:114:            'signed_xml_path' => $document->signedXmlPath(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:115:            'ted_xml' => $document->tedXml(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:4:use App\Modules\Dte\Domain\Entities\ExternalSystem;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:5:use App\Modules\Dte\Domain\RepositoryContracts\ExternalSystemRepositoryInterface;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:6:use App\Modules\Dte\Infrastructure\Persistence\EloquentModels\ExternalSystemEloquentModel;
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:7:use App\Modules\Dte\Infrastructure\Persistence\Mappers\ExternalSystemPersistenceMapper;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:8:use RuntimeException;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:9:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:10:final class EloquentExternalSystemRepository implements ExternalSystemRepositoryInterface
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:11:{
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:12:    public function __construct(
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:13:        private readonly ExternalSystemPersistenceMapper $mapper,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:14:    ){}
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:15:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:16:    public function create(ExternalSystem $externalSystem): ExternalSystem
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:17:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:18:        $model = ExternalSystemEloquentModel::query()->create([
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:19:            'company_id' => $externalSystem->companyId(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:20:            'code' => trim($externalSystem->code()),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:21:            'name' => trim($externalSystem->name()),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:40:        if(!$model)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:41:        {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:42:            throw new RuntimeException
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:43:            ('El Sistema externo no existe o no pertenece a la empresa.');
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:44:        }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:45:        $model->fill([
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:46:            'code' => trim($externalSystem->code()),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:47:            'name' => trim($externalSystem->name()),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:48:            'description' => $externalSystem->description(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:49:            'is_active' => $externalSystem->isActive(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:50:        ]);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentExternalSystemRepository.php:51:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:30:            'metadata_hash' => $certificate->metadataHash(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:31:            'certificate_fingerprint_sha1' => $certificate->certificateFingerprintSha1(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:32:            'has_private_key' => $certificate->hasPrivateKey(),
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:33:            'is_default' => $certificate->isDefault(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:34:            'is_active' => $certificate->isActive(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:35:            'last_validity_check_at' => $certificate->lastValidityCheckAt(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:36:            'last_validity_status' => $certificate->lastValidityStatus(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:37:        ]);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:38:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:39:        $model->save();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:40:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:41:        return $this->toDomain($model);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:51:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:52:        return SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:53:            ->where('company_id', $companyId)
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:54:            ->orderByDesc('is_default')
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:55:            ->orderByDesc('valid_to')
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:56:            ->orderByDesc('id')
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:57:            ->get()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:58:            ->map(fn(SiiCertificateEloquentModel $model) => $this->toDomain($model))
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:59:            ->all();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:60:    }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:61:    
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:62:    public function hasDefaultForCompany(int $companyId): bool
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:63:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:64:        return SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:65:            ->where('company_id', $companyId)
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:66:            ->where('is_default', true)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:67:            ->exists();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:68:    }
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:69:    public function findDefaultByCompanyId(int $companyId): ?SiiCertificate
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:70:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:71:        $model = SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:72:            ->where('company_id', $companyId)
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:73:            ->where('is_default', true)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:74:            ->first();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:75:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:76:        return $model ? $this->toDomain($model) : null;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:77:    }
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:78:    public function findDefaultValidByCompanyId(int $companyId): ?SiiCertificate
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:79:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:80:        $now = now();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:81:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:82:        $model = SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:83:            ->where('company_id', $companyId)
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:84:            ->where('is_default', true)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:85:            ->where('is_active', true)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:86:            ->whereNotNull('valid_from')
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:87:            ->whereNotNull('valid_to')
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:88:            ->where('valid_from', '<=', $now)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:89:            ->where('valid_to', '>=', $now)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:90:            ->first();
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:91:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:92:        return $model ? $this->toDomain($model) : null;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:93:    }
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:94:    public function clearDefaultByCompanyId(int $companyId): void
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:95:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:96:        SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:97:            ->where('company_id', $companyId)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:98:            ->update([
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:99:                'is_default' => false,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:100:                'updated_at' => now(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:101:            ]);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:102:    }
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:103:    public function setDefaultById(int $certificateId, bool $isDefault): void
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:104:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:105:        SiiCertificateEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:106:            ->where('id', $certificateId)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:107:            ->update([
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:108:                'is_default' => $isDefault,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:109:                'updated_at' => now(),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:110:            ]);
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:111:    }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:112:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:113:    public function existsDuplicateByCompanyAndHashes(
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:114:        int $companyId,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:115:        ?string $pfxSha256,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:116:        ?string $metadataHash
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:162:            metadataHash: $model->metadata_hash,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:163:            certificateFingerprintSha1: $model->certificate_fingerprint_sha1,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:164:            hasPrivateKey: (bool) $model->has_private_key,
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:165:            isDefault: (bool) $model->is_default,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:166:            isActive: (bool) $model->is_active,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:167:            lastValidityCheckAt: $model->last_validity_check_at?->format('Y-m-d H:i:s'),
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:168:            lastValidityStatus: $model->last_validity_status,
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:169:        );
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:170:    }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:171:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertificateRepository.php:172:}
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:9:{
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:10:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:11:
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:12:    public function get(string $key, mixed $default = null): mixed
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:13:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:14:        $setting = SystemSettingEloquentModel::query()
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:15:                   ->where('key',$key)
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:16:                   ->first();
+> app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:17:        return $setting?->value ?? $default;
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:18:    }
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:19:
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:20:    public function set(string $key, mixed $value, ?string $description = null): void
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:21:    {
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:22:        SystemSettingEloquentModel::query()->UpdateOrCreate(
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:23:            ['key' => $key],
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:24:            [
+  app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository.php:25:                'value' => $value,
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:32:            'json_xml' => $this->sendJsonXml($request, $httpMethod, $url, $bodyField, $xmlPayload, $filename),
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:33:            'json_base64_xml' => $this->sendJsonBase64Xml($request, $httpMethod, $url, $bodyField, $xmlPayload, $filename),
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:34:            'multipart_xml' => $this->sendMultipartXml($request,$httpMethod,$url,$bodyField,$xmlPayload,$filename),
+> app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:35:            default => throw SiiBoletaSendException::because(
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:36:                "El modo REST de envío '{$mode}'"
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:37:            ),
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:38:        };
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:39:
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:40:        if(!$response->successful())
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:41:        {
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:42:            throw SiiBoletaSendException::because(
+  app\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService.php:43:                'La API REST de boleta respondió con HTTP '. $response->status(). ' al intentar enviar el documento.'
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:27:    {
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:28:        $url = $this->resolveUploadUrl($environment);
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:29:        $referer = (string) config("dte.sii.{$environment}.upload.referer", 'http://localhost');
+> app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:30:        $responseBuffer = fopen('php://temp', 'w+');
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:31:
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:32:        if ($responseBuffer === false) {
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:33:            throw SiiUploadException::because(
+> app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:34:                'No fue posible crear el buffer temporal para la respuesta del SII.'
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:35:            );
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:36:        }
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:37:        
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:38:        $httpStatus = null;
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:39:        $body = '';
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:40:        $transportDiagnostics = [];
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:41:        $transportRecovered = false;
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:42:
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:188:            | Podemos haber recibido datos por dos caminos
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:189:            |--------------------------------------------------------------------------
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:190:            |
+> app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:191:            | 1. El sink php://temp
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:192:            | 2. La Response interna de Guzzle
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:193:            |
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:194:            | Conservamos la respuesta más completa.
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:195:            |
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:196:            */
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:197:
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:198:            $body =
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:199:                $this->chooseMostCompleteBody(
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:412:            '2' => 'Error en tamaño del archivo',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:413:            '3' => 'Archivo cortado',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:414:            '5' => 'No está autenticado',
+> app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:415:            '6' => 'Empresa no autorizada a enviar archivos',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:416:            '7' => 'Esquema inválido',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:417:            '8' => 'Firma del documento inválida',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:418:            '9' => 'Sistema bloqueado',
+> app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:419:            default => $code === null ? null : 'Estado no reconocido del SII',
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:420:        };
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:421:    }
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:422:    private function isCompleteReceptionBody(
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:423:        string $body
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:424:    ): bool {
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:425:
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:426:        return str_contains(
+  app\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService.php:427:            $body,
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:297:        }
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:298:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:299:        /*
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:300:         * El manual del SII contiene ejemplos tanto
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:301:         * con SEMILLA como con SEED.
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:302:         *
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:303:         * El servicio operativo habitualmente utiliza
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:304:         * SEMILLA, pero soportamos ambos.
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:305:         */
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:306:        $seed =
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:307:            $this->findNodeValue(
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:308:                xpath:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1133:            );
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1134:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1135:        /*
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1136:         * Primero detectar SOAP Fault.
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1137:         */
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1138:        $faultNode =
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1139:            $xpath
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1140:                ->query(
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1141:                    "//*[local-name()='Fault']"
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1142:                )
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1143:                ->item(0);
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1144:
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1145:        if ($faultNode instanceof DOMNode) {
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1146:            throw SiiAuthenticationException::because(
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1147:                'El SII respondió con SOAP Fault: '
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1148:                . trim(
+> app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1149:                    $faultNode->textContent
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1150:                )
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1151:            );
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1152:        }
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1153:
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1154:        /*
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1155:         * Buscar getSeedReturn / getTokenReturn.
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1156:         */
+  app\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService.php:1157:        $node =
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:13:        string $targetFilename
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:14:    ): string {
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:15:        if (!File::exists($sourcePath)) {
+> app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:16:            throw new RuntimeException("No existe el archivo temporal: {$sourcePath}");
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:17:        }
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:18:
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:19:        $baseDirectory = config('dte.storage.base');
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:20:        $absoluteTargetDirectory = $baseDirectory . DIRECTORY_SEPARATOR . trim($targetDirectory, DIRECTORY_SEPARATOR);
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:21:
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:22:        if (!File::isDirectory($absoluteTargetDirectory)) {
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:23:            File::makeDirectory($absoluteTargetDirectory, 0777, true);
+  app\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService.php:24:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:85:        $this->appendElement($dom, $emisor, 'RUTEmisor', (string) $emitter['rut']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:86:        $this->appendElement($dom, $emisor, 'RznSoc', (string) $emitter['razon_social']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:87:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:88:        if (!empty($emitter['giro'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:89:            $this->appendElement($dom, $emisor, 'GiroEmis', (string) $emitter['giro']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:90:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:91:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:92:        /*
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:93:        * Correo del emisor.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:94:        *
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:95:        * Debe ir antes de Acteco/DirOrigen.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:96:        */
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:97:        if (!empty($emitter['email'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:98:            $this->appendElement(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:99:                $dom,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:100:                $emisor,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:101:                'CorreoEmisor',
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:102:                (string) $emitter['email']
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:103:            );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:104:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:105:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:109:        * Es la pieza que actualmente falta.
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:110:        */
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:111:        if (
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:112:            empty($emitter['acteco'])
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:113:        ) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:114:            throw new RuntimeException(
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:115:                'La empresa no tiene configurado el código de actividad económica SII requerido para generar el DTE.'
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:116:            );
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:117:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:118:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:119:        $this->appendElement(
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:120:            $dom,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:121:            $emisor,
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:122:            'Acteco',
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:123:            (string) $emitter['acteco']
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:134:        $this->appendElement($dom, $receptor, 'RUTRecep', (string) $receiver['rut']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:135:        $this->appendElement($dom, $receptor, 'RznSocRecep', (string) $receiver['razon_social']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:136:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:137:        if (!empty($receiver['giro'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:138:            $this->appendElement($dom, $receptor, 'GiroRecep', (string) $receiver['giro']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:139:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:140:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:141:        if (!empty($receiver['direccion'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:142:            $this->appendElement($dom, $receptor, 'DirRecep', (string) $receiver['direccion']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:143:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:144:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:145:        if (!empty($receiver['commune'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:146:            $this->appendElement($dom, $receptor, 'CmnaRecep', (string) $receiver['commune']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:147:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:148:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:149:        if (!empty($receiver['city'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:150:            $this->appendElement($dom, $receptor, 'CiudadRecep', (string) $receiver['city']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:151:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:152:    }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:153:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:154:    private function buildTotals(DOMDocument $dom, DOMElement $encabezado, array $totals): void
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:155:    {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:156:        $totales = $this->appendElement($dom, $encabezado, 'Totales');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:157:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:159:            $this->appendElement($dom, $totales, 'MntNeto', (string) $totals['net_amount']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:160:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:161:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:162:        if ($totals['exempt_amount'] !== null) {
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:163:            $this->appendElement($dom, $totales, 'MntExe', (string) $totals['exempt_amount']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:164:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:165:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:166:        if ($totals['tax_rate'] !== null) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:167:            $this->appendElement($dom, $totales, 'TasaIVA', (string) $totals['tax_rate']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:168:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:169:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:170:        if ($totals['tax_amount'] !== null) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:171:            $this->appendElement($dom, $totales, 'IVA', (string) $totals['tax_amount']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:180:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:181:        $this->appendElement($dom, $detalle, 'NroLinDet', (string) $detail['line_number']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:182:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:183:        if (!empty($detail['item_code_type']) && !empty($detail['item_code'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:184:            $cdgItem = $this->appendElement($dom, $detalle, 'CdgItem');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:185:            $this->appendElement($dom, $cdgItem, 'TpoCodigo', (string) $detail['item_code_type']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:186:            $this->appendElement($dom, $cdgItem, 'VlrCodigo', (string) $detail['item_code']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:187:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:188:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:189:        if (!empty($detail['tax_exempt'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:190:            $this->appendElement($dom, $detalle, 'IndExe', '1');
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:191:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:192:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:193:        $this->appendElement($dom, $detalle, 'NmbItem', (string) $detail['name']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:194:
+> app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:195:        if (!empty($detail['description'])) {
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:196:            $this->appendElement($dom, $detalle, 'DscItem', (string) $detail['description']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:197:        }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:198:
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:199:        $this->appendElement($dom, $detalle, 'QtyItem', (string) $detail['quantity']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:200:        $this->appendElement($dom, $detalle, 'PrcItem', (string) $detail['unit_price']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:201:        $this->appendElement($dom, $detalle, 'MontoItem', (string) $detail['line_amount']);
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:202:    }
+  app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:203:
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:16:        | Para calcular la firma del Timbre Electrónico, el SII exige eliminar
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:17:        | saltos de línea, espacios y tabs que existan ENTRE tags.
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:18:        |
+> app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:19:        | Ejemplo:
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:20:        |
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:21:        | </RE>
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:22:        |     <TD>
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:23:        |
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:24:        | debe convertirse en:
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:25:        |
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:26:        | </RE><TD>
+  app\Modules\Dte\Infrastructure\Xml\TedSignatureService.php:27:        |
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:36:                new ImportCafInputDto(
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:37:                    companyId: $companyId,
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:38:                    externalSystemId: (int) $data['external_system_id'],
+> app\Modules\Dte\Presentation\Http\Controllers\CafController.php:39:                    tempFilePath: $file->getRealPath(),
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:40:                    originalFilename: $file->getClientOriginalName(),
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:41:                )
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:42:            );
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:43:
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:44:            return response()->json([
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:45:                'message' => 'CAF importado.',
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:46:                'data' => new CafResource((object) [
+  app\Modules\Dte\Presentation\Http\Controllers\CafController.php:47:                    'id' => $result->id,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:34:                'issuer_name' => $result->issuerName,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:35:                'valid_from' => $result->validFrom,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:36:                'valid_to' => $result->validTo,
+> app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:37:                'is_default' => $result->isDefault,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:38:                'is_active' => $result->isActive,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:39:                'current_validity_status' => $result->currentValidityStatus,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:40:                'has_private_key' => $result->hasPrivateKey,
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:41:            ],
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:42:        ], 201);
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:43:    }
+  app\Modules\Dte\Presentation\Http\Controllers\CertificateController.php:44:}
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:42:            );
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:43:
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:44:            return response()->json([
+> app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:45:                'message' => 'Empresa registrada.',
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:46:                'date' => new CompanyResource((object) [
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:47:                    'id' => $result->id,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:48:                    'rut' => $result->rut,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:49:                    'legalName' => $result->legalName,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:50:                    'cityId' => $result->cityId,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:51:                    'siiEnvironment' => $result->siiEnvironment,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:52:                    'isActive' => $result->isActive,
+  app\Modules\Dte\Presentation\Http\Controllers\CompanyController.php:53:                ]),
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:36:                unitPrice: (float) $item['unit_price'],
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:37:                discountPercent: (float) $item['discount_percent'],
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:38:                discountAmount: (float) $item['discount_amount'],
+> app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:39:                taxExempt: (bool) ($item['tax_exempt'] ?? false),
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:40:                extraPayload: $item['extra_payload'] ?? null,
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:41:            );
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:42:        }
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:43:        $references = [];
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:44:        foreach(($data['references'] ?? []) as $reference)
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:45:        {
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:46:            $references[] = new DteReferenceInputDto(
+  app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:47:                referencedDteType: $reference['referenced_dte_type'] ?? null,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:81:                'message' => match ($result->status){
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:82:                    'success' => 'Folios reservados correctamente.',
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:83:                    'partial' => 'La reserva fue realizada parcialmente.',
+> app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:84:                    default => 'No fue posible reservar folios.',
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:85:                },
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:86:                'data' =>[
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:87:                    'requested_quantity' => $result->requestedQuantity,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:88:                    'reserved_quantity' => $result->reservedQuantity,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:89:                    'available_quantity_after' => $result->availableQuantityAfter,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:90:                    'folios' => $result->folios,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:91:                    'status' => $result->status,
+  app\Modules\Dte\Presentation\Http\Controllers\FolioController.php:92:                    'warning' => $result->warning,
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:25:    public function attributes(): array
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:26:    {
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:27:        return [
+> app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:28:            'company_id' => 'empresa',
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:29:            'alias' => 'alias',
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:30:            'pfx_password' => 'contraseña del certificado',
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:31:            'pfx_file' => 'archivo certificado PFX/P12',
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:32:            'is_active' => 'estado activo',
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:33:        ];
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:34:    }
+  app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:35:}
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:40:            'items.*.unit_price' => ['required','numeric','min:0'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:41:            'items.*.discount_percent' => ['nullable','numeric','min:0','max:100'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:42:            'items.*.discount_amount' => ['nullable','numeric','min:0'],
+> app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:43:            'items.*.tax_exempt' => ['nullable','boolean'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:44:            'items.*.extra_payload' => ['nullable', 'array'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:45:
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:46:            'references' => ['nullable','array'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:47:            'references.*.referenced_dte_type' => ['nullable','integer'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:48:            'references.*.referenced_folio' => ['nullable','integer','min:1'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:49:            'references.*.referenced_issue_date' => ['nullable','date'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:50:            'references.*.referenced_code' => ['nullable', 'integer'],
+  app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:51:            'references.*.reason' => ['nullable','string', 'max:100'],
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:18:            'issuer_name' => $this->resource->resourceName,
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:19:            'valid_from' => $this->resource->validFrom,
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:20:            'valid_to' => $this->resource->validTo,
+> app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:21:            'is_default' => $this->resource->isDefault,
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:22:            'is_active' => $this->resource->isActive,
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:23:        ];
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:24:    }
+  app\Modules\Dte\Presentation\Http\Resources\CertificateResource.php:25:}
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:15:            'issue_date' => $this->resource->issueDate,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:16:            'receiver_city_id' => $this->resource->receiverCityId,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:17:            'net_amount' => $this->resource->netAmount,
+> app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:18:            'exempt_amount' => $this->resource->exemptAmount,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:19:            'tax_amount' => $this->resource->taxAmount,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:20:            'total_amount' => $this->resource->totalAmount,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:21:            'external_system_id' => $this->resource->externalSystemId,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:22:            'folio' => $this->resource->folio,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:23:            'caf_id' => $this->resource->cafId,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:24:            'folio_reservation_id' => $this->resource->folioReservationId,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:25:            'branch_office_number' => $this->resource->branchOfficeNumber,
+  app\Modules\Dte\Presentation\Http\Resources\DteDocumentResource.php:26:            'facility_number' => $this->resource->facilityNumber,
+
+

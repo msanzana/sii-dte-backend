@@ -84,7 +84,19 @@ final class EloquentSiiDispatchRepository implements SiiDispatchRepositoryInterf
 
         return $this->mapper->toDomain($model);
     }
+    public function findByIdForUpdate(int $id): ?SiiDispatch
+    {
+        $model = SiiDispatchEloquentModel::query()
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
 
+        if (!$model) {
+            return null;
+        }
+
+        return $this->mapper->toDomain($model);
+    }
     public function findLatestByDocumentId(int $documentId): ?SiiDispatch
     {
         $model = SiiDispatchEloquentModel::query()

@@ -34,7 +34,7 @@ final class CafRangeAllocationController extends Controller
                     folioRangeTo: (int) $data['folio_range_to'],
                     branchOfficeNumber: isset($data['branch_office_number']) ? (int) $data['branch_office_number'] : null,
                     facilityNumber: isset($data['facility_number']) ? (int) $data['facility_number'] : null,
-                    externalBranchCode: isset($data['external_branch_code']) 
+                    externalBranchCode: isset($data['external_branch_code'])
                                         && trim((string) $data['external_branch_code']) !== ''
                                         ? trim((string) $data['external_branch_code'])
                                         :null,
@@ -46,7 +46,7 @@ final class CafRangeAllocationController extends Controller
                 )
             );
             return response()->json([
-                'messaje' => 'Rango CAF asignado correctamente',
+                'message' => 'Rango CAF asignado correctamente',
                 'data' => [
                     'reservation_id' => $result->reservationId,
                     'caf_id' => $result->cafId,

@@ -7,40 +7,69 @@ use Illuminate\Support\Facades\Http;
 
 class SiiBoletaApiUploadService
 {
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     public function upload(
         string $environment,
         string $token,
         string $filename,
-        string $xmlPayload
-    ):array
+        string $xmlPayload,
+        ?string $senderRutBody = null,
+        ?string $senderRutDv = null,
+        ?string $companyRutBody = null,
+        ?string $companyRutDv = null,
+    ): array
     {
-        $url = $this->resolveConfig($environment, 'sent_url');
+        $url = $this->resolveConfig($environment, 'send_url');
         $httpMethod = strtoupper($this->resolveConfig($environment, 'send_http_method'));
-        $mode = $this->resolveConfig($environment, 'send_node');
+        $mode = $this->resolveConfig($environment, 'send_mode');
         $contentType = $this->resolveConfig($environment, 'send_content_type');
         $bodyField = $this->resolveConfig($environment, 'send_body_field');
-        $headerName = $this->resolveConfig($environment, 'send_header_name');
-        $headerPrefix = (string) config("dte.sii.{$environment}.token_header_prefix",'Bearer ');
 
         $request = Http::withHeaders([
-            $headerName => $headerPrefix.$token,
-            'Accept' => 'Application/json application/xml, text/plain',
+            'Cookie' => 'TOKEN=' . $token,
+            'Accept' => 'application/json, application/xml, text/plain',
+            'User-Agent' => 'Mozilla/4.0 (compatible; PROG 1.0; Laravel DTE Client)',
         ]);
-
+        $this->requestThrottleService->wait($environment);
         $response = match ($mode) {
             'raw_xml' => $this->sendRawXml($request, $httpMethod, $url, $xmlPayload, $contentType),
             'json_xml' => $this->sendJsonXml($request, $httpMethod, $url, $bodyField, $xmlPayload, $filename),
             'json_base64_xml' => $this->sendJsonBase64Xml($request, $httpMethod, $url, $bodyField, $xmlPayload, $filename),
-            'multipart_xml' => $this->sendMultipartXml($request,$httpMethod,$url,$bodyField,$xmlPayload,$filename),
+            'multipart_xml' => $this->sendMultipartXml(
+                request: $request,
+                method: $httpMethod,
+                url: $url,
+                bodyField: $bodyField,
+                xmlPayload: $xmlPayload,
+                filename: $filename,
+                senderRutBody: $senderRutBody,
+                senderRutDv: $senderRutDv,
+                companyRutBody: $companyRutBody,
+                companyRutDv: $companyRutDv,
+            ),
             default => throw SiiBoletaSendException::because(
                 "El modo REST de envío '{$mode}'"
             ),
         };
 
-        if(!$response->successful())
-        {
+        if (!$response->successful()) {
+
+            $body = (string) $response->body();
+
             throw SiiBoletaSendException::because(
-                'La API REST de boleta respondió con HTTP '. $response->status(). ' al intentar enviar el documento.'
+                message:
+                    'La API REST de boleta respondió con HTTP '
+                    . $response->status()
+                    . ' al intentar enviar el documento.',
+
+                httpStatus:
+                    $response->status(),
+
+                rawBody:
+                    $body,
             );
         }
 
@@ -86,11 +115,51 @@ class SiiBoletaApiUploadService
         ]);
     }
 
-    private function sendMultipartXml($request, string $method, string $url, string $bodyField, string $xmlPayload, string $filename)
+    private function sendMultipartXml(
+        $request,
+        string $method,
+        string $url,
+        string $bodyField,
+        string $xmlPayload,
+        string $filename,
+        ?string $senderRutBody,
+        ?string $senderRutDv,
+        ?string $companyRutBody,
+        ?string $companyRutDv,
+    )
     {
         return $request
-                ->attach($bodyField,$xmlPayload, $filename,['Content-Type' => 'text/xml'])
-                ->send($method, $url);
+            ->attach(
+                'rutSender',
+                (string) $senderRutBody
+            )
+            ->attach(
+                'dvSender',
+                (string) $senderRutDv
+            )
+            ->attach(
+                'rutCompany',
+                (string) $companyRutBody
+            )
+            ->attach(
+                'dvCompany',
+                (string) $companyRutDv
+            )
+            ->attach(
+                $bodyField,
+                $xmlPayload,
+                $filename,
+                [
+                    'Content-Type' => 'text/xml',
+                ]
+            )
+            ->send(
+                $method,
+                $url,
+                [
+                    'multipart' => [],
+                ]
+            );
     }
 
     private function resolveConfig(string $environment, string $key): string

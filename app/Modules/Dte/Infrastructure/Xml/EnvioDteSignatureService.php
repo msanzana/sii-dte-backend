@@ -46,13 +46,22 @@ class EnvioDteSignatureService
 
         $xpath = new DOMXPath($dom);
 
-        $envioNode = $xpath->query("/*[local-name()='EnvioDTE']")->item(0);
-        $setDteNode = $xpath->query("/*[local-name()='EnvioDTE']/*[local-name()='SetDTE']")->item(0);
+        $envioNode = $xpath->query(
+            "/*[local-name()='EnvioDTE' or local-name()='EnvioBOLETA']"
+        )->item(0);
 
-        if(!$envioNode instanceof DOMElement || !$setDteNode instanceof DOMElement)
+        $setDteNode = $xpath->query(
+            "/*[local-name()='EnvioDTE' or local-name()='EnvioBOLETA']"
+            . "/*[local-name()='SetDTE']"
+        )->item(0);
+
+        if(
+            !$envioNode instanceof DOMElement
+            || !$setDteNode instanceof DOMElement
+        )
         {
             throw InvalidSignatureXmlException::because(
-                'No se encontró EnvioDTE o SetDTE en el XML del envío'
+                'No se encontró un sobre EnvioDTE/EnvioBOLETA con su SetDTE.'
             );
         }
 

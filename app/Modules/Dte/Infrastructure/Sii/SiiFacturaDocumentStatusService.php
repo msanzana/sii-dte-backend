@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Http;
 
 class SiiFacturaDocumentStatusService
 {
+    public function __construct(
+        private readonly SiiRequestThrottleService $requestThrottleService,
+    ) {
+    }
     public function query(
         string $environment,
         string $consultantRutBody,
@@ -48,6 +52,7 @@ class SiiFacturaDocumentStatusService
 </SOAP-ENV:Envelope>
 XML;
 
+        $this->requestThrottleService->wait($environment);
         $response = Http::withHeaders([
             'Content-Type' => 'text/xml; charset=UTF-8',
             'SOAPAction' => ''
