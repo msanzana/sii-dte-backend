@@ -31,8 +31,17 @@ return [
         'responses' => storage_path('app/private/dte/responses'),
     ],
 
-    'openssl_binary' => env('OPENSSL_BINARY', 'openssl'),
-    'openssl_modules' => env('OPENSSL_MODULES'),
+    // 'openssl_binary' => env('OPENSSL_BINARY', 'openssl'),
+    // 'openssl_modules' => env('OPENSSL_MODULES'),
+    'openssl_binary' => env(
+        'DTE_OPENSSL_BINARY',
+        env('OPENSSL_BINARY')
+    ),
+
+    'openssl_modules' => env(
+        'DTE_OPENSSL_MODULES',
+        env('OPENSSL_MODULES')
+    ),
     /*
     |--------------------------------------------------------------------------
     | Claves de estado del servicio
@@ -211,9 +220,68 @@ PEM,
         ],
 
         'backoff' => [
-            'pipeline' => [5, 15, 60],
-            'dispatch_polling' => [10, 30, 120],
-            'document_status' => [10, 60, 180],
+            'pipeline' => [
+                5,
+                15,
+                60,
+            ],
+
+            'dispatch_polling' => [
+                10,
+                30,
+                120,
+            ],
+
+            'document_status' => [
+                10,
+                60,
+                180,
+            ],
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Retry funcional de dispatch SII
+        |--------------------------------------------------------------------------
+        */
+
+        'dispatch_retry' => [
+            'max_attempts' => (int) env(
+                'DTE_AUTOMATION_DISPATCH_RETRY_MAX_ATTEMPTS',
+                3
+            ),
+
+            'backoff_seconds' => [
+                30,
+                120,
+                300,
+            ],
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Retry funcional de automatización del documento
+        |--------------------------------------------------------------------------
+        |
+        | Se utiliza solamente para errores recuperables en:
+        |
+        | - build_xml
+        | - build_ted
+        | - sign_xml
+        |
+        */
+
+        'document_retry' => [
+            'max_attempts' => (int) env(
+                'DTE_AUTOMATION_DOCUMENT_RETRY_MAX_ATTEMPTS',
+                3
+            ),
+
+            'backoff_seconds' => [
+                30,
+                120,
+                300,
+            ],
         ],
     ],
 ];

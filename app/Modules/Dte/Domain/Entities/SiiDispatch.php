@@ -181,6 +181,40 @@ final class SiiDispatch
             processedAt: $this->processedAt,
         );
     }
+    public function withScheduledRetry(
+    string $nextRetryAt
+    ): self {
+        if ($this->status !== 'failed') {
+            throw new \LogicException(
+                'Sólo un dispatch FAILED puede programar un retry.'
+            );
+        }
+
+        return new self(
+            id: $this->id,
+            batchUuid: $this->batchUuid,
+            companyId: $this->companyId,
+            dteDocumentId: $this->dteDocumentId,
+            environment: $this->environment,
+            transportType: $this->transportType,
+            status: $this->status,
+            trackId: $this->trackId,
+            requestIdentifier: $this->requestIdentifier,
+            requestPath: $this->requestPath,
+            requestHeaders: $this->requestHeaders,
+            requestBodyPath: $this->requestBodyPath,
+            responseHttpStatus: $this->responseHttpStatus,
+            responseBody: $this->responseBody,
+            uploadStatusCode: $this->uploadStatusCode,
+            uploadStatusMessage: $this->uploadStatusMessage,
+            retryCount: $this->retryCount + 1,
+            nextRetryAt: $nextRetryAt,
+            errorMessage: $this->errorMessage,
+            sentAt: $this->sentAt,
+            lastPolledAt: $this->lastPolledAt,
+            processedAt: $this->processedAt,
+        );
+    }
     public function withPollingResult(
         string $status,
         ?string $responseBody,

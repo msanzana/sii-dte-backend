@@ -2,7 +2,7 @@
 namespace App\Jobs\Dte\Automation;
 
 use App\Modules\Dte\Application\Services\ReconcileAllCafCountersService;
-use DragonCode\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;

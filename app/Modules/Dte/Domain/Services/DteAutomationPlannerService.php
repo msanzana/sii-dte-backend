@@ -8,14 +8,22 @@ final class DteAutomationPlannerService
 {
     public function resolveNextAction(DteDocument $document): ? string
     {
-        return match($document->status()){
+        return match ($document->status()) {
             DteStatus::READY_FOR_XML->value => 'prepare_for_xml',
-            DteStatus::FOLIO_ASSIGNED->value => 'build_xml',
+
+            DteStatus::FOLIO_ASSIGNED->value,
+            DteStatus::NEEDS_RESEND->value => 'build_xml',
+
             DteStatus::XML_BUILT->value => 'build_ted',
+
             DteStatus::TED_BUILT->value => 'sign_xml',
-            DteStatus::SIGNED->value => $document->dteType()->isFacturaFamily()
-                ? 'send_factura'
-                : 'send_boleta',
+
+            DteStatus::SIGNED->value => match (true) {
+                $document->dteType()->isBoletaFamily() => 'send_boleta',
+                $document->dteType()->isFacturaFamily() => 'send_factura',
+                default => null,
+            },
+
             default => null,
         };
     }

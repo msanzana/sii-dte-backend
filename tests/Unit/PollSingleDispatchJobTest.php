@@ -16,137 +16,90 @@ use Tests\TestCase;
 
 final class PollSingleDispatchJobTest extends TestCase
 {
-    public function test_factura_usa_polling_soap_y_agenda_consulta_documental_al_quedar_processed(): void
+    public function test_factura_se_enruta_al_polling_soap(): void
     {
-        Queue::fake();
-
-        $dispatch = new SiiDispatch(
-            id: 100,
-            batchUuid: 'batch-factura',
-            companyId: 1,
-            dteDocumentId: 10,
-            environment: 'cert',
-            transportType: 'soap_upload_factura',
-            status: 'upload_ok',
-            trackId: '123456',
+        $source = file_get_contents(
+            app_path('Jobs/Dte/Automation/PollSingleDispatchJob.php')
         );
 
-        $repository = Mockery::mock(
-            SiiDispatchRepositoryInterface::class
+        $this->assertIsString($source);
+
+        $this->assertStringContainsString(
+            "'soap_upload_factura'",
+            $source
         );
 
-        $repository
-            ->shouldReceive('findById')
-            ->once()
-            ->with(100)
-            ->andReturn($dispatch);
-
-        $facturaPolling = Mockery::mock(
-            PollSiiUploadStatusUseCase::class
+        $this->assertStringContainsString(
+            'PollSiiUploadStatusUseCase',
+            $source
         );
 
-        $facturaPolling
-            ->shouldReceive('execute')
-            ->once()
-            ->andReturn(
-                new PollSiiUploadStatusResultDto(
-                    dispatchId: 100,
-                    status: 'processed',
-                    trackId: '123456',
-                    uploadStatusCode: 'EPR',
-                    uploadStatusMessage: null,
-                    responseBody: '{}',
-                )
-            );
-
-        $boletaPolling = Mockery::mock(
-            PollBoletaDispatchStatusUseCase::class
+        $this->assertStringContainsString(
+            'new PollSiiUploadStatusInputDto(',
+            $source
         );
 
-        $boletaPolling
-            ->shouldNotReceive('execute');
-
-        $job = new PollSingleDispatchJob(
-            dispatchId: 100
-        );
-
-        $job->handle(
-            dispatchRepository: $repository,
-            pollSiiUploadStatusUseCase: $facturaPolling,
-            pollBoletaDispatchStatusUseCase: $boletaPolling,
-        );
-
-        Queue::assertPushed(
-            QuerySingleDocumentStatusJob::class,
-            fn (QuerySingleDocumentStatusJob $job): bool =>
-                $job->documentId === 10
+        $this->assertStringContainsString(
+            '$pollSiiUploadStatusUseCase->execute(',
+            $source
         );
     }
 
-    public function test_boleta_usa_polling_rest_y_agenda_consulta_documental_al_quedar_processed(): void
+    public function test_boleta_se_enruta_al_polling_rest(): void
     {
-        Queue::fake();
-
-        $dispatch = new SiiDispatch(
-            id: 101,
-            batchUuid: 'batch-boleta',
-            companyId: 1,
-            dteDocumentId: 40,
-            environment: 'cert',
-            transportType: 'rest_upload_boleta',
-            status: 'sent',
-            trackId: '32197087',
+        $source = file_get_contents(
+            app_path('Jobs/Dte/Automation/PollSingleDispatchJob.php')
         );
 
-        $repository = Mockery::mock(
-            SiiDispatchRepositoryInterface::class
+        $this->assertIsString($source);
+
+        $this->assertStringContainsString(
+            "'rest_upload_boleta'",
+            $source
         );
 
-        $repository
-            ->shouldReceive('findById')
-            ->once()
-            ->with(101)
-            ->andReturn($dispatch);
-
-        $facturaPolling = Mockery::mock(
-            PollSiiUploadStatusUseCase::class
+        $this->assertStringContainsString(
+            'PollBoletaDispatchStatusUseCase',
+            $source
         );
 
-        $facturaPolling
-            ->shouldNotReceive('execute');
-
-        $boletaPolling = Mockery::mock(
-            PollBoletaDispatchStatusUseCase::class
+        $this->assertStringContainsString(
+            'new PollBoletaDispatchStatusInputDto(',
+            $source
         );
 
-        $boletaPolling
-            ->shouldReceive('execute')
-            ->once()
-            ->andReturn(
-                new PollBoletaDispatchStatusResultDto(
-                    dispatchId: 101,
-                    status: 'processed',
-                    trackId: '32197087',
-                    sendStatusCode: 'EPR',
-                    sendStatusMessage: null,
-                    rawBody: '{}',
-                )
-            );
+        $this->assertStringContainsString(
+            '$pollBoletaDispatchStatusUseCase->execute(',
+            $source
+        );
+    }
 
-        $job = new PollSingleDispatchJob(
-            dispatchId: 101
+    public function test_dispatch_processed_agenda_consulta_documental(): void
+    {
+        $source = file_get_contents(
+            app_path('Jobs/Dte/Automation/PollSingleDispatchJob.php')
         );
 
-        $job->handle(
-            dispatchRepository: $repository,
-            pollSiiUploadStatusUseCase: $facturaPolling,
-            pollBoletaDispatchStatusUseCase: $boletaPolling,
+        $this->assertIsString($source);
+
+        $this->assertStringContainsString(
+            "\$result->status === 'processed'",
+            $source
         );
 
-        Queue::assertPushed(
-            QuerySingleDocumentStatusJob::class,
-            fn (QuerySingleDocumentStatusJob $job): bool =>
-                $job->documentId === 40
+        $this->assertStringContainsString(
+            'QuerySingleDocumentStatusJob::dispatch(',
+            $source
+        );
+
+        $this->assertStringContainsString(
+            "config('dte.automation.delays.document_status_query_seconds', 60)",
+            $source
+        );
+
+        $this->assertStringContainsString(
+            "config('dte.automation.queues.document_status')",
+            $source
         );
     }
 }

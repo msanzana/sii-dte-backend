@@ -66,6 +66,8 @@ final class EloquentSiiDispatchRepository implements SiiDispatchRepositoryInterf
             'sent_at' => $dispatch->sentAt(),
             'last_polled_at' => $dispatch->lastPolledAt(),
             'processed_at' => $dispatch->processedAt(),
+            'retry_count' => $dispatch->retryCount(),
+            'next_retry_at' => $dispatch->nextRetryAt(),
         ]);
 
         $model->save();

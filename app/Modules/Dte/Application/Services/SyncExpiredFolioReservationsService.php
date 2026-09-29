@@ -18,7 +18,7 @@ final class SyncExpiredFolioReservationsService
     public function execute(int $limit = 100): int
     {
         $references = $this->reservationRepository->findExpiredActiveReferences(
-            expiresBefore: now()->formate('Y-m-d H:i:s'),
+            expiresBefore: now()->format('Y-m-d H:i:s'),
             limit: $limit
         );
 
@@ -30,7 +30,7 @@ final class SyncExpiredFolioReservationsService
                 $this->deactivationService->execute(
                     new DeactivateFolioReservationInputDto(
                         companyId: (int) $reference['company_id'],
-                        reservationId: (int) $reference['reservation_id'],
+                        reservationId: (int) $reference['id'],
                         userId: null,
                         reason: 'La vigencia de la asignacion de rango expiró automáticamente',
                         source: DeactivateFolioReservationService::SOURCE_AUTOMATIC_EXPIRATION

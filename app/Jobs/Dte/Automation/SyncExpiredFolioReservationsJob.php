@@ -2,7 +2,7 @@
 namespace App\Jobs\Dte\Automation;
 
 use App\Modules\Dte\Application\Services\SyncExpiredFolioReservationsService;
-use DragonCode\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,7 +16,7 @@ final class SyncExpiredFolioReservationsJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public int $limits = 3;
+    public int $tries = 3;
 
     public function __construct()
     {

@@ -5,9 +5,11 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 use App\Modules\Dte\Application\DTOs\SendSignedDteToSiiInputDto;
 use App\Modules\Dte\Application\DTOs\SendSignedDteToSiiResultDto;
 use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
+use App\Modules\Dte\Application\Services\ScheduleDispatchRetryService;
 use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Domain\Enums\DispatchStatus;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\DispatchRetryScheduledException;
 use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
 use App\Modules\Dte\Domain\Exceptions\SiiUploadException;
@@ -15,12 +17,11 @@ use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
+use App\Modules\Dte\Domain\Services\DispatchRetryPolicyService;
 use App\Modules\Dte\Domain\Services\DteSiiSendDomainService;
-// use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService;
-// use App\Modules\Dte\Infrastructure\Sii\SiiSoapAuthenticationService;
+use App\Modules\Dte\Infrastructure\Sii\Exceptions\SiiUploadTransportException;
 use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService;
 use App\Modules\Dte\Infrastructure\Sii\SiiTokenProviderService;
-use App\Modules\Dte\Infrastructure\Sii\Exceptions\SiiUploadTransportException;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
@@ -80,9 +81,10 @@ final class SendSignedDteToSiiUseCase
             | Evita un segundo POST si existe un envío
             | cuyo resultado todavía no está resuelto.
             */
-            $this->assertNoUnresolvedDispatch(
-                (int) $document->id()
-            );
+            $retryCount =
+                $this->assertNoUnresolvedDispatch(
+                    (int) $document->id()
+                );
 
             $company = $this->companyRepository
                 ->findById(
@@ -272,7 +274,7 @@ final class SendSignedDteToSiiUseCase
                         null,
 
                     retryCount:
-                        0,
+                        $retryCount,
 
                     nextRetryAt:
                         null,
@@ -463,30 +465,83 @@ final class SendSignedDteToSiiUseCase
         } catch (Throwable $e) {
 
             /*
-            | Aquí todavía NO ejecutamos el POST.
-            | Por tanto este error es seguro de marcar
-            | como FAILED y eventualmente reintentar.
+            |--------------------------------------------------------------------------
+            | Falló la autenticación antes del POST
+            |--------------------------------------------------------------------------
+            |
+            | Aquí sabemos que todavía NO comenzó el upload al SII.
+            |
+            | Por eso este FAILED sí puede ser candidato a retry automático.
+            |
             */
 
             $failedDispatch =
                 $dispatch->withStatus(
-
                     status:
-                        DispatchStatus::FAILED
-                            ->value,
+                        DispatchStatus::FAILED->value,
 
                     errorMessage:
                         'Falló la autenticación previa al upload: '
                         . $e->getMessage()
                 );
 
-            $this->dispatchRepository
-                ->update(
-                    $failedDispatch
-                );
+            /*
+            |--------------------------------------------------------------------------
+            | Preparar política de retry
+            |--------------------------------------------------------------------------
+            */
+
+            $scheduleRetryService =
+                new ScheduleDispatchRetryService();
+
+            // 🟩 NUEVO
+            //
+            // false = todavía no hemos demostrado que exista un retry
+            //         realmente programado.
+            //
+            $retryScheduled = false;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Intentar programar el siguiente retry
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $scheduleRetryService
+                    ->canScheduleRetry(
+                        $failedDispatch
+                    )
+            ) {
+                $failedDispatch =
+                    $scheduleRetryService
+                        ->execute(
+                            $failedDispatch
+                        );
+
+                // 🟩 NUEVO
+                $retryScheduled = true;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Persistir el FAILED / retry programado
+            |--------------------------------------------------------------------------
+            */
+
+            $dispatch =
+                $this->dispatchRepository
+                    ->update(
+                        $failedDispatch
+                    );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Registrar diagnóstico
+            |--------------------------------------------------------------------------
+            */
 
             $this->logRepository->error(
-
                 channel:
                     'sii_dispatch',
 
@@ -494,9 +549,14 @@ final class SendSignedDteToSiiUseCase
                     'Falló la autenticación previa al upload del DTE.',
 
                 context: [
-
                     'dispatch_id' =>
                         $dispatch->id(),
+
+                    'retry_count' =>
+                        $dispatch->retryCount(),
+
+                    'next_retry_at' =>
+                        $dispatch->nextRetryAt(),
 
                     'error' =>
                         $e->getMessage(),
@@ -511,6 +571,32 @@ final class SendSignedDteToSiiUseCase
                 code:
                     'SII_DISPATCH_AUTH_FAILED'
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry de negocio efectivamente programado
+            |--------------------------------------------------------------------------
+            */
+
+            // 🟩 NUEVO
+            if ($retryScheduled) {
+                throw DispatchRetryScheduledException::forScheduledRetry(
+                    dispatchId:
+                        (int) $dispatch->id(),
+
+                    documentId:
+                        (int) $document->id(),
+
+                    previous:
+                        $e
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry agotado o no permitido
+            |--------------------------------------------------------------------------
+            */
 
             throw $e;
         }
@@ -1193,54 +1279,52 @@ final class SendSignedDteToSiiUseCase
 
     private function assertNoUnresolvedDispatch(
         int $documentId
-    ): void {
-
+    ): int {
         $latestDispatch =
             $this->dispatchRepository
                 ->findLatestByDocumentId(
                     $documentId
                 );
 
-
         if (!$latestDispatch) {
-            return;
+            return 0;
         }
 
+        $retryPolicy = new DispatchRetryPolicyService(
+            maxAttempts: (int) config(
+                'dte.automation.dispatch_retry.max_attempts'
+            ),
+
+            backoffSeconds: (array) config(
+                'dte.automation.dispatch_retry.backoff_seconds',
+                []
+            ),
+        );
+
+        if (
+            $retryPolicy->canExecuteScheduledRetry(
+                $latestDispatch,
+                now()->toDateTimeImmutable()
+            )
+        ) {
+            return $latestDispatch->retryCount();
+        }
 
         $blockingStatuses = [
+            DispatchStatus::PENDING->value,
+            DispatchStatus::SENDING->value,
+            DispatchStatus::UPLOAD_OK->value,
+            DispatchStatus::UPLOAD_REJECTED->value,
+            DispatchStatus::DELIVERY_UNKNOWN->value,
+            DispatchStatus::POLLING->value,
+            DispatchStatus::PROCESSED->value,
+            DispatchStatus::ACCEPTED->value,
+            DispatchStatus::REJECTED->value,
+            DispatchStatus::FAILED->value,
 
-            DispatchStatus::PENDING
-                ->value,
-
-            DispatchStatus::SENDING
-                ->value,
-
-            DispatchStatus::UPLOAD_OK
-                ->value,
-
-            DispatchStatus::DELIVERY_UNKNOWN
-                ->value,
-
-            DispatchStatus::POLLING
-                ->value,
-
-            DispatchStatus::PROCESSED
-                ->value,
-
-            DispatchStatus::ACCEPTED
-                ->value,
-
-            DispatchStatus::REJECTED
-                ->value,
-
-            /*
-            | Compatibilidad con valores históricos
-            | de tu implementación anterior.
-            */
             'send',
             'sent',
         ];
-
 
         if (
             in_array(
@@ -1249,17 +1333,16 @@ final class SendSignedDteToSiiUseCase
                 true
             )
         ) {
-
-            throw InvalidDocumentStateException
-                ::because(
-
-                    "El documento {$documentId} ya tiene "
-                    . "el dispatch {$latestDispatch->id()} "
-                    . "en estado {$latestDispatch->status()}. "
-                    . "No se realizará un nuevo upload "
-                    . "hasta reconciliarlo."
-                );
+            throw InvalidDocumentStateException::because(
+                "El documento {$documentId} ya tiene "
+                . "el dispatch {$latestDispatch->id()} "
+                . "en estado {$latestDispatch->status()}. "
+                . "No se realizará un nuevo upload "
+                . "hasta reconciliarlo."
+            );
         }
+
+        return 0;
     }
 
 

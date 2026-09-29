@@ -74,6 +74,18 @@ final class DteDocumentPersistenceMapper
             tedXml:$model->ted_xml,
             lastErrorCode:$model->last_error_code,
             lastErrorMessage:$model->last_error_message,
+            // 🟩 NUEVO
+            automationRetryAction:
+                $model->automation_retry_action,
+
+            // 🟩 NUEVO
+            automationRetryCount:
+                (int) $model->automation_retry_count,
+
+            // 🟩 NUEVO
+            automationNextRetryAt:
+                $model->automation_next_retry_at
+                ?->format('Y-m-d H:i:s'),
             externalSystemId:$model->external_system_id !== null
                     ? (int) $model->external_system_id
                     : null,

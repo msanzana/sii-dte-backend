@@ -56,6 +56,10 @@ class DteDocumentEloquentModel extends Model
 
         'last_error_code',
         'last_error_message',
+        // 🟩 NUEVO
+        'automation_retry_action',
+        'automation_retry_count',
+        'automation_next_retry_at',
 
         'queued_at',
         'sent_at',
@@ -80,7 +84,10 @@ class DteDocumentEloquentModel extends Model
         'totals_payload' => 'array',
         'raw_input' => 'array',
         'validation_warnings' => 'array',
-
+        // 🟩 NUEVO
+        'automation_retry_count' => 'integer',
+        'automation_next_retry_at' => 'datetime',
+        
         'queued_at' => 'datetime',
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',

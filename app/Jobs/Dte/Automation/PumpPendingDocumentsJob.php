@@ -34,15 +34,16 @@ class PumpPendingDocumentsJob implements ShouldQueue
     ):void{
         Context::add('job','PumpPendingDocumentsJob');
 
-        $ids = $documentRepository->findIdsByStatuses(
+        $ids = $documentRepository->findIdsEligibleForAutomation(
             statuses:[
                 DteStatus::READY_FOR_XML->value,
                 DteStatus::FOLIO_ASSIGNED->value,
                 DteStatus::XML_BUILT->value,
                 DteStatus::TED_BUILT->value,
                 DteStatus::SIGNED->value,
+                DteStatus::NEEDS_RESEND->value,
             ],
-            limit: (int) config('dte.automation.limits.documents_per:pump', 50)
+            limit: (int) config('dte.automation.limits.documents_per_pump', 50)
         );
 
         foreach($ids as $documentId)

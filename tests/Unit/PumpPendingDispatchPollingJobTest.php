@@ -13,6 +13,9 @@ final class PumpPendingDispatchPollingJobTest extends TestCase
 {
     public function test_busca_dispatches_enviados_de_factura_y_boleta_para_polling(): void
     {
+        config([
+            'cache.default' => 'array',
+        ]);
         Queue::fake();
 
         $repository = Mockery::mock(

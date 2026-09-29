@@ -42,11 +42,17 @@ class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
             limit:(int) config('dte.automation.limits.document_status_queries_per_pump',50)
         );
 
-        foreach($ids as $documentId)
+        foreach ($ids as $documentId)
         {
             QuerySingleDocumentStatusJob::dispatch($documentId)
-                        ->onConnection((string) config('dte.automation.queue_connection'))
-                        ->onQueue((string) config('dte.automation.queues.document_status'));
+                ->delay(now()->addSeconds(
+                    (int) config(
+                        'dte.automation.delays.document_status_query_seconds',
+                        60
+                    )
+                ))
+                ->onConnection((string) config('dte.automation.queue_connection'))
+                ->onQueue((string) config('dte.automation.queues.document_status'));
         }
     }
 }

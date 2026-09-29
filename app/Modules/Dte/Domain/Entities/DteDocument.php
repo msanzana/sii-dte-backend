@@ -47,6 +47,29 @@ final class DteDocument
         private readonly ?DateTimeImmutable $sentAt = null,
         private readonly ?DateTimeImmutable $acceptedAt = null,
         private readonly ?DateTimeImmutable $rejectedAt = null,
+        // 🟩 NUEVO
+        //
+        // Acción concreta que deberá volver a ejecutar la automatización.
+        // Ejemplos:
+        // - build_xml
+        // - build_ted
+        // - sign_xml
+        //
+        private readonly ?string $automationRetryAction = null,
+
+        // 🟩 NUEVO
+        //
+        // Cantidad de retries de automatización ya programados.
+        //
+        private readonly int $automationRetryCount = 0,
+
+        // 🟩 NUEVO
+        //
+        // Momento desde el cual el documento vuelve a ser elegible
+        // para la automatización.
+        //
+        private readonly ?string $automationNextRetryAt = null,
+
     ) {
     }
 
@@ -170,7 +193,22 @@ final class DteDocument
     {
         return $this->lastErrorMessage;
     }
+    // 🟩 NUEVO
 
+    public function automationRetryAction(): ?string
+    {
+        return $this->automationRetryAction;
+    }
+
+    public function automationRetryCount(): int
+    {
+        return $this->automationRetryCount;
+    }
+
+    public function automationNextRetryAt(): ?string
+    {
+        return $this->automationNextRetryAt;
+    }
     public function queuedAt(): ?DateTimeImmutable
     {
         return $this->queuedAt;
@@ -607,6 +645,358 @@ final class DteDocument
             rejectedAt: $this->rejectedAt ?? new DateTimeImmutable(),
         );
     }
+        // 🟩 NUEVO
+
+    public function withAutomationRetryScheduled(
+        string $action,
+        string $nextRetryAt,
+        string $errorCode,
+        string $errorMessage
+    ): self {
+        return new self(
+            id:
+                $this->id,
+
+            externalId:
+                $this->externalId,
+
+            companyId:
+                $this->companyId,
+
+            dteType:
+                $this->dteType,
+
+            issueDate:
+                $this->issueDate,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Estado funcional
+            |--------------------------------------------------------------------------
+            |
+            | NO cambiamos el estado.
+            |
+            | Si build_xml falló en FOLIO_ASSIGNED,
+            | el documento continúa FOLIO_ASSIGNED.
+            |
+            | Si build_ted falló en XML_BUILT,
+            | continúa XML_BUILT.
+            |
+            | Si sign_xml falló en TED_BUILT,
+            | continúa TED_BUILT.
+            |
+            */
+
+            status:
+                $this->status,
+
+            receiver:
+                $this->receiver,
+
+            netAmount:
+                $this->netAmount,
+
+            exemptAmount:
+                $this->exemptAmount,
+
+            taxAmount:
+                $this->taxAmount,
+
+            totalAmount:
+                $this->totalAmount,
+
+            items:
+                $this->items,
+
+            references:
+                $this->references,
+
+            headerPayload:
+                $this->headerPayload,
+
+            totalsPayload:
+                $this->totalsPayload,
+
+            rawInput:
+                $this->rawInput,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Folio y ambiente
+            |--------------------------------------------------------------------------
+            |
+            | CRÍTICO:
+            | se conserva el mismo folio.
+            |
+            */
+
+            folio:
+                $this->folio,
+
+            siiEnvironment:
+                $this->siiEnvironment,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Artefactos técnicos existentes
+            |--------------------------------------------------------------------------
+            |
+            | Por ahora no borramos nada aquí.
+            |
+            | Cada acción de reproceso decidirá posteriormente cuáles
+            | artefactos deben invalidarse.
+            |
+            */
+
+            unsignedXmlPath:
+                match ($action) {
+                    'build_xml' =>
+                        null,
+
+                    default =>
+                        $this->unsignedXmlPath,
+                },
+
+            signedXmlPath:
+                match ($action) {
+                    'build_xml',
+                    'build_ted',
+                    'sign_xml' =>
+                        null,
+
+                    default =>
+                        $this->signedXmlPath,
+                },
+
+            tedXml:
+                match ($action) {
+                    'build_xml',
+                    'build_ted' =>
+                        null,
+
+                    default =>
+                        $this->tedXml,
+                },
+
+            /*
+            |--------------------------------------------------------------------------
+            | Diagnóstico del último error
+            |--------------------------------------------------------------------------
+            */
+
+            lastErrorCode:
+                $errorCode,
+
+            lastErrorMessage:
+                $errorMessage,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Referencias de negocio
+            |--------------------------------------------------------------------------
+            |
+            | Estas referencias NO deben cambiar por un fallo técnico.
+            |
+            */
+
+            externalSystemId:
+                $this->externalSystemId,
+
+            cafId:
+                $this->cafId,
+
+            folioReservationId:
+                $this->folioReservationId,
+
+            branchOfficeNumber:
+                $this->branchOfficeNumber,
+
+            facilityNumber:
+                $this->facilityNumber,
+
+            externalBranchCode:
+                $this->externalBranchCode,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry de automatización
+            |--------------------------------------------------------------------------
+            */
+
+            automationRetryAction:
+                $action,
+
+            automationRetryCount:
+                $this->automationRetryCount + 1,
+
+            automationNextRetryAt:
+                $nextRetryAt,
+        );
+    }
+    public function withAutomationRetryExhausted(
+        string $action,
+        string $errorCode,
+        string $errorMessage
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: $this->status,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath:
+                match ($action) {
+                    'build_xml' =>
+                        null,
+
+                    default =>
+                        $this->unsignedXmlPath,
+                },
+
+            signedXmlPath:
+                match ($action) {
+                    'build_xml',
+                    'build_ted',
+                    'sign_xml' =>
+                        null,
+
+                    default =>
+                        $this->signedXmlPath,
+                },
+
+            tedXml:
+                match ($action) {
+                    'build_xml',
+                    'build_ted' =>
+                        null,
+
+                    default =>
+                        $this->tedXml,
+                },
+            lastErrorCode: $errorCode,
+            lastErrorMessage: $errorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry interno agotado
+            |--------------------------------------------------------------------------
+            |
+            | Conservamos la acción y el contador alcanzado, pero eliminamos
+            | next_retry_at para impedir que el pump vuelva a seleccionarlo.
+            |
+            */
+
+            automationRetryAction: $action,
+            automationRetryCount: $this->automationRetryCount,
+            automationNextRetryAt: null,
+        );
+    }
+
+    public function withAutomationRetryNotRetryable(
+        string $action,
+        string $errorCode,
+        string $errorMessage
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+            status: $this->status,
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+            items: $this->items,
+            references: $this->references,
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+            unsignedXmlPath:
+                match ($action) {
+                    'build_xml' =>
+                        null,
+
+                    default =>
+                        $this->unsignedXmlPath,
+                },
+
+            signedXmlPath:
+                match ($action) {
+                    'build_xml',
+                    'build_ted',
+                    'sign_xml' =>
+                        null,
+
+                    default =>
+                        $this->signedXmlPath,
+                },
+
+            tedXml:
+                match ($action) {
+                    'build_xml',
+                    'build_ted' =>
+                        null,
+
+                    default =>
+                        $this->tedXml,
+                },
+            lastErrorCode: $errorCode,
+            lastErrorMessage: $errorMessage,
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry interno agotado
+            |--------------------------------------------------------------------------
+            |
+            | Conservamos la acción y el contador alcanzado, pero eliminamos
+            | next_retry_at para impedir que el pump vuelva a seleccionarlo.
+            |
+            */
+
+            automationRetryAction: $action,
+            automationRetryCount: $this->automationRetryCount,
+            automationNextRetryAt: null,
+        );
+    }
+
     public function externalSystemId(): ?int
     {
         return $this->externalSystemId;

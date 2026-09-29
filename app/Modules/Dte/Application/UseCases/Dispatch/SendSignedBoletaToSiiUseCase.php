@@ -5,30 +5,33 @@ namespace App\Modules\Dte\Application\UseCases\Dispatch;
 use App\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiInputDto;
 use App\Modules\Dte\Application\DTOs\SendSignedBoletaToSiiResultDto;
 use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
+use App\Modules\Dte\Application\Services\ScheduleDispatchRetryService;
+use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Entities\SiiDispatch;
 use App\Modules\Dte\Domain\Enums\DispatchStatus;
+use App\Modules\Dte\Domain\Enums\DteStatus;
 use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\DispatchRetryScheduledException;
 use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
 use App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+use App\Modules\Dte\Domain\Exceptions\SiiBoletaSendException;
 use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
 use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
+use App\Modules\Dte\Domain\Services\DispatchRetryPolicyService;
 use App\Modules\Dte\Domain\Services\DteBoletaSendDomainService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService;
 use App\Modules\Dte\Infrastructure\Sii\SiiBoletaTokenProviderService;
 use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
 use App\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService;
+use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Illuminate\Http\Client\ConnectionException;
 use Throwable;
-use App\Modules\Dte\Domain\Exceptions\SiiBoletaSendException;
-use App\Modules\Dte\Domain\Entities\DteDocument;
-use App\Modules\Dte\Domain\Enums\DteStatus;
-use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
 
 final class SendSignedBoletaToSiiUseCase
 {
@@ -89,9 +92,10 @@ final class SendSignedBoletaToSiiUseCase
             |--------------------------------------------------------------------------
             */
 
-            $this->assertNoUnresolvedDispatch(
-                $document
-            );
+            $retryCount =
+                $this->assertNoUnresolvedDispatch(
+                    $document
+                );
 
             $company = $this->companyRepository
                 ->findById(
@@ -291,7 +295,7 @@ final class SendSignedBoletaToSiiUseCase
                     null,
 
                 retryCount:
-                    0,
+                    $retryCount,
 
                 nextRetryAt:
                     null,
@@ -342,7 +346,7 @@ final class SendSignedBoletaToSiiUseCase
 
                 'payload_build' =>
                     $payloadBuild,
-                
+
                 'signed_envelope_xml' =>
                     $signedEnvelopeXml,
 
@@ -377,7 +381,7 @@ final class SendSignedBoletaToSiiUseCase
 
         $payloadBuild =
             $prepared['payload_build'];
-        
+
         $signedEnvelopeXml =
             $prepared['signed_envelope_xml'];
 
@@ -433,25 +437,167 @@ final class SendSignedBoletaToSiiUseCase
             |
             | Aquí sabemos que todavía NO comenzó el upload al SII.
             |
-            | Por eso este caso es distinto de DELIVERY_UNKNOWN:
+            | Por lo tanto:
             |
-            | TOKEN falla       -> FAILED
-            | POST se interrumpe -> DELIVERY_UNKNOWN
+            | - el dispatch puede marcarse FAILED;
+            | - el error es elegible para retry automático;
+            | - sólo se programa retry mientras no se alcance el máximo;
+            | - si se programa retry, se lanza una excepción controlada especial;
+            | - si ya no quedan retries, se conserva la excepción original.
+            |
+            */
+
+            $failedDispatch =
+                $dispatch->withStatus(
+                    status:
+                        DispatchStatus::FAILED->value,
+
+                    errorMessage:
+                        'Falló la autenticación previa al upload: '
+                        . $e->getMessage()
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Servicio encargado de programar el retry
+            |--------------------------------------------------------------------------
+            */
+
+            $scheduleRetryService =
+                new ScheduleDispatchRetryService();
+
+            // 🟩 NUEVO
+            //
+            // Esta bandera nos permitirá distinguir entre:
+            //
+            // 1. FAILED con retry realmente programado.
+            // 2. FAILED porque ya no quedan retries disponibles.
+            //
+            $retryScheduled = false;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Programar retry sólo cuando la política lo permita
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $scheduleRetryService
+                    ->canScheduleRetry(
+                        $failedDispatch
+                    )
+            ) {
+                $failedDispatch =
+                    $scheduleRetryService
+                        ->execute(
+                            $failedDispatch
+                        );
+
+                // 🟩 NUEVO
+                //
+                // Si llegamos aquí:
+                //
+                // retry_count fue incrementado
+                // next_retry_at fue asignado
+                //
+                $retryScheduled = true;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Persistir el FAILED
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANTE:
+            |
+            | Se hace UN SOLO update.
+            |
+            | Si hubo retry:
+            |   FAILED + retry_count + next_retry_at
+            |
+            | Si no hubo retry:
+            |   FAILED sin una nueva programación
             |
             */
 
             $dispatch =
                 $this->dispatchRepository
                     ->update(
-                        $dispatch->withStatus(
-                            status:
-                                DispatchStatus::FAILED
-                                    ->value,
-
-                            errorMessage:
-                                $e->getMessage()
-                        )
+                        $failedDispatch
                     );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Log del error de autenticación
+            |--------------------------------------------------------------------------
+            */
+
+            $this->logRepository->error(
+                channel:
+                    'sii_dispatch',
+
+                message:
+                    'Falló la autenticación previa al upload del DTE.',
+
+                context: [
+                    'dispatch_id' =>
+                        $dispatch->id(),
+
+                    'retry_count' =>
+                        $dispatch->retryCount(),
+
+                    'next_retry_at' =>
+                        $dispatch->nextRetryAt(),
+
+                    'error' =>
+                        $e->getMessage(),
+                ],
+
+                companyId:
+                    $document->companyId(),
+
+                documentId:
+                    $document->id(),
+
+                code:
+                    'SII_DISPATCH_AUTH_FAILED'
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry de negocio programado
+            |--------------------------------------------------------------------------
+            */
+
+            // 🟩 NUEVO
+            //
+            // Solamente lanzamos esta excepción cuando REALMENTE quedó
+            // programado un retry en retry_count / next_retry_at.
+            //
+            if ($retryScheduled) {
+                throw DispatchRetryScheduledException::forScheduledRetry(
+                    dispatchId:
+                        (int) $dispatch->id(),
+
+                    documentId:
+                        (int) $document->id(),
+
+                    previous:
+                        $e
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | No quedan retries
+            |--------------------------------------------------------------------------
+            |
+            | Si canScheduleRetry() devolvió false, debemos mantener la
+            | excepción original.
+            |
+            | Esto permitirá que Laravel maneje el error técnico normalmente.
+            |
+            */
 
             throw $e;
         }
@@ -946,7 +1092,7 @@ final class SendSignedBoletaToSiiUseCase
     */
     private function assertNoUnresolvedDispatch(
         DteDocument $document
-    ): void
+    ): int
     {
         $documentId = (int) $document->id();
 
@@ -956,8 +1102,17 @@ final class SendSignedBoletaToSiiUseCase
                     $documentId
                 );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Sin dispatch anterior
+        |--------------------------------------------------------------------------
+        |
+        | Es un envío normal, por lo que el contador técnico comienza en cero.
+        |
+        */
+
         if (!$latestDispatch) {
-            return;
+            return 0;
         }
 
         /*
@@ -974,16 +1129,10 @@ final class SendSignedBoletaToSiiUseCase
         | - el último dispatch realmente terminó REJECTED;
         | - dicho dispatch también fue rechazado por RSC.
         |
-        | Esta excepción existe para el flujo explícito:
-        |
-        | SENT
-        |   -> NEEDS_RESEND
-        |   -> XML_BUILT
-        |   -> TED_BUILT
-        |   -> SIGNED
-        |   -> nuevo dispatch
+        | Este reproceso funcional NO hereda el contador de retry técnico.
         |
         */
+
         $isControlledRscReprocess =
             $document->status() === DteStatus::SIGNED->value
             && $document->lastErrorCode() === 'RSC'
@@ -991,18 +1140,58 @@ final class SendSignedBoletaToSiiUseCase
             && $latestDispatch->uploadStatusCode() === 'RSC';
 
         if ($isControlledRscReprocess) {
-            return;
+            return 0;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Retry automático previamente programado
+        |--------------------------------------------------------------------------
+        |
+        | Sólo dejamos continuar un FAILED que ya fue marcado explícitamente
+        | con retry_count / next_retry_at y cuyo plazo ya venció.
+        |
+        | En ese caso el nuevo dispatch hereda el contador del intento anterior.
+        |
+        */
+
+        $retryPolicy = new DispatchRetryPolicyService(
+            maxAttempts: (int) config(
+                'dte.automation.dispatch_retry.max_attempts'
+            ),
+
+            backoffSeconds: (array) config(
+                'dte.automation.dispatch_retry.backoff_seconds',
+                []
+            ),
+        );
+
+        if (
+            $retryPolicy->canExecuteScheduledRetry(
+                $latestDispatch,
+                now()->toDateTimeImmutable()
+            )
+        ) {
+            return $latestDispatch->retryCount();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Estados bloqueantes
+        |--------------------------------------------------------------------------
+        */
 
         $blockingStatuses = [
             DispatchStatus::PENDING->value,
             DispatchStatus::SENDING->value,
             DispatchStatus::UPLOAD_OK->value,
+            DispatchStatus::UPLOAD_REJECTED->value,
             DispatchStatus::DELIVERY_UNKNOWN->value,
             DispatchStatus::POLLING->value,
             DispatchStatus::PROCESSED->value,
             DispatchStatus::ACCEPTED->value,
             DispatchStatus::REJECTED->value,
+            DispatchStatus::FAILED->value,
 
             /*
             | Compatibilidad con valores históricos
@@ -1026,6 +1215,14 @@ final class SendSignedBoletaToSiiUseCase
                 . "hasta reconciliarlo."
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dispatch histórico no bloqueante
+        |--------------------------------------------------------------------------
+        */
+
+        return 0;
     }
 
     /*

@@ -26,4 +26,12 @@ interface DteDocumentRepositoryInterface
      * @return int[]
      */
     public function findIdsByStatuses(array $statuses, int $limit = 100): array;
+    /**
+     * @param string[] $statuses
+     * @return int[]
+     */
+    public function findIdsEligibleForAutomation(
+        array $statuses,
+        int $limit = 100
+    ): array;
 }
