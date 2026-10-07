@@ -280,9 +280,10 @@ final class QuerySiiDocumentStatusUseCase
 
         if($normalized === 'FAU')
         {
-            return $document->withSentStatus(
-                code: $siiCode,
-                message: $siiMessage
+            return $this->scheduleDocumentStatusRetry(
+                document: $document,
+                siiCode: $siiCode,
+                siiMessage: $siiMessage
             );
         }
 
@@ -344,21 +345,13 @@ final class QuerySiiDocumentStatusUseCase
         }
         if($normalizedCode === 'fau')
         {
-            return $document->withSentStatus(
-                code: $siiCode,
-                message: $siiMessage
+            return $this->scheduleDocumentStatusRetry(
+                document: $document,
+                siiCode: $siiCode,
+                siiMessage: $siiMessage
             );
         }
-        // if(
-        //     str_contains($normalizedMessage, 'rechaz')
-        //     || in_array($normalizedCode,['rechazado','rejected'],true)
-        // )
-        // {
-        //     return $document->withRejectedStatus(
-        //         code:$siiCode,
-        //         message: $siiMessage
-        //     );
-        // }
+
         if(
             str_contains($normalizedMessage, 'rechaz')
             || in_array(
@@ -382,6 +375,82 @@ final class QuerySiiDocumentStatusUseCase
         return $document;
     }
 
+    private function scheduleDocumentStatusRetry(
+        $document,
+        ?string $siiCode,
+        ?string $siiMessage
+    ) {
+        $currentRetryCount =
+            (int) $document->statusQueryRetryCount();
+
+        $maxAttempts =
+            max(
+                1,
+                (int) config(
+                    'dte.automation.document_status_retry.max_attempts',
+                    3
+                )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Retry documental agotado
+        |--------------------------------------------------------------------------
+        |
+        | status_query_retry_count representa la cantidad de reconsultas
+        | que ya fueron programadas/ejecutadas.
+        |
+        | Si ya alcanzamos el máximo y el SII vuelve a responder FAU,
+        | no debemos programar una cuarta consulta.
+        |
+        | El documento pasa a NEEDS_RESEND para que el pipeline pueda
+        | reconstruirlo y reenviarlo preservando folio, CAF y reserva.
+        |
+        */
+
+        if ($currentRetryCount >= $maxAttempts) {
+            return $document->withStatusQueryRetryExhausted(
+                code: $siiCode,
+                message: $siiMessage
+            );
+        }
+
+        $backoffSeconds =
+            config(
+                'dte.automation.document_status_retry.backoff_seconds',
+                [60, 180, 600]
+            );
+
+        if (
+            !is_array($backoffSeconds)
+            || $backoffSeconds === []
+        ) {
+            $backoffSeconds = [60];
+        }
+
+        $backoffIndex =
+            min(
+                $currentRetryCount,
+                count($backoffSeconds) - 1
+            );
+
+        $delaySeconds =
+            max(
+                1,
+                (int) $backoffSeconds[$backoffIndex]
+            );
+
+        $nextRetryAt =
+            now()
+                ->addSeconds($delaySeconds)
+                ->format('Y-m-d H:i:s');
+
+        return $document->withStatusQueryRetryScheduled(
+            nextRetryAt: $nextRetryAt,
+            code: $siiCode,
+            message: $siiMessage
+        );
+    }
     private function splitRut(string $rut):array
     {
         $parts = explode('-', $rut);

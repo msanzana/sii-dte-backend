@@ -2,7 +2,7 @@
 
 namespace App\Modules\Auth\Infrastructure\Security;
 
-use App\Modules\Auth\Domain\Exceptions\InvalidRefreshTokenException;
+use App\Modules\Auth\Domain\Exception\InvalidRefreshTokenException;
 
 final class RefreshTokenService
 {

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Auth\Application\DTOs\AssignUserCompanyInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateUserCompanyAssignmentInputDto;
 use App\Modules\Auth\Application\Services\ManageUserCompanyAssignmentsService;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Presentation\Http\Requests\AssignUserCompanyRequest;
 use App\Modules\Auth\Presentation\Http\Requests\UpdateUserCompanyAssignmentRequest;
 use Illuminate\Http\JsonResponse;

@@ -4,7 +4,7 @@ namespace App\Modules\Auth\Application\Services;
 
 use App\Modules\Auth\Application\DTOs\AssignUserCompanyInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateUserCompanyAssignmentInputDto;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthCompanyStateRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRolesRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
@@ -22,11 +22,7 @@ final class ManageUserCompanyAssignmentsService
 
     public function listByUser(int $userId): array
     {
-        $user = $this->authUserRepository->findById($userId);
-
-        if (!$user) {
-            throw AuthEntityNotFoundException::for('usuario', $userId);
-        }
+        $this->assertAdministrableUser($userId);
 
         return array_map(
             fn ($assignment) => [
@@ -47,9 +43,9 @@ final class ManageUserCompanyAssignmentsService
 
     public function assign(AssignUserCompanyInputDto $input): array
     {
-        if (!$this->authUserRepository->findById($input->userId)) {
-            throw AuthEntityNotFoundException::for('usuario', $input->userId);
-        }
+        $this->assertAdministrableUser(
+            $input->userId
+        );
 
         $company = $this->authCompanyStateRepository->findById($input->companyId);
 
@@ -98,7 +94,9 @@ final class ManageUserCompanyAssignmentsService
                 throw AuthEntityNotFoundException::for('rol', (int) $roleId);
             }
         }
-
+        $this->assertAdministrableUser(
+            $current->userId()
+        );
         $assignment = $this->userCompanyAccessRepository->updateAssignment(
             accessId: $input->accessId,
             isDefault: $input->isDefault,
@@ -127,7 +125,10 @@ final class ManageUserCompanyAssignmentsService
         if (!$current) {
             throw AuthEntityNotFoundException::for('acceso usuario-empresa', $accessId);
         }
-
+        // NUEVA VALIDACIÓN
+        $this->assertAdministrableUser(
+            $current->userId()
+        );
         $this->userCompanyAccessRepository->setAssignmentActive($accessId, $isActive);
 
         $updated = $this->userCompanyAccessRepository->findByAccessId($accessId);
@@ -148,12 +149,37 @@ final class ManageUserCompanyAssignmentsService
 
     public function remove(int $accessId): void
     {
-        $current = $this->userCompanyAccessRepository->findByAccessId($accessId);
+        $current = $this->userCompanyAccessRepository
+            ->findByAccessId($accessId);
 
         if (!$current) {
-            throw AuthEntityNotFoundException::for('acceso usuario-empresa', $accessId);
+            throw AuthEntityNotFoundException::for(
+                'acceso usuario-empresa',
+                $accessId
+            );
         }
 
-        $this->userCompanyAccessRepository->removeAssignment($accessId);
+        // NUEVA VALIDACIÓN
+        $this->assertAdministrableUser(
+            $current->userId()
+        );
+
+        $this->userCompanyAccessRepository
+            ->removeAssignment($accessId);
+    }
+    private function assertAdministrableUser(int $userId): void
+    {
+        $user = $this->authUserRepository->findById($userId);
+
+        if (
+            $user === null
+            || !$user->isHuman()
+            || !$user->isVisible()
+        ) {
+            throw AuthEntityNotFoundException::for(
+                'usuario',
+                $userId
+            );
+        }
     }
 }

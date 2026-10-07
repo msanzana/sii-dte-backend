@@ -1,0 +1,476 @@
+﻿<?php
+namespace App\Modules\Dte\Application\UseCases\Document;
+
+use App\Modules\Dte\Application\DTOs\BuildDteXmlInputDto;
+use App\Modules\Dte\Application\DTOs\BuildDteXmlResultDto;
+use App\Modules\Dte\Application\Services\DteXmlDataAssemblerService;
+use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\LocationSummaryNotFoundException;
+use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\LocationRepositoryInterface;
+use App\Modules\Dte\Domain\Services\DteXmlBuildDomainService;
+use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+use App\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService;
+use Illuminate\Support\Facades\DB;
+
+class BuildDteXmlUseCase
+{
+    public function __construct(
+        private readonly DteDocumentRepositoryInterface $documentRepository,
+        private readonly CompanyRepositoryInterface $companyRepository,
+        private readonly LocationRepositoryInterface $locationRepository,
+        private readonly IntegrationLogRepositoryInterface $logRepository,
+        private readonly DteXmlBuildDomainService $xmlBuildDomainService,
+        private readonly DteXmlDataAssemblerService $xmlDataAssemblerService,
+        private readonly DteXmlBuilderService $xmlBuilderService,
+        private readonly DtePrivateStorageService $storageService,
+    )
+    {}
+
+    public function execute(BuildDteXmlInputDto $input): BuildDteXmlResultDto
+    {
+        return DB::transaction( function () use ($input){
+            $document = $this->documentRepository->findByIdForUpdate($input->documentId);
+
+            if(!$document)
+            {
+                throw DocumentNotFoundException::withId($input->documentId);
+            }
+
+            $this->xmlBuildDomainService->assertCanBuildXml($document);
+
+            $company = $this->companyRepository->findById($document->companyId());
+
+            if(!$company || !$company->isActive())
+            {
+                throw CompanyNotFoundException::withId($document->companyId());
+            }
+
+            $emitterLocation = $this->locationRepository->findSummaryByCityId($company->cityId());
+
+            $receiverLocation = null;
+
+            if($document->receiver()->cityId() !== null)
+            {
+                $receiverLocation = $this->locationRepository->findSummaryByCityId(
+                    $document->receiver()->cityId(),
+                );
+
+                if(!$receiverLocation)
+                {
+                    throw LocationSummaryNotFoundException::withCityId(
+                        $document->receiver()->cityId()
+                    );
+                }
+            }
+
+            $xmlData = $this->xmlDataAssemblerService->assemble(
+                document: $document,
+                company: $company,
+                emitterLocation: $emitterLocation,
+                receiverLocation: $receiverLocation,
+            );
+
+            $xml = $this->xmlBuilderService->build($xmlData);
+
+            $filename = sprintf(
+                'dte_company_%d_td_%d_f_%d_%s.xml',
+                $document->companyId(),
+                $document->dteType()->value,
+                $document->folio(),
+                bin2hex(random_bytes(4))
+            );
+
+            $relativePath = $this->storageService->storeString(
+                contents: $xml,
+                targetDirectory: 'xml',
+                targetFileName: $filename,
+            );
+
+            $updatedDocument = $document->withUnsignedXmlBuilt($relativePath);
+
+            $saved = $this->documentRepository->update($updatedDocument);
+
+            $this->logRepository->info(
+                channel: 'xml_build',
+                message: 'XML base del DTE construido correctamente.',
+                context: [
+                    'document_id' => $saved->id(),
+                    'external_id' => $saved->externalId(),
+                    'folio' => $saved->folio(),
+                    'unsigned_xml_path' => $relativePath,
+                    'document_xml_id' => $xmlData['document_xml_id'],
+                ],
+                companyId: $saved->companyId(),
+                documentId:$saved->id(),
+                code: 'DTE_XML_BUILT'
+            );
+
+            return new BuildDteXmlResultDto(
+                documentId: $saved->id(),
+                externalId: $saved->externalId(),
+                companyId: $saved->companyId(),
+                dteType: $saved->dteType()->value,
+                folio: (int) $saved->folio(),
+                documentXmlId: $xmlData['document_xml_id'],
+                status: $saved->status(),
+                siiEnvironment: $saved->siiEnvironment() ?? $company->siiEnvironment(),
+                unsignedXmlPath: $relativePath,
+            );
+        });
+    }
+}
+<?php
+namespace App\Modules\Dte\Application\UseCases\Document;
+
+use App\Modules\Dte\Application\DTOs\BuildTedInputDto;
+use App\Modules\Dte\Application\DTOs\BuildTedResultDto;
+use App\Modules\Dte\Application\Services\DteTedBuildDomainService;
+use App\Modules\Dte\Domain\Exceptions\CafNotFoundForFolioException;
+use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
+use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiCafRepositoryInterface;
+use App\Modules\Dte\Domain\Services\TedDataAssemblerService;
+use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+use App\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService;
+use App\Modules\Dte\Infrastructure\Xml\DteTedEmbedderService;
+use App\Modules\Dte\Infrastructure\Xml\TedSignatureService;
+use App\Modules\Dte\Infrastructure\Xml\TedXmlBuilderService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+
+final class BuildTedUseCase
+{
+    public function __construct(
+        private readonly DteDocumentRepositoryInterface $documentRepository,
+        private readonly CompanyRepositoryInterface $companyRepository,
+        private readonly SiiCafRepositoryInterface $cafRepository,
+        private readonly IntegrationLogRepositoryInterface $logRepository,
+        private readonly DteTedBuildDomainService $tedBuildDomainService,
+        private readonly TedDataAssemblerService $tedDataAssemblerService,
+        private readonly CafTedMaterialExtractorService $cafTedMaterialExtractorService,
+        private readonly TedXmlBuilderService $tedXmlBuilderService,
+        private readonly TedSignatureService $tedSignatureService,
+        private readonly DteTedEmbedderService $dteTedEmbedderService,
+        private readonly DtePrivateStorageService $storageService,
+    )
+    {}
+
+    public function execute(BuildTedInputDto $input): BuildTedResultDto
+    {
+        return DB::transaction(function () use ($input): BuildTedResultDto {
+            $document = $this->documentRepository->findByIdForUpdate($input->documentId);
+
+            if(!$document)
+            {
+                throw DocumentNotFoundException::withId($input->documentId);
+            }
+
+            $this->tedBuildDomainService->assertCanBuildTed($document);
+
+            $company = $this->companyRepository->findById($document->companyId());
+
+            if (!$company || !$company->isActive())
+            {
+                throw CompanyNotFoundException::withId($document->companyId());
+            }
+
+            $caf = $this->cafRepository->findActiveContainingFolio(
+                companyId: $document->companyId(),
+                dteType: $document->dteType()->value,
+                folio: (int) $document->folio(),
+            );
+
+            if(!$caf)
+            {
+                throw CafNotFoundForFolioException::forDocument(
+                    companyId: $document->companyId(),
+                    dteType: $document->dteType()->value,
+                    folio: (int) $document->folio(),
+                );
+            }
+
+            $cafMaterial = $this->cafTedMaterialExtractorService->extract($caf);
+
+            $tedData = $this->tedDataAssemblerService->assemble(
+                document: $document,
+                company: $company,
+                cafXmlFragment: $cafMaterial['caf_xml_fragment'],
+            );
+
+            $ddXml = $this->tedXmlBuilderService->buildDdXml($tedData);
+
+            $frmtBase64 = $this->tedSignatureService->singDdXml(
+                ddXmlUtf8: $ddXml,
+                privateKeyPem: $cafMaterial['private_key_pem'],
+            );
+
+            $tedXml = $this->tedXmlBuilderService->buildTedXml(
+                data: $tedData,
+                frmtBase64: $frmtBase64,
+            );
+
+            $absoluteUnsignedXmlPath = storage_path($document->unsignedXmlPath());
+
+            if(!File::exists($absoluteUnsignedXmlPath))
+            {
+                throw new \RuntimeException(
+                    "No existe el XML base del documento en {$document->unsignedXmlPath()}."
+                );
+            }
+
+            $existingDteXml = File::get($absoluteUnsignedXmlPath);
+
+            if($existingDteXml === false || trim($existingDteXml) === '')
+            {
+                throw new \RuntimeException(
+                    'No fue posible leer el XML base del documento antes de incrustar el TED.'
+                );
+            }
+
+            $xmlWithTed = $this->dteTedEmbedderService->embedTed(
+                dteXmlIso88591: $existingDteXml,
+                tedXmlUtf8: $tedXml,
+            );
+
+            $filename = sprintf(
+                'dte_company_%d_td_%d_f_%d_ted_%s.xml',
+                $document->companyId(),
+                $document->dteType()->value,
+                $document->folio(),
+                bin2hex(random_bytes(4))
+            );
+
+            $relativePath = $this->storageService->storeString(
+                contents: $xmlWithTed,
+                targetDirectory: 'xml',
+                targetFileName: $filename,
+            );
+
+            $updatedDocument = $document->withTedBuilt(
+                tedXml: $tedXml,
+                unsignedXmlPath: $relativePath
+            );
+
+            $saved = $this->documentRepository->update($updatedDocument);
+
+            $this->logRepository->info(
+                channel: 'ted_build',
+                message: 'TED construido e incrustado correctamente en el Xml del DTE..',
+                context: [
+                    'document_id' => $saved->id(),
+                    'external_id' => $saved->externalId(),
+                    'dte_type' => $saved->companyId(),
+                    'folio' => $saved->folio(),
+                    'caf_id' => $caf->id(),
+                    'unsigned_xml_path' => $relativePath,
+                ],
+                companyId: $saved->companyId(),
+                documentId:$saved->id(),
+                code: 'DTE_TED_BUILT'
+            );
+
+            return new BuildTedResultDto(
+                documentId: $saved->id(),
+                externalId: $saved->externalId(),
+                companyId: $saved->companyId(),
+                dteType: $saved->dteType()->value,
+                folio: (int) $saved->folio(),
+                cafId: (int) $caf->id(),
+                status: $saved->status(),
+                unsignedXmlPath: $relativePath,
+                tedXml: $tedXml,
+            );
+        });
+    }
+}
+<?php
+namespace App\Modules\Dte\Application\UseCases\Document;
+
+
+use App\Modules\Dte\Application\DTOs\SignDteXmlInputDto;use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Application\DTOs\SignDteXmlResultDto;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
+use App\Modules\Dte\Domain\Exceptions\DocumentNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\InvalidDocumentStateException;
+use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+use App\Modules\Dte\Domain\Services\DteXmlSignDomainService;
+use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+use App\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+
+final class SignDteXmlUseCase
+{
+    public function __construct(
+        private readonly DteDocumentRepositoryInterface $documentRepository,
+        private readonly CompanyRepositoryInterface $companyRepository,
+        private readonly IntegrationLogRepositoryInterface $logRepository,
+        private readonly DteXmlSignatureService $dteXmlSignatureService,
+        private readonly DtePrivateStorageService $storageService,
+        private readonly DteXmlSignDomainService $xmlSignDomainService,
+        private readonly LoadCertificateMaterialForEmisionService $loadCertificateMaterialForEmisionService,
+    )
+    {}
+
+    public function execute(SignDteXmlInputDto $input): SignDteXmlResultDto
+    {
+        return DB::transaction(function () use ($input){
+            $document = $this->documentRepository->findByIdForUpdate($input->documentId);
+
+            if(!$document)
+            {
+                throw DocumentNotFoundException::withId($input->documentId);
+            }
+
+            $this->xmlSignDomainService->assertCanSignXml($document);
+
+            $company = $this->companyRepository->findById($document->companyId());
+
+            if(!$company || !$company->isActive())
+            {
+                throw CompanyNotFoundException::withId($document->companyId());
+            }
+
+            $certificateContext = $this->loadCertificateMaterialForEmisionService->execute(
+                $document->companyId()
+            );
+
+            $absoluteUnsignedPath = storage_path($document->unsignedXmlPath());
+
+            if(!File::exists($absoluteUnsignedPath))
+            {
+                throw InvalidDocumentStateException::because(
+                    "El No existe el Xml unsigned del documento en {$document->unsignedXmlPath()}."
+                );
+            }
+
+            $unsignedXml = File::get($absoluteUnsignedPath);
+
+            if($unsignedXml === false || trim($unsignedXml) === '')
+            {
+                throw InvalidDocumentStateException::because(
+                    'No fue posible leer el XML unsigned del documento antes del firmarlo.'
+                );
+            }
+
+            $signatureResult = $this->dteXmlSignatureService->signDte(
+                xmlWithTed: $unsignedXml,
+                privateKeyPem: $certificateContext->privateKeyPem,
+                certificateBase64: $certificateContext->certificateBase64,
+                modulusBase64: $certificateContext->modulusBase64,
+                exponentBase64: $certificateContext->exponentBase64,
+            );
+
+            $filename = sprintf(
+                'dte_company_%d_td_%d_f_%d_signed_%s.xml',
+                $document->companyId(),
+                $document->dteType()->value,
+                $document->folio(),
+                bin2hex(random_bytes(4)),
+            );
+
+            $relativePath = $this->storageService->storeString(
+                contents: $signatureResult['signed_xml'],
+                targetDirectory: 'signed',
+                targetFileName: $filename,
+            );
+
+            $updatedDocument = $document->withSignedXml($relativePath);
+
+            $saved = $this->documentRepository->update($updatedDocument);
+
+            $this->logRepository->info(
+                channel: 'xml_sign',
+                message: 'DTE firmado correctamente con XMLDSig',
+                context: [
+                    'document_id' => $saved->id(),
+                    'external_id' => $saved->externalId(),
+                    'company_id' => $saved->companyId(),
+                    'dte_type' => $saved->dteType()->value,
+                    'folio' => $saved->folio(),
+                    //'certificate_id' => $certificate->id(),
+                    'certificate_id' => $certificateContext->certificateId,
+                    'document_xml_id' => $signatureResult['document_xml_id'],
+                    'tmst_firma' => $signatureResult['tmst_firma'],
+                    'signed_xml_path' => $relativePath,
+                ],
+                companyId: $saved->companyId(),
+                documentId: $saved->id(),
+                code:'DTE_XML_SIGNED'
+            );
+
+            return new SignDteXmlResultDto(
+                documentId: $saved->id(),
+                externalId: $saved->externalId(),
+                companyId: $saved->companyId(),
+                dteType: $saved->dteType()->value,
+                folio: (int) $saved->folio(),
+                certificateId: (int) $certificateContext->certificateId,
+                documentXmlId: $signatureResult['document_xml_id'],
+                tmstFirma: $signatureResult['tmst_firma'],
+                status: $saved->status(),
+                signedXmlPath: $relativePath,
+            );
+        });
+    }
+}
+<?php
+namespace App\Modules\Dte\Application\DTOs;
+final class BuildDteXmlResultDto
+{
+    public function __construct(
+        public readonly int $documentId,
+        public readonly string $externalId,
+        public readonly int $companyId,
+        public readonly int $dteType,
+        public readonly int $folio,
+        public readonly string $documentXmlId,
+        public readonly string $status,
+        public readonly string $siiEnvironment,
+        public readonly string $unsignedXmlPath,
+    ){}
+}
+<?php
+namespace App\Modules\Dte\Application\DTOs;
+class BuildTedResultDto
+{
+    public function __construct(
+        public readonly int $documentId,
+        public readonly string $externalId,
+        public readonly int $companyId,
+        public readonly int $dteType,
+        public readonly int $folio,
+        public readonly int $cafId,
+        public readonly string $status,
+        public readonly string $unsignedXmlPath,
+        public readonly string $tedXml,
+    )
+    {}
+}
+<?php
+namespace App\Modules\Dte\Application\DTOs;
+final class SignDteXmlResultDto
+{
+    public function __construct(
+        public readonly int $documentId,
+        public readonly string $externalId,
+        public readonly int $companyId,
+        public readonly int $dteType,
+        public readonly int $folio,
+        public readonly int $certificateId,
+        public readonly string $documentXmlId,
+        public readonly string $tmstFirma,
+        public readonly string $status,
+        public readonly string $signedXmlPath,
+    )
+    {}
+}

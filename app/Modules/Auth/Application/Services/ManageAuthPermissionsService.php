@@ -4,7 +4,7 @@ namespace App\Modules\Auth\Application\Services;
 
 use App\Modules\Auth\Application\DTOs\CreateAuthPermissionInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateAuthPermissionInputDto;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthPermissionRepositoryInterface;
 
 final class ManageAuthPermissionsService

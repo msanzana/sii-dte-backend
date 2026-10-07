@@ -32,7 +32,9 @@ return [
     ],
 
     // 'openssl_binary' => env('OPENSSL_BINARY', 'openssl'),
-    // 'openssl_modules' => env('OPENSSL_MODULES'),
+    // 'openssl_modules' => env
+    
+    ('OPENSSL_MODULES'),
     'openssl_binary' => env(
         'DTE_OPENSSL_BINARY',
         env('OPENSSL_BINARY')
@@ -281,6 +283,15 @@ PEM,
                 30,
                 120,
                 300,
+            ],
+        ],
+        'document_status_retry' => [
+            'max_attempts' => 3,
+
+            'backoff_seconds' => [
+                60,
+                180,
+                600,
             ],
         ],
     ],

@@ -8,25 +8,75 @@ use App\Modules\Auth\Infrastructure\Persistence\EloquentModels\AuthUserEloquentM
 
 final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
 {
-    public function findActiveByEmail(string $email): ?AuthUser
-    {
+    public function findActiveByEmail(
+        string $email
+    ): ?AuthUser {
         $model = AuthUserEloquentModel::query()
-            ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])
+            ->whereRaw(
+                'LOWER(email) = ?',
+                [$this->normalizeEmail($email)]
+            )
+            ->where(
+                'account_type',
+                AuthUser::ACCOUNT_TYPE_HUMAN
+            )
             ->where('is_active', true)
             ->first();
 
-        return $model ? $this->toDomain($model) : null;
+        return $model
+            ? $this->toDomain($model)
+            : null;
     }
 
-    public function findById(int $id): ?AuthUser
-    {
-        $model = AuthUserEloquentModel::query()->find($id);
+    public function findActiveTechnicalByLoginUuid(
+        string $loginUuid
+    ): ?AuthUser {
+        $model = AuthUserEloquentModel::query()
+            ->where(
+                'login_uuid',
+                $this->normalizeLoginUuid($loginUuid)
+            )
+            ->where(
+                'account_type',
+                AuthUser::ACCOUNT_TYPE_TECHNICAL
+            )
+            ->where('is_active', true)
+            ->first();
 
-        return $model ? $this->toDomain($model) : null;
+        return $model
+            ? $this->toDomain($model)
+            : null;
     }
 
-    public function touchLastLoginAt(int $userId): void
-    {
+    public function findById(
+        int $id
+    ): ?AuthUser {
+        $model = AuthUserEloquentModel::query()
+            ->find($id);
+
+        return $model
+            ? $this->toDomain($model)
+            : null;
+    }
+
+    public function findByEmail(
+        string $email
+    ): ?AuthUser {
+        $model = AuthUserEloquentModel::query()
+            ->whereRaw(
+                'LOWER(email) = ?',
+                [$this->normalizeEmail($email)]
+            )
+            ->first();
+
+        return $model
+            ? $this->toDomain($model)
+            : null;
+    }
+
+    public function touchLastLoginAt(
+        int $userId
+    ): void {
         AuthUserEloquentModel::query()
             ->where('id', $userId)
             ->update([
@@ -35,17 +85,31 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
             ]);
     }
 
-    public function findAll(?bool $isActive = null, int $limit = 100): array
-    {
+    public function findAll(
+        ?bool $isActive = null,
+        int $limit = 100
+    ): array {
         return AuthUserEloquentModel::query()
+            ->where(
+                'account_type',
+                AuthUser::ACCOUNT_TYPE_HUMAN
+            )
+            ->where('is_visible', true)
             ->when(
                 $isActive !== null,
-                fn($query) => $query->where('is_active', $isActive)
+                fn ($query) =>
+                    $query->where(
+                        'is_active',
+                        $isActive
+                    )
             )
             ->orderBy('full_name')
             ->limit($limit)
             ->get()
-            ->map(fn(AuthUserEloquentModel $model) => $this->toDomain($model))
+            ->map(
+                fn (AuthUserEloquentModel $model) =>
+                    $this->toDomain($model)
+            )
             ->all();
     }
 
@@ -57,11 +121,25 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
     ): AuthUser {
         $model = new AuthUserEloquentModel();
 
+        /*
+         * El CRUD administrativo existente crea
+         * exclusivamente usuarios humanos.
+         *
+         * La creación de usuarios técnicos tendrá
+         * posteriormente su propio servicio.
+         */
         $model->fill([
             'full_name' => $fullName,
-            'email' => mb_strtolower(trim($email)),
+            'email' => $this->normalizeEmail($email),
+
+            'account_type' =>
+                AuthUser::ACCOUNT_TYPE_HUMAN,
+
+            'login_uuid' => null,
+
             'password_hash' => $passwordHash,
             'is_active' => $isActive,
+            'is_visible' => true,
         ]);
 
         $model->save();
@@ -74,11 +152,12 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
         string $fullName,
         string $email
     ): AuthUser {
-        $model = AuthUserEloquentModel::query()->findOrFail($userId);
+        $model = AuthUserEloquentModel::query()
+            ->findOrFail($userId);
 
         $model->fill([
             'full_name' => $fullName,
-            'email' => mb_strtolower(trim($email)),
+            'email' => $this->normalizeEmail($email),
         ]);
 
         $model->save();
@@ -86,8 +165,10 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
         return $this->toDomain($model);
     }
 
-    public function setPassword(int $userId, string $passwordHash): void
-    {
+    public function setPassword(
+        int $userId,
+        string $passwordHash
+    ): void {
         AuthUserEloquentModel::query()
             ->where('id', $userId)
             ->update([
@@ -96,8 +177,10 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
             ]);
     }
 
-    public function setActive(int $userId, bool $isActive): void
-    {
+    public function setActive(
+        int $userId,
+        bool $isActive
+    ): void {
         AuthUserEloquentModel::query()
             ->where('id', $userId)
             ->update([
@@ -106,31 +189,50 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
             ]);
     }
 
-    private function toDomain(AuthUserEloquentModel $model): AuthUser
-    {
+    private function toDomain(
+        AuthUserEloquentModel $model
+    ): AuthUser {
         return new AuthUser(
             id: (int) $model->id,
             fullName: (string) $model->full_name,
             email: (string) $model->email,
-            passwordHash: (string) $model->password_hash,
-            isActive: (bool) $model->is_active,
-            lastLoginAt: $model->last_login_at?->format('Y-m-d H:i:s'),
+
+            accountType:
+                (string) $model->account_type,
+
+            loginUuid:
+                $model->login_uuid !== null
+                    ? (string) $model->login_uuid
+                    : null,
+
+            passwordHash:
+                (string) $model->password_hash,
+
+            isActive:
+                (bool) $model->is_active,
+
+            isVisible:
+                (bool) $model->is_visible,
+
+            lastLoginAt:
+                $model->last_login_at
+                    ?->format('Y-m-d H:i:s'),
         );
     }
 
-    public function findByEmail(string $email): ?AuthUser
-    {
-        $normalizedEmail = $this->normalizeEmail($email);
-
-        $model = AuthUserEloquentModel::query()
-            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
-            ->first();
-
-        return $model ? $this->toDomain($model) : null;
+    private function normalizeEmail(
+        string $email
+    ): string {
+        return mb_strtolower(
+            trim($email)
+        );
     }
 
-        private function normalizeEmail(string $email): string
-    {
-        return mb_strtolower(trim($email));
+    private function normalizeLoginUuid(
+        string $loginUuid
+    ): string {
+        return mb_strtolower(
+            trim($loginUuid)
+        );
     }
 }

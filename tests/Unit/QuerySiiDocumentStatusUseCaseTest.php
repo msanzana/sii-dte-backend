@@ -434,6 +434,24 @@ final class QuerySiiDocumentStatusUseCaseTest extends TestCase
 
                 return $clone;
             }
+            public function statusQueryRetryCount(): int
+            {
+                return 0;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->mappedTo = 'sent';
+                $clone->mappedCode = $code;
+                $clone->mappedMessage = $message;
+
+                return $clone;
+            }
         };
 
         $result = $method->invoke(
@@ -775,6 +793,22 @@ final class QuerySiiDocumentStatusUseCaseTest extends TestCase
 
                 return $this;
             }
+            public function statusQueryRetryCount(): int
+            {
+                return 0;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ) {
+                $this->sent = true;
+                $this->code = $code;
+                $this->message = $message;
+
+                return $this;
+            }
         };
 
         $reflection = new ReflectionClass(
@@ -809,6 +843,7 @@ final class QuerySiiDocumentStatusUseCaseTest extends TestCase
             'Documento No Recibido por el SII',
             $result->message
         );
+
     }
     public function test_fan_fna_y_emp_de_boleta_se_mapean_como_rejected(): void
     {
@@ -1014,4 +1049,413 @@ final class QuerySiiDocumentStatusUseCaseTest extends TestCase
             $methodSource
         );
     }
+    public function test_fau_programa_retry_controlado_de_consulta_documental(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(
+            '2026-10-01 00:45:00'
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.max_attempts',
+            3
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.backoff_seconds',
+            [60, 180, 600]
+        );
+
+        $reflection = new \ReflectionClass(
+            \App\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase::class
+        );
+
+        $useCase = $reflection->newInstanceWithoutConstructor();
+
+        $method = $reflection->getMethod(
+            'mapFacturaResultToDocument'
+        );
+
+        $method->setAccessible(true);
+
+        $document = new class {
+            public bool $retryScheduled = false;
+            public ?string $nextRetryAt = null;
+            public ?string $code = null;
+            public ?string $message = null;
+
+            public function statusQueryRetryCount(): int
+            {
+                return 0;
+            }
+
+            public function withSentStatus(
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryScheduled = true;
+                $clone->nextRetryAt = $nextRetryAt;
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+        };
+
+        try {
+            $result = $method->invoke(
+                $useCase,
+                $document,
+                'FAU',
+                'Documento No Recibido por el SII'
+            );
+
+            $this->assertTrue(
+                $result->retryScheduled,
+                'FAU debe programar un retry controlado de consulta documental.'
+            );
+
+            $this->assertSame(
+                '2026-10-01 00:46:00',
+                $result->nextRetryAt
+            );
+
+            $this->assertSame(
+                'FAU',
+                $result->code
+            );
+
+            $this->assertSame(
+                'Documento No Recibido por el SII',
+                $result->message
+            );
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+    public function test_fau_agota_retry_documental_al_alcanzar_el_maximo(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(
+            '2026-10-01 01:00:00'
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.max_attempts',
+            3
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.backoff_seconds',
+            [60, 180, 600]
+        );
+
+        $reflection = new \ReflectionClass(
+            \App\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase::class
+        );
+
+        $useCase = $reflection->newInstanceWithoutConstructor();
+
+        $method = $reflection->getMethod(
+            'mapFacturaResultToDocument'
+        );
+
+        $method->setAccessible(true);
+
+        $document = new class {
+            public bool $retryScheduled = false;
+            public bool $retryExhausted = false;
+            public ?string $mappedTo = null;
+            public ?string $code = null;
+            public ?string $message = null;
+
+            public function statusQueryRetryCount(): int
+            {
+                return 3;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryScheduled = true;
+                $clone->mappedTo = 'sent';
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+
+            public function withStatusQueryRetryExhausted(
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryExhausted = true;
+                $clone->mappedTo = 'needs_resend';
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+        };
+
+        try {
+            $result = $method->invoke(
+                $useCase,
+                $document,
+                'FAU',
+                'Documento No Recibido por el SII'
+            );
+
+            $this->assertTrue(
+                $result->retryExhausted,
+                'Al alcanzar max_attempts, FAU debe agotar la consulta y pasar a reproceso controlado.'
+            );
+
+            $this->assertFalse(
+                $result->retryScheduled,
+                'No debe programarse un retry adicional después del máximo.'
+            );
+
+            $this->assertSame(
+                'needs_resend',
+                $result->mappedTo
+            );
+
+            $this->assertSame(
+                'FAU',
+                $result->code
+            );
+
+            $this->assertSame(
+                'Documento No Recibido por el SII',
+                $result->message
+            );
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+    public function test_boleta_fau_programa_retry_controlado_de_consulta_documental(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(
+            '2026-10-01 02:30:00'
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.max_attempts',
+            3
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.backoff_seconds',
+            [60, 180, 600]
+        );
+
+        $reflection = new \ReflectionClass(
+            \App\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase::class
+        );
+
+        $useCase = $reflection->newInstanceWithoutConstructor();
+
+        $method = $reflection->getMethod(
+            'mapBoletaResultToDocument'
+        );
+
+        $method->setAccessible(true);
+
+        $document = new class {
+            public bool $retryScheduled = false;
+            public ?string $nextRetryAt = null;
+            public ?string $code = null;
+            public ?string $message = null;
+
+            public function statusQueryRetryCount(): int
+            {
+                return 0;
+            }
+
+            public function withSentStatus(
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryScheduled = true;
+                $clone->nextRetryAt = $nextRetryAt;
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+        };
+
+        try {
+            $result = $method->invoke(
+                $useCase,
+                $document,
+                'FAU',
+                'Documento No Recibido por el SII'
+            );
+
+            $this->assertTrue(
+                $result->retryScheduled,
+                'Boleta FAU debe programar un retry controlado de consulta documental.'
+            );
+
+            $this->assertSame(
+                '2026-10-01 02:31:00',
+                $result->nextRetryAt
+            );
+
+            $this->assertSame(
+                'FAU',
+                $result->code
+            );
+
+            $this->assertSame(
+                'Documento No Recibido por el SII',
+                $result->message
+            );
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+    public function test_boleta_fau_agota_retry_documental_al_alcanzar_el_maximo(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(
+            '2026-10-01 13:30:00'
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.max_attempts',
+            3
+        );
+
+        config()->set(
+            'dte.automation.document_status_retry.backoff_seconds',
+            [60, 180, 600]
+        );
+
+        $reflection = new \ReflectionClass(
+            \App\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase::class
+        );
+
+        $useCase = $reflection->newInstanceWithoutConstructor();
+
+        $method = $reflection->getMethod(
+            'mapBoletaResultToDocument'
+        );
+
+        $method->setAccessible(true);
+
+        $document = new class {
+            public bool $retryScheduled = false;
+            public bool $retryExhausted = false;
+            public ?string $mappedTo = null;
+            public ?string $code = null;
+            public ?string $message = null;
+
+            public function statusQueryRetryCount(): int
+            {
+                return 3;
+            }
+
+            public function withStatusQueryRetryScheduled(
+                string $nextRetryAt,
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryScheduled = true;
+                $clone->mappedTo = 'sent';
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+
+            public function withStatusQueryRetryExhausted(
+                ?string $code = null,
+                ?string $message = null
+            ): self {
+                $clone = clone $this;
+
+                $clone->retryExhausted = true;
+                $clone->mappedTo = 'needs_resend';
+                $clone->code = $code;
+                $clone->message = $message;
+
+                return $clone;
+            }
+        };
+
+        try {
+            $result = $method->invoke(
+                $useCase,
+                $document,
+                'FAU',
+                'Documento No Recibido por el SII'
+            );
+
+            $this->assertTrue(
+                $result->retryExhausted,
+                'Boleta FAU debe agotar el retry al alcanzar max_attempts.'
+            );
+
+            $this->assertFalse(
+                $result->retryScheduled,
+                'Boleta no debe programar un cuarto retry.'
+            );
+
+            $this->assertSame(
+                'needs_resend',
+                $result->mappedTo
+            );
+
+            $this->assertSame(
+                'FAU',
+                $result->code
+            );
+
+            $this->assertSame(
+                'Documento No Recibido por el SII',
+                $result->message
+            );
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
 }

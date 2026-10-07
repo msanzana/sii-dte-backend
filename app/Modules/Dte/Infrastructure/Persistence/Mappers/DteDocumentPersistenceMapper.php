@@ -86,6 +86,12 @@ final class DteDocumentPersistenceMapper
             automationNextRetryAt:
                 $model->automation_next_retry_at
                 ?->format('Y-m-d H:i:s'),
+            statusQueryRetryCount:
+                (int) ($model->status_query_retry_count ?? 0),
+
+            statusQueryNextAt:
+                $model->status_query_next_at
+                    ?->format('Y-m-d H:i:s'),
             externalSystemId:$model->external_system_id !== null
                     ? (int) $model->external_system_id
                     : null,

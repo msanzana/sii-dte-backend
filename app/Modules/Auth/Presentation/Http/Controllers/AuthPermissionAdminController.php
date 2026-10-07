@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Auth\Application\DTOs\CreateAuthPermissionInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateAuthPermissionInputDto;
 use App\Modules\Auth\Application\Services\ManageAuthPermissionsService;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Presentation\Http\Requests\CreateAuthPermissionRequest;
 use App\Modules\Auth\Presentation\Http\Requests\UpdateAuthPermissionRequest;
 use Illuminate\Http\JsonResponse;

@@ -1,0 +1,519 @@
+
+   PASS  Tests\Unit\AdvanceDteAutomationDocumentRetryIntegrationTest
+  ✓ fallo de build xml programa retry y lanza excepcion controlada                          0.81s  
+  ✓ fallo de build ted programa retry y lanza excepcion controlada                          0.11s  
+  ✓ fallo de sign xml programa retry y lanza excepcion controlada                           0.07s  
+  ✓ fallo del ultimo retry de build xml lanza excepcion de agotamiento                      0.14s  
+  ✓ fallo de prepare for xml no programa document retry y propaga excepcion original        0.11s  
+  ✓ fallo de send boleta no programa document retry y propaga excepcion original            0.07s  
+  ✓ fallo de send factura no programa document retry y propaga excepcion original           0.20s  
+  ✓ error deterministico de build xml lanza excepcion no retryable                          0.14s  
+
+   PASS  Tests\Unit\AdvanceDteAutomationUseCaseContractTest
+  ✓ no ignora silenciosamente una accion de automatizacion desconocida                      0.23s  
+
+   PASS  Tests\Unit\AdvanceDteDocumentPipelineJobDocumentRetryContractTest
+  ✓ captura retry interno programado sin relanzarlo                                         0.11s  
+
+   PASS  Tests\Unit\AdvanceDteDocumentPipelineJobExhaustedRetryContractTest
+  ✓ captura el agotamiento del retry interno sin relanzarlo                                 0.20s  
+
+   PASS  Tests\Unit\AdvanceDteDocumentPipelineJobNotRetryableContractTest
+  ✓ captura fallo no retryable sin relanzarlo                                               0.12s  
+
+   PASS  Tests\Unit\AdvanceDteDocumentPipelineJobQueueContractTest
+  ✓ libera el lock unico antes de procesar para permitir requeue inmediato                  0.16s  
+  ✓ impide procesar simultaneamente el mismo documento                                      0.09s  
+  ✓ dispatch normal no duplica fisicamente el job del mismo documento                       0.40s  
+  ✓ codigo productivo no despacha pipeline mediante bus dispatcher de bajo nivel            1.27s  
+
+   PASS  Tests\Unit\AdvanceDteDocumentPipelineJobScheduledRetryContractTest
+  ✓ captura el retry de negocio programado sin relanzarlo                                   0.22s  
+
+   PASS  Tests\Unit\BoletaTokenFailureRetrySchedulingContractTest
+  ✓ fallo de token programa retry antes del post                                            0.16s  
+  ✓ retry automatico se programa una sola vez en el use case                                0.31s  
+
+   PASS  Tests\Unit\CafXmlParserServiceTest
+  ✓ extrae el rut emisor desde el nodo re del caf                                           0.21s  
+  ✓ extrae idk algoritmo y firma frma del caf                                               0.10s  
+  ✓ extrae la llave publica pem desde rsapubk                                               0.15s  
+  ✓ conserva el fragmento da exacto para verificar frma                                     0.10s  
+
+   PASS  Tests\Unit\ComposerDevAutomationTest
+  ✓ composer dev inicia el scheduler de laravel                                             0.17s  
+  ✓ composer dev escucha las colas de automatizacion dte                                    0.10s  
+
+   PASS  Tests\Unit\CreateDteDocumentExternalIdUniquenessTest
+  ✓ external id duplicado se rechaza antes de reservar o asignar folio                      0.21s  
+
+   PASS  Tests\Unit\CreateDteDocumentTypeAuthorizationTest
+  ✓ dte no autorizado se rechaza antes de resolver o asignar folio                          0.06s  
+
+   PASS  Tests\Unit\DispatchRetryConfigurationTest
+  ✓ existe una politica explicita de retry para dispatches failed                           0.06s  
+
+   PASS  Tests\Unit\DispatchRetryPolicyServiceTest
+  ✓ failed sin retries previos puede reintentarse con primer backoff                        0.01s  
+  ✓ el backoff depende del numero de retries ya realizados
+  ✓ no permite mas retries al alcanzar el maximo                                            0.01s  
+  ✓ delivery unknown nunca es elegible para retry automatico
+  ✓ retry programado y vencido puede ejecutarse
+  ✓ retry programado pero aun no vencido no puede ejecutarse
+  ✓ failed sin next retry at no es un retry programado                                      0.01s  
+  ✓ el ultimo retry programado puede ejecutarse con retry count maximo
+  ✓ reconoce un retry que ya fue programado aunque aun no venza
+  ✓ failed sin next retry at no tiene retry programado
+  ✓ delivery unknown nunca se considera retry programado
+  ✓ retry count superior al maximo no es un retry programado valido                         0.01s  
+
+   PASS  Tests\Unit\DispatchRetryScheduledExceptionTest
+  ✓ conserva la excepcion original y las referencias del retry                              0.06s  
+
+   PASS  Tests\Unit\DocumentAutomationFailureRetryabilityPolicyServiceTest
+  ✓ runtime exception generica se considera retryable                                       0.05s  
+  ✓ company not found no se considera retryable                                             0.06s  
+  ✓ invalid document state no se considera retryable                                        0.08s  
+  ✓ invalid dte no se considera retryable                                                   0.07s  
+  ✓ invalid ted data no se considera retryable                                              0.15s  
+
+   PASS  Tests\Unit\DocumentAutomationNotRetryableExceptionTest
+  ✓ conserva la excepcion original y las referencias del fallo no retryable                 0.12s  
+
+   PASS  Tests\Unit\DocumentAutomationRetryConfigurationTest
+  ✓ existe una politica explicita de retry para automatizacion del documento                0.05s  
+
+   PASS  Tests\Unit\DocumentAutomationRetryExhaustedExceptionTest
+  ✓ conserva la excepcion original y las referencias del retry agotado                      0.09s  
+
+   PASS  Tests\Unit\DocumentAutomationRetryPolicyServiceTest
+  ✓ build xml puede programar primer retry                                                  0.12s  
+  ✓ segundo retry usa segundo backoff                                                       0.14s  
+  ✓ no permite mas retries al alcanzar el maximo                                            0.16s  
+  ✓ solo permite acciones internas retryables                                               0.11s  
+  ✓ retry programado y vencido puede ejecutarse                                             0.11s  
+  ✓ retry programado pero aun no vencido no puede ejecutarse                                0.08s  
+  ✓ no ejecuta retry si la accion programada no coincide                                    0.10s  
+  ✓ next delay lanza error si no es elegible                                                0.05s  
+
+   PASS  Tests\Unit\DocumentAutomationRetryScheduledExceptionTest
+  ✓ conserva la excepcion original y las referencias del retry                              0.07s  
+
+   PASS  Tests\Unit\DteAutomationFamiliesEndToEndTest
+  ✓ factura 33 recorre automatizacion completa hasta sent                                   0.94s  
+  ✓ boleta 39 recorre automatizacion completa hasta sent                                    0.48s  
+
+   PASS  Tests\Unit\DteAutomationPlannerServiceTest
+  ✓ ready for xml prepara el documento antes de construir xml                               0.13s  
+  ✓ needs resend vuelve a construir el xml                                                  0.07s  
+  ✓ signed factura se enruta al envio de factura                                            0.07s  
+  ✓ signed boleta se enruta al envio de boleta                                              0.07s  
+  ✓ prepare for xml reencola si queda folio assigned                                        0.08s  
+  ✓ build xml reencola si queda xml built                                                   0.07s  
+  ✓ build ted reencola si queda ted built                                                   0.08s  
+  ✓ sign xml reencola si queda signed                                                       0.06s  
+  ✓ send factura no reencola inmediatamente                                                 0.05s  
+  ✓ send boleta no reencola inmediatamente                                                  0.09s  
+  ✓ accion nula no reencola                                                                 0.13s  
+
+   PASS  Tests\Unit\DteBoletaDispatchStatusDomainServiceTest
+  ✓ no permite polling sobre estados terminales                                             0.12s  
+  ✓ permite polling en estados operativos con track id                                      0.10s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryArtifactCleanupTest
+  ✓ build xml programado limpia todos los artefactos tecnicos                               0.11s  
+  ✓ build ted programado conserva xml base y limpia ted y firma                             0.11s  
+  ✓ sign xml programado conserva xml y ted y limpia solo firma                              0.07s  
+  ✓ build xml agotado tambien limpia todos los artefactos tecnicos                          0.06s  
+  ✓ build ted agotado conserva xml base y limpia ted y firma                                0.06s  
+  ✓ sign xml agotado conserva xml y ted y limpia solo firma                                 0.07s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryCompletionStateTest
+  ✓ build xml exitoso limpia el retry interno                                               0.08s  
+  ✓ build ted exitoso limpia el retry interno                                               0.06s  
+  ✓ sign xml exitoso limpia el retry interno                                                0.07s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryExhaustionStateTest
+  ✓ agota retry interno sin perder referencias de negocio                                   0.07s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryMigrationTest
+  ✓ migracion agrega columnas de retry de automatizacion                                    0.07s  
+  ✓ down elimina columnas e indice de retry de automatizacion                               0.06s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryPersistenceContractTest
+  ✓ modelo eloquent permite los campos de retry de automatizacion                           0.07s  
+  ✓ repositorio create y update persisten los campos de retry                               0.06s  
+  ✓ mapper reconstruye el retry de automatizacion desde eloquent                            0.06s  
+
+   PASS  Tests\Unit\DteDocumentAutomationRetryStateTest
+  ✓ programa retry de automatizacion sin perder folio caf ni reserva                        0.12s  
+  ✓ segundo retry incrementa el contador sin perder referencias de negocio                  0.06s  
+
+   PASS  Tests\Unit\DteDocumentExternalIdScopedUniqueMigrationTest
+  ✓ up reemplaza unique global por unique por empresa y ambito                              0.12s  
+  ✓ external system null tambien queda protegido por unique                                 0.08s  
+  ✓ down restaura unique global original                                                    0.09s  
+
+   PASS  Tests\Unit\DteDocumentNeedsResendTest
+  ✓ needs resend conserva el folio actualiza header e invalida artefactos derivados         0.07s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryConfigTest
+  ✓ configura retry de consulta documental                                                  0.07s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryContractTest
+  ✓ constructor expone estado de retry de consulta documental                               0.09s  
+  ✓ entidad expone getters de retry de consulta documental                                  0.07s  
+  ✓ entidad expone transiciones de retry documental                                         0.07s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryMigrationTest
+  ✓ migracion agrega columnas de retry de consulta documental                               0.07s  
+  ✓ down elimina columnas e indice de retry de consulta                                     0.09s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryPersistenceContractTest
+  ✓ modelo eloquent permite campos de retry de consulta                                     0.08s  
+  ✓ repositorio create y update persisten retry de consulta                                 0.06s  
+  ✓ mapper reconstruye retry de consulta desde eloquent                                     0.06s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryResetContractTest
+  ✓ rebuild xml reinicia explictamente el retry de consulta                                 0.05s  
+
+   PASS  Tests\Unit\DteDocumentStatusQueryRetryStateTest
+  ✓ programa retry de consulta sin perder referencias de negocio                            0.05s  
+  ✓ retries sucesivos incrementan el contador                                               0.05s  
+  ✓ agotamiento pasa a needs resend sin perder folio caf ni reserva                         0.05s  
+  ✓ transiciones de envio y terminales inician ciclo de consulta limpio sin perder referen… 0.04s  
+  ✓ rebuild xml despues de fau agotado inicia nuevo ciclo de consulta                       0.05s  
+  ✓ fau agotado limpia retry de automatizacion anterior                                     0.09s  
+
+   PASS  Tests\Unit\DteXmlBuildDomainServiceTest
+  ✓ permite reconstruir xml desde needs resend                                              0.05s  
+  ✓ no permite reconstruir xml desde sent                                                   0.04s  
+  ✓ permite reconstruir xml built si proviene de reproceso rsc y no tiene ted ni firma      0.05s  
+  ✓ no permite reconstruir xml built normal sin reproceso rsc                               0.05s  
+  ✓ no permite rebuild rsc si ya existe ted                                                 0.04s  
+  ✓ no permite rebuild rsc si ya existe xml firmado                                         0.05s  
+
+   PASS  Tests\Unit\DteXmlBuilderServiceTest
+  ✓ boleta genera ind servicio despues de fch emis                                          0.06s  
+  ✓ boleta 39 usa nodos propios del schema de boleta                                        0.05s  
+  ✓ factura 33 conserva sus nodos actuales                                                  0.04s  
+  ✓ boleta 39 genera ind mnt neto despues de ind servicio                                   0.04s  
+
+   PASS  Tests\Unit\DteXmlDataAssemblerServiceTest
+  ✓ boleta propaga ind servicio desde header payload                                        0.05s  
+  ✓ boleta 41 no genera ind mnt neto                                                        0.05s  
+  ✓ factura 33 no genera ind mnt neto                                                       0.06s  
+
+   PASS  Tests\Unit\EloquentDteDocumentAutomationEligibilityTest
+  ✓ excluye signed cuyo ultimo dispatch es upload rejected                                  0.09s  
+  ✓ incluye signed sin dispatch                                                             0.07s  
+  ✓ un upload rejected historico no bloquea si existe un dispatch posterior                 0.05s  
+  ✓ el limite se aplica despues de excluir documentos bloqueados                            0.05s  
+  ✓ excluye signed cuyo ultimo dispatch es failed                                           0.06s  
+  ✓ incluye signed con failed retryable cuyo plazo ya vencio                                0.09s  
+  ✓ excluye failed retryable cuyo plazo aun no vence                                        0.08s  
+  ✓ incluye el ultimo retry programado al alcanzar el maximo                                0.08s  
+  ✓ documento sin retry interno sigue siendo elegible                                       0.07s  
+  ✓ excluye documento con retry interno cuyo plazo aun no vence                             0.07s  
+  ✓ incluye documento con retry interno cuyo plazo ya vencio                                0.09s  
+  ✓ incluye el ultimo retry interno programado al alcanzar el maximo                        0.06s  
+  ✓ excluye retry interno programado sin next retry at                                      0.06s  
+
+   PASS  Tests\Unit\EloquentDteDocumentAutomationRetryStageEligibilityTest
+  ✓ incluye xml built con build ted vencido                                                 0.09s  
+  ✓ incluye ted built con sign xml vencido                                                  0.06s  
+  ✓ incluye needs resend con build xml vencido                                              0.07s  
+  ✓ excluye folio assigned con sign xml vencido                                             0.05s  
+  ✓ excluye xml built con build xml vencido                                                 0.09s  
+  ✓ excluye retry count cero aunque tenga action y fecha                                    0.06s  
+  ✓ excluye retry count superior al maximo                                                  0.07s  
+
+   PASS  Tests\Unit\EloquentDteDocumentExternalIdScopeTest
+  ✓ detecta external id en la misma empresa y sistema                                       0.07s  
+  ✓ mismo external id en otra empresa no es duplicado                                       0.07s  
+  ✓ mismo external id en otro sistema de la misma empresa no es duplicado                   0.08s  
+  ✓ detecta external id repetido en el ambito interno de la misma empresa                   0.07s  
+
+   PASS  Tests\Unit\EloquentDteDocumentStatusQueryEligibilityTest
+  ✓ excluye sent con proxima consulta futura                                                0.09s  
+  ✓ excluye retry de consulta que supera el maximo                                          0.08s  
+  ✓ incluye el ultimo retry cuando alcanza el maximo y ya vencio                            0.06s  
+  ✓ excluye retry programado sin next at                                                    0.06s  
+  ✓ excluye count cero si tiene next at                                                     0.07s  
+
+   PASS  Tests\Unit\EloquentDteTypeAuthorizationRepositoryTest
+  ✓ detecta tipo dte activo por codigo                                                      0.08s  
+  ✓ no considera tipo dte inactivo como activo                                              0.07s  
+  ✓ tipo dte inexistente no se considera activo                                             0.07s  
+  ✓ detecta autorizacion activa a nivel empresa                                             0.05s  
+  ✓ autorizacion de sistema no reemplaza autorizacion de empresa                            0.06s  
+  ✓ rechaza autorizacion de empresa desactivada                                             0.06s  
+  ✓ detecta autorizacion activa para sistema                                                0.06s  
+  ✓ no acepta autorizacion del mismo sistema en otra empresa                                0.07s  
+  ✓ rechaza autorizacion de sistema desactivada                                             0.06s  
+  ✓ tipo inactivo invalida autorizacion de empresa                                          0.07s  
+  ✓ tipo inactivo invalida autorizacion de sistema                                          0.06s  
+
+   PASS  Tests\Unit\EloquentSiiDispatchRepositoryTest
+  ✓ find by id for update expone el contrato y usa lock for update                          0.08s  
+  ✓ update persiste retry count y next retry at                                             0.05s  
+  ✓ update persiste realmente retry count y next retry at en base de datos                  0.07s  
+
+   PASS  Tests\Unit\EnvioBoletaEnvelopeBuilderServiceTest
+  ✓ envio boleta declara schema location oficial del sii                                    0.06s  
+  ✓ envio boleta incorpora el dte firmado sin importnode                                    0.06s  
+
+   PASS  Tests\Unit\EnvioDteSignatureServiceTest
+  ✓ puede firmar el setdte de un envio boleta                                               0.28s  
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true                                                                       0.01s  
+
+   PASS  Tests\Unit\FacturaTokenFailureRetrySchedulingContractTest
+  ✓ fallo de token programa retry antes del post                                            0.06s  
+  ✓ retry automatico se programa una sola vez en el use case                                0.09s  
+
+   PASS  Tests\Unit\HandleDocumentAutomationFailureServiceTest
+  ✓ programa siguiente retry y lo persiste                                                  0.05s  
+  ✓ al fallar el ultimo retry lo marca agotado y no lo reprograma                           0.05s  
+
+   PASS  Tests\Unit\HandleDocumentAutomationNonRetryableFailureServiceTest
+  ✓ error deterministico termina sin consumir retries automaticos                           0.05s  
+
+   PASS  Tests\Unit\ImportCafUseCaseTest
+  ✓ rechaza un caf cuyo rut emisor no corresponde a la empresa                              0.06s  
+  ✓ guarda rsapubk como llave publica pem del caf                                           0.11s  
+  ✓ rechaza caf con frma invalida antes de persistir                                        0.06s  
+  ✓ rechaza caf con frma criptograficamente invalida antes de persistir                     0.07s  
+
+   PASS  Tests\Unit\MaintenanceJobsQueueContractTest
+  ✓ reconcile caf counters implementa el contrato queue de laravel                          0.06s  
+  ✓ sync expired folio reservations implementa el contrato queue de laravel                 0.04s  
+  ✓ sync expired folio reservations configura tres intentos                                 0.04s  
+
+   PASS  Tests\Unit\PollBoletaDispatchStatusRequestTest
+  ✓ prepare for validation mapea dispatch id desde la ruta                                  0.05s  
+
+   PASS  Tests\Unit\PollBoletaDispatchStatusUseCaseTest
+  ✓ el polling de boleta entrega el exponente rsa a la autenticacion                        0.06s  
+  ✓ processed at solo se asigna a estados terminales usando comparacion estricta            0.04s  
+  ✓ un dispatch rejected guarda el mensaje de error del sii                                 0.04s  
+  ✓ el polling de boleta usa el proveedor compartido de token                               0.04s  
+  ✓ el polling de boleta entrega el rut de la empresa a la consulta del envio               0.05s  
+  ✓ el token y la consulta sii se ejecutan antes de abrir la transaccion de persistencia    0.05s  
+  ✓ la fase de persistencia bloquea y recarga el dispatch antes de actualizarlo             0.04s  
+  ✓ la fase de persistencia revalida el dispatch bloqueado antes de guardar el resultado    0.05s  
+  ✓ rsc del sii se mapea como dispatch rejected                                             0.04s  
+
+   PASS  Tests\Unit\PollSiiUploadStatusUseCaseTest
+  ✓ usa el proveedor compartido de token en vez de autenticacion directa                    0.05s  
+
+   PASS  Tests\Unit\PollSingleDispatchJobTest
+  ✓ factura se enruta al polling soap                                                       0.04s  
+  ✓ boleta se enruta al polling rest                                                        0.05s  
+  ✓ dispatch processed agenda consulta documental                                           0.04s  
+
+   PASS  Tests\Unit\PrepareDteForResendUseCaseTest
+  ✓ prepara para reenvio una boleta sent con ultimo dispatch rsc rejected                   0.05s  
+  ✓ no prepara reenvio si el ultimo dispatch no es rsc                                      0.06s  
+
+   PASS  Tests\Unit\PumpPendingDispatchPollingJobTest
+  ✓ busca dispatches enviados de factura y boleta para polling                              0.08s  
+
+   PASS  Tests\Unit\PumpPendingDocumentStatusQueriesJobTest
+  ✓ agenda consultas documentales respetando el delay configurado                           0.05s  
+  ✓ usa seleccion especifica de documentos elegibles para consulta de estado                0.05s  
+  ✓ retry documental vencido no agrega un segundo delay                                     0.04s  
+  ✓ dos pumps consecutivos no duplican consulta documental del mismo dte                    0.06s  
+
+   PASS  Tests\Unit\PumpPendingDocumentsJobTest
+  ✓ respeta el limite configurado de documentos por pump                                    0.05s  
+  ✓ usa una seleccion especifica de documentos elegibles para automatizacion                0.04s  
+
+   PASS  Tests\Unit\QuerySiiDocumentStatusUseCaseTest
+  ✓ la familia factura usa el proveedor compartido de token                                 0.05s  
+  ✓ al aceptar un dte query est dte sincroniza el folio con accepted by sii                 0.04s  
+  ✓ fan marca el folio como cancelled y registra la conciliacion sii                        0.06s  
+  ✓ accepted with reparos tambien sincroniza el folio como accepted by sii                  0.04s  
+  ✓ mmc se mapea como accepted with reparos                                                 0.04s  
+  ✓ and y anc se mapean como accepted with reparos                                          0.04s  
+  ✓ fau fna y emp no modifican el folio en la reconciliacion                                0.04s  
+  ✓ fau mantiene el documento sent para seguir consultando sii                              0.04s  
+  ✓ with sent status permite guardar el diagnostico sii                                     0.05s  
+  ✓ fna y emp quedan rejected y no se tratan como reenvio                                   0.05s  
+  ✓ la familia boleta sincroniza el folio cuando el documento es aceptado                   0.05s  
+  ✓ la respuesta de boleta usa status message como mensaje sii                              0.05s  
+  ✓ dok de boleta se mapea como accepted                                                    0.08s  
+  ✓ los estados de boleta con observaciones se mapean como accepted with reparos            0.07s  
+  ✓ fau de boleta mantiene el documento sent y guarda el diagnostico sii                    0.06s  
+  ✓ fan fna y emp de boleta se mapean como rejected                                         0.05s  
+  ✓ la familia boleta ejecuta la conciliacion del folio para fan                            0.04s  
+  ✓ query boleta envia el exponente rsa a la autenticacion                                  0.06s  
+  ✓ la familia boleta usa el proveedor compartido de token                                  0.06s  
+  ✓ fau programa retry controlado de consulta documental                                    0.04s  
+  ✓ fau agota retry documental al alcanzar el maximo                                        0.04s  
+  ✓ boleta fau programa retry controlado de consulta documental                             0.04s  
+  ✓ boleta fau agota retry documental al alcanzar el maximo                                 0.07s  
+
+   PASS  Tests\Unit\ResolveReservedFolioForDteServiceTest
+  ✓ rechaza tipo propuesto distinto del tipo del documento                                  0.09s  
+  ✓ tipo propuesto coincidente no reemplaza dte type en busqueda del folio                  0.06s  
+
+   PASS  Tests\Unit\ScheduleDispatchRetryServiceTest
+  ✓ programa el primer retry usando la configuracion                                        0.06s  
+  ✓ segundo retry usa el segundo backoff                                                    0.06s  
+  ✓ puede programar retry mientras no alcanza el maximo                                     0.06s  
+  ✓ no puede programar retry si ya alcanzo el maximo                                        0.05s  
+
+   PASS  Tests\Unit\ScheduleDocumentAutomationRetryServiceTest
+  ✓ programa primer retry usando la configuracion                                           0.05s  
+  ✓ segundo retry usa segundo backoff                                                       0.06s  
+  ✓ puede programar retry mientras no alcanza el maximo                                     0.05s  
+  ✓ no puede programar retry si ya alcanzo el maximo                                        0.04s  
+
+   PASS  Tests\Unit\SendSignedBoletaToSiiUseCaseTest
+  ✓ el envio de boleta entrega el exponente rsa a la autenticacion                          0.05s  
+  ✓ el envio de boleta usa el proveedor compartido de token                                 0.04s  
+  ✓ el envio de boleta entrega los ruts requeridos al upload multipart                      0.05s  
+  ✓ el envio de boleta protege contra uploads duplicados                                    0.04s  
+  ✓ el token y el upload de boleta se ejecutan fuera de la transaccion de preparacion       0.05s  
+  ✓ el dispatch de boleta se crea pending antes de contactar al sii                         0.05s  
+  ✓ el dispatch de boleta pasa a sending antes del post al sii                              0.05s  
+  ✓ el corte de conexion de boleta deja delivery unknown y documento sending                0.04s  
+  ✓ si falla la obtencion del token el dispatch de boleta queda failed y la excepcion se p… 0.04s  
+  ✓ si el endpoint de boleta responde con error conocido el dispatch queda failed           0.07s  
+  ✓ el dispatch de boleta registra cookie token en la metadata y no header legacy           0.05s  
+  ✓ el guard de duplicados reconoce un reproceso rsc firmado                                0.05s  
+  ✓ el sobre de boleta se firma antes de guardarlo y enviarlo                               0.05s  
+
+   PASS  Tests\Unit\SendUseCasesUploadRejectedGuardContractTest
+  ✓ factura bloquea nuevo upload si el ultimo dispatch fue upload rejected                  0.05s  
+  ✓ boleta bloquea nuevo upload si el ultimo dispatch fue upload rejected                   0.04s  
+  ✓ factura bloquea nuevo upload si el ultimo dispatch esta failed                          0.04s  
+  ✓ boleta bloquea nuevo upload si el ultimo dispatch esta failed                           0.05s  
+  ✓ factura bloquea failed en el guard de duplicados                                        0.04s  
+  ✓ boleta bloquea failed en el guard de duplicados                                         0.04s  
+  ✓ factura permite un failed solo si es un retry programado y vencido                      0.05s  
+  ✓ boleta permite un failed solo si es un retry programado y vencido                       0.05s  
+  ✓ factura hereda retry count del failed programado al nuevo dispatch                      0.04s  
+  ✓ boleta hereda retry count del failed programado y rsc parte en cero                     0.04s  
+
+   PASS  Tests\Unit\SiiBoletaApiAuthenticationServiceTest
+  ✓ la autenticacion de boleta usa el firmador compartido y recibe el exponente rsa         0.05s  
+  ✓ extract flexible value extrae un valor desde json anidado                               0.04s  
+  ✓ extract flexible value mantiene el fallback xml                                         0.04s  
+  ✓ authenticate obtiene semilla firma y recupera token sin contactar al sii                0.10s  
+  ✓ authenticate aplica throttle antes de semilla y token                                   0.04s  
+
+   PASS  Tests\Unit\SiiBoletaApiDocumentStatusServiceTest
+  ✓ resuelve la configuracion desde la seccion boleta del ambiente cert                     0.05s  
+  ✓ envia el token en cookie segun el contrato oficial del sii                              0.05s  
+  ✓ extrae estado y glosa desde una respuesta json                                          0.04s  
+  ✓ consulta el estado de boleta mediante get y la ruta oficial del sii                     0.06s  
+  ✓ envia los parametros oficiales de consulta de boleta                                    0.07s  
+  ✓ aplica throttle antes de consultar el estado del documento                              0.04s  
+
+   PASS  Tests\Unit\SiiBoletaApiSendStatusServiceTest
+  ✓ aplica throttle antes de consultar el estado del envio                                  0.05s  
+  ✓ query usa la clave send status url de la configuracion                                  0.04s  
+  ✓ query envia el token en cookie                                                          0.05s  
+  ✓ query recibe el rut de la empresa para construir la consulta de estado                  0.05s  
+  ✓ query consulta el estado mediante get y ruta rut dv trackid                             0.04s  
+  ✓ query envia un header accept valido                                                     0.04s  
+  ✓ query no depende de la configuracion legacy del header de token                         0.05s  
+
+   PASS  Tests\Unit\SiiBoletaApiUploadServiceTest
+  ✓ aplica throttle antes de enviar la boleta al sii                                        0.06s  
+  ✓ upload usa la configuracion real de boleta y cookie token                               0.04s  
+  ✓ upload multipart envia los campos oficiales del sii y el archivo xml                    0.05s  
+  ✓ la configuracion cert de boleta activa el upload multipart                              0.04s  
+  ✓ la configuracion prod de boleta usa su propia variable de entorno para send mode        0.05s  
+  ✓ upload multipart envia user agent compatible con pangal                                 0.05s  
+  ✓ upload preserva http status y body cuando pangal responde error                         0.05s  
+
+   PASS  Tests\Unit\SiiBoletaTokenProviderServiceTest
+  ✓ el proveedor de token de boleta mantiene el contrato del proveedor de factura           0.05s  
+  ✓ cache key separa ambiente empresa y certificado                                         0.04s  
+  ✓ devuelve el token desde cache sin autenticarse nuevamente                               0.05s  
+  ✓ usa la configuracion correcta para el ttl del token cacheado                            0.07s  
+  ✓ si no hay token en cache autentica y lo guarda con el ttl configurado                   0.07s  
+  ✓ la generacion del token se protege con un lock de 90 segundos                           0.07s  
+  ✓ revisa nuevamente el cache despues de obtener el lock                                   0.06s  
+  ✓ si expira el lock revisa el cache y no autentica fuera del lock                         0.04s  
+
+   PASS  Tests\Unit\SiiCafSignatureKeyResolverTest
+  ✓ resuelve la llave publica del sii por idk                                               0.06s  
+  ✓ rechaza un idk del sii no configurado                                                   0.05s  
+
+   PASS  Tests\Unit\SiiCafSignatureVerifierTest
+  ✓ acepta una firma frma sha1withrsa valida                                                0.05s  
+  ✓ rechaza la firma frma si el da fue modificado                                           0.05s  
+  ✓ rechaza una firma frma manipulada                                                       0.07s  
+  ✓ rechaza frma con base64 invalido                                                        0.05s  
+  ✓ rechaza un algoritmo frma no soportado                                                  0.05s  
+  ✓ rechaza un idk del sii no configurado                                                   0.04s  
+  ✓ verifica frma eliminando whitespace entre etiquetas del da                              0.05s  
+
+   PASS  Tests\Unit\SiiDispatchRetryStateTest
+  ✓ failed puede programar retry e incrementa el contador                                   0.01s  
+  ✓ no permite programar retry si el dispatch no esta failed
+
+   PASS  Tests\Unit\SiiFacturaDocumentStatusServiceTest
+  ✓ aplica el throttle antes de enviar query est dte                                        0.06s  
+
+   PASS  Tests\Unit\SiiFacturaUploadStatusServiceTest
+  ✓ aplica el throttle antes de enviar query est up                                         0.09s  
+  ✓ rechaza una respuesta http no exitosa de query est up                                   0.08s  
+
+   PASS  Tests\Unit\SiiSeedXmlSignerServiceTest
+  ✓ el firmador compartido genera una semilla xmldsig valida                                0.07s  
+
+   PASS  Tests\Unit\SiiSoapAuthenticationServiceTest
+  ✓ la autenticacion soap delega la firma al firmador compartido                            0.05s  
+
+   PASS  Tests\Unit\SiiTokenProviderServiceTest
+  ✓ usa la clave correcta para el ttl del token cacheado                                    0.05s  
+  ✓ revisa nuevamente el cache despues de obtener el lock                                   0.06s  
+  ✓ revisa el cache si el lock expira antes de generar otro token                           0.05s  
+  ✓ no genera un token fuera del lock si el timeout ocurre y el cache sigue vacio           0.05s  
+  ✓ el lock para generar el token tiene un ttl de 90 segundos                               0.05s  
+  ✓ cache key separa ambiente empresa y certificado                                         0.05s  
+
+   PASS  Tests\Unit\StoreDteDocumentRequestTest
+  ✓ boleta 39 exige ind servicio                                                            0.09s  
+  ✓ boleta 39 acepta ind servicio valido                                                    0.06s  
+  ✓ boleta 39 rechaza ind servicio fuera de rango                                           0.06s  
+  ✓ boleta 41 tambien exige ind servicio                                                    0.05s  
+  ✓ factura 33 no exige ind servicio                                                        0.06s  
+
+   PASS  Tests\Unit\StoreDteDocumentTypeCatalogBoundaryTest
+  ✓ form request no mantiene whitelist hardcodeada de tipos dte                             0.08s  
+  ✓ form request sigue exigiendo que dte type sea entero                                    0.06s  
+  ✓ form request no mantiene whitelist en tipo dte propuesto                                0.05s  
+
+   PASS  Tests\Unit\SyncExpiredFolioReservationsServiceTest
+  ✓ consulta reservas expiradas con fecha formateada                                        0.05s  
+  ✓ usa el id de la referencia como reservation id                                          0.04s  
+
+   PASS  Tests\Unit\ValidateDteTypeAuthorizationServiceTest
+  ✓ permite tipo autorizado para empresa y sistema                                          0.05s  
+  ✓ rechaza tipo inexistente o inactivo                                                     0.04s  
+  ✓ rechaza tipo no autorizado para empresa                                                 0.05s  
+  ✓ rechaza tipo autorizado para empresa pero no para sistema                               0.04s  
+  ✓ sin sistema externo solo exige autorizacion de empresa                                  0.04s  
+  ✓ boleta 39 autorizada para empresa y sistema                                             0.04s  
+  ✓ rechaza tipo configurado pero no soportado tecnicamente                                 0.05s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                                           0.18s  
+
+   PASS  Tests\Feature\StoreDteDocumentTypeAuthorizationTest
+  ✓ post rechaza dte no autorizado con 422 sin tocar folios                                 0.09s  
+
+   PASS  Tests\Feature\StoreDteDocumentTypeCatalogHttpTest
+  ✓ post rechaza tipo configurado pero no soportado con 422                                 0.05s  
+  ✓ post rechaza tipo inexistente con 422                                                   0.05s  
+
+  Tests:    337 passed (1454 assertions)
+  Duration: 29.08s
+

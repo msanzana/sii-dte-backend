@@ -3,7 +3,7 @@
 namespace App\Modules\Auth\Application\UseCases;
 
 use App\Modules\Auth\Application\DTOs\ResetPasswordInputDto;
-use App\Modules\Auth\Domain\Exceptions\PasswordResetException;
+use App\Modules\Auth\Domain\Exception\PasswordResetException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthPasswordResetTokenRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRefreshTokenRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
@@ -52,9 +52,14 @@ final class ResetPasswordUseCase
                 );
             }
 
-            $user = $this->authUserRepository->findById($token->userId());
+            $user = $this->authUserRepository
+                ->findById($token->userId());
 
-            if (!$user || !$user->isActive()) {
+            if (
+                $user === null
+                || !$user->isActive()
+                || !$user->isHuman()
+            ) {
                 throw PasswordResetException::because(
                     'El usuario asociado al token no es válido o está inactivo.'
                 );

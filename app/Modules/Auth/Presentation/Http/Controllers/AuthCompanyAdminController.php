@@ -4,7 +4,7 @@ namespace App\Modules\Auth\Presentation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Auth\Application\Services\ManageCompaniesStateService;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use Illuminate\Http\JsonResponse;
 
 class AuthCompanyAdminController extends Controller

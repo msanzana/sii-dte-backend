@@ -1,0 +1,31 @@
+
+   PASS  Tests\Unit\EloquentAuthUserRepositoryTechnicalAccountTest
+  ✓ find all oculta usuarios no visibles                                                    0.41s  
+  ✓ login por email solo encuentra usuarios humanos                                         0.04s  
+  ✓ login tecnico busca por uuid y tipo technical                                           0.04s  
+  ✓ login tecnico no acepta usuario tecnico inactivo                                        0.03s  
+  ✓ create existente sigue creando usuario humano visible                                   0.04s  
+
+   PASS  Tests\Unit\ManageAuthUsersServiceTechnicalAccountTest
+  ✓ show no expone usuario tecnico oculto                                                   0.07s  
+  ✓ update no modifica usuario tecnico oculto                                               0.04s  
+  ✓ set active no bloquea usuario tecnico oculto                                            0.04s  
+  ✓ usuario humano visible sigue disponible en show                                         0.04s  
+
+   PASS  Tests\Unit\ManageUserCompanyAssignmentsTechnicalAccountTest
+  ✓ list by user oculta las asignaciones del tecnico                                        0.05s  
+  ✓ assign rechaza asignar otra empresa a un tecnico                                        0.04s  
+  ✓ update rechaza modificar asignacion de un tecnico                                       0.04s  
+  ✓ set active rechaza desactivar asignacion de un tecnico                                  0.04s  
+  ✓ remove rechaza eliminar asignacion de un tecnico                                        0.04s  
+  ✓ un tecnico visible por error tambien es rechazado                                       0.04s  
+  ✓ un humano oculto tambien es rechazado                                                   0.04s  
+  ✓ un humano visible conserva el acceso al listado                                         0.04s  
+
+   PASS  Tests\Unit\ResetPasswordTechnicalAccountTest
+  ✓ token valido de usuario tecnico no permite resetear password                            0.06s  
+  ✓ usuario humano activo puede resetear password                                           0.04s  
+
+  Tests:    19 passed (35 assertions)
+  Duration: 2.15s
+

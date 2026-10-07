@@ -1,0 +1,1574 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Modules\Dte\Application\DTOs\AdvanceDteAutomationInputDto;
+use App\Modules\Dte\Application\Services\DteTedBuildDomainService;
+use App\Modules\Dte\Application\Services\DteXmlDataAssemblerService;
+use App\Modules\Dte\Application\Services\EmitCertificateNoticeService;
+use App\Modules\Dte\Application\Services\HandleDocumentAutomationFailureService;
+use App\Modules\Dte\Application\Services\LoadCertificateForEmisionService;
+use App\Modules\Dte\Application\Services\LoadCertificateMaterialForEmisionService;
+use App\Modules\Dte\Application\Services\ResolveCertificateForEmisionService;
+use App\Modules\Dte\Application\Services\ScheduleDocumentAutomationRetryService;
+use App\Modules\Dte\Application\UseCases\Automation\AdvanceDteAutomationUseCase;
+use App\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase;
+use App\Modules\Dte\Application\UseCases\Dispatch\SendSignedDteToSiiUseCase;
+use App\Modules\Dte\Application\UseCases\Document\BuildDteXmlUseCase;
+use App\Modules\Dte\Application\UseCases\Document\BuildTedUseCase;
+use App\Modules\Dte\Application\UseCases\Document\PrepareDteDocumentForXmlUseCase;
+use App\Modules\Dte\Application\UseCases\Document\SignDteXmlUseCase;
+use App\Modules\Dte\Domain\Entities\Company;
+use App\Modules\Dte\Domain\Entities\DteDocument;
+use App\Modules\Dte\Domain\Entities\DteLineItem;
+use App\Modules\Dte\Domain\Entities\SiiCaf;
+use App\Modules\Dte\Domain\Entities\SiiCertificate;
+use App\Modules\Dte\Domain\Entities\SiiDispatch;
+use App\Modules\Dte\Domain\Enums\DteStatus;
+use App\Modules\Dte\Domain\Enums\DteType;
+use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\LocationRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiCafRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiCertificateRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
+use App\Modules\Dte\Domain\Services\DteAutomationPlannerService;
+use App\Modules\Dte\Domain\Services\DteBoletaSendDomainService;
+use App\Modules\Dte\Domain\Services\DteSiiSendDomainService;
+use App\Modules\Dte\Domain\Services\DteXmlBuildDomainService;
+use App\Modules\Dte\Domain\Services\DteXmlSignDomainService;
+use App\Modules\Dte\Domain\Services\TedDataAssemblerService;
+use App\Modules\Dte\Domain\ValueObjects\LocationSummary;
+use App\Modules\Dte\Domain\ValueObjects\ReceiverData;
+use App\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService;
+use App\Modules\Dte\Infrastructure\Crypto\SecretEncryptionService;
+use App\Modules\Dte\Infrastructure\Sii\SiiBoletaApiUploadService;
+use App\Modules\Dte\Infrastructure\Sii\SiiBoletaTokenProviderService;
+use App\Modules\Dte\Infrastructure\Sii\SiiFacturaUploadService;
+use App\Modules\Dte\Infrastructure\Sii\SiiTokenProviderService;
+use App\Modules\Dte\Infrastructure\Storage\DtePrivateStorageService;
+use App\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService;
+use App\Modules\Dte\Infrastructure\Xml\DteTedEmbedderService;
+use App\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService;
+use App\Modules\Dte\Infrastructure\Xml\DteXmlSignatureService;
+use App\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService;
+use App\Modules\Dte\Infrastructure\Xml\EnvioDteEnvelopeBuilderService;
+use App\Modules\Dte\Infrastructure\Xml\EnvioDteSignatureService;
+use App\Modules\Dte\Infrastructure\Xml\TedSignatureService;
+use App\Modules\Dte\Infrastructure\Xml\TedXmlBuilderService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+use Mockery;
+use ReflectionClass;
+use RuntimeException;
+use Tests\TestCase;
+
+final class DteAutomationFamiliesEndToEndTest extends TestCase
+{
+    public function test_factura_33_recorre_automatizacion_completa_hasta_sent(): void
+    {
+        $this->runFamily(
+            dteType: DteType::from(33),
+            headerPayload: null,
+            expectedSendAction: 'send_factura',
+            expectedTransport: 'soap_upload_factura',
+            expectedDispatchStatus: 'upload_ok',
+            expectedUploadCode: '0',
+            expectedTrackId: '0261000001',
+        );
+    }
+
+    public function test_boleta_39_recorre_automatizacion_completa_hasta_sent(): void
+    {
+        $this->runFamily(
+            dteType: DteType::from(39),
+            headerPayload: [
+                'ind_servicio' => 3,
+            ],
+            expectedSendAction: 'send_boleta',
+            expectedTransport: 'rest_upload_boleta',
+            expectedDispatchStatus: 'sent',
+            expectedUploadCode: 'REC',
+            expectedTrackId: '32500001',
+        );
+    }
+
+    private function runFamily(
+        DteType $dteType,
+        ?array $headerPayload,
+        string $expectedSendAction,
+        string $expectedTransport,
+        string $expectedDispatchStatus,
+        string $expectedUploadCode,
+        string $expectedTrackId,
+    ): void {
+        $storageRoot = storage_path(
+            'framework/testing/dte-automation-families-e2e'
+        );
+
+        File::deleteDirectory($storageRoot);
+        File::makeDirectory($storageRoot, 0777, true, true);
+
+        // Ambos proveedores usan el store file, aislado para este test.
+        $originalFileStore = config('cache.stores.file');
+        $originalTokenStore = config('dte.sii.transport.cache_store');
+
+        config()->set('cache.stores.file', [
+            'driver' => 'file',
+            'path' => $storageRoot . '/cache',
+            'lock_path' => $storageRoot . '/cache',
+        ]);
+        config()->set('dte.sii.transport.cache_store', 'file');
+        Cache::purge('file');
+
+        /*
+         * Si por cualquier motivo falla el cache del token,
+         * este test NO debe contactar servicios HTTP reales.
+         */
+        Http::preventStrayRequests();
+
+        config()->set(
+            'dte.storage.base',
+            $storageRoot
+        );
+
+        config()->set(
+            'dte.default_environment',
+            'cert'
+        );
+
+        config()->set(
+            'dte.sii.sender.rut_body',
+            '15259615'
+        );
+
+        config()->set(
+            'dte.sii.sender.rut_dv',
+            '4'
+        );
+
+        config()->set(
+            'dte.sii.cert.upload.url',
+            'https://sii.test/factura'
+        );
+
+        config()->set(
+            'dte.sii.boleta.cert.send_url',
+            'https://sii.test/boleta'
+        );
+
+        config()->set(
+            'dte.sii.boleta.cert.send_content_type',
+            'application/xml; charset=UTF-8'
+        );
+
+        try {
+            /*
+             * --------------------------------------------------------------
+             * Estado compartido en memoria
+             * --------------------------------------------------------------
+             */
+
+            $document = $this->document(
+                dteType: $dteType,
+                headerPayload: $headerPayload
+            );
+
+            $dispatch = null;
+
+            /*
+             * --------------------------------------------------------------
+             * Repository de documento STATEFUL
+             * --------------------------------------------------------------
+             */
+
+            $documentRepository =
+                Mockery::mock(
+                    DteDocumentRepositoryInterface::class
+                );
+
+            $documentRepository
+                ->shouldReceive('findById')
+                ->with(1)
+                ->andReturnUsing(
+                    function () use (&$document): DteDocument {
+                        return $document;
+                    }
+                );
+
+            $documentRepository
+                ->shouldReceive('findByIdForUpdate')
+                ->with(1)
+                ->andReturnUsing(
+                    function () use (&$document): DteDocument {
+                        return $document;
+                    }
+                );
+
+            $documentRepository
+                ->shouldReceive('update')
+                ->andReturnUsing(
+                    function (
+                        DteDocument $updated
+                    ) use (&$document): DteDocument {
+                        $document = $updated;
+
+                        return $document;
+                    }
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * Empresa
+             * --------------------------------------------------------------
+             */
+
+            $company = new Company(
+                id: 1,
+                rut: '77760724-3',
+                rutBody: '77760724',
+                rutDv: '3',
+                legalName: 'EMPRESA AUTOMATION TEST SPA',
+                tradeName: 'AUTOMATION TEST',
+                giro: 'Servicios informaticos',
+                siiActivityCode: '620200',
+                address: 'Av. Alemania 123',
+                cityId: 211,
+                dteEmail: 'dte@example.cl',
+                resolutionNumber: '80',
+                resolutionDate: '2014-08-22',
+                siiEnvironment: 'cert',
+                isActive: true,
+            );
+
+            $companyRepository =
+                Mockery::mock(
+                    CompanyRepositoryInterface::class
+                );
+
+            $companyRepository
+                ->shouldReceive('findById')
+                ->with(1)
+                ->andReturn($company);
+
+            /*
+             * --------------------------------------------------------------
+             * Ubicacion
+             * --------------------------------------------------------------
+             */
+
+            $location = new LocationSummary(
+                cityId: 211,
+                cityName: 'Temuco',
+                comuneName: 'Temuco',
+            );
+
+            $locationRepository =
+                Mockery::mock(
+                    LocationRepositoryInterface::class
+                );
+
+            $locationRepository
+                ->shouldReceive('findSummaryByCityId')
+                ->with(211)
+                ->andReturn($location);
+
+            /*
+             * --------------------------------------------------------------
+             * Logs
+             * --------------------------------------------------------------
+             */
+
+            $logRepository =
+                Mockery::mock(
+                    IntegrationLogRepositoryInterface::class
+                )
+                    ->shouldIgnoreMissing();
+
+            /*
+             * --------------------------------------------------------------
+             * Storage REAL, pero aislado en storage/framework/testing
+             * --------------------------------------------------------------
+             */
+
+            $storageService =
+                new DtePrivateStorageService();
+
+            /*
+             * --------------------------------------------------------------
+             * BUILD XML REAL
+             * --------------------------------------------------------------
+             */
+
+            $buildXmlUseCase =
+                new BuildDteXmlUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    companyRepository:
+                        $companyRepository,
+
+                    locationRepository:
+                        $locationRepository,
+
+                    logRepository:
+                        $logRepository,
+
+                    xmlBuildDomainService:
+                        new DteXmlBuildDomainService(),
+
+                    xmlDataAssemblerService:
+                        new DteXmlDataAssemblerService(),
+
+                    xmlBuilderService:
+                        new DteXmlBuilderService(),
+
+                    storageService:
+                        $storageService,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * CAF
+             * --------------------------------------------------------------
+             */
+
+            $caf = new SiiCaf(
+                id: 15,
+                companyId: 1,
+                dteType: $dteType->value,
+                folioStart: 1,
+                folioEnd: 100,
+                lastAssignedFolio: 76,
+                cafXmlPath: 'testing/caf.xml',
+                privateKeyPemEncrypted: 'CAF_PRIVATE_KEY_TEST',
+                publicKeyPem: null,
+                authorizedAt: '2026-01-01',
+                isActive: true,
+                externalSystemId: 1,
+            );
+
+            $cafRepository =
+                Mockery::mock(
+                    SiiCafRepositoryInterface::class
+                );
+
+            $cafRepository
+                ->shouldReceive(
+                    'findActiveContainingFolio'
+                )
+                ->with(
+                    1,
+                    $dteType->value,
+                    77
+                )
+                ->andReturn($caf);
+
+            $cafExtractor =
+                Mockery::mock(
+                    CafTedMaterialExtractorService::class
+                );
+
+            $cafExtractor
+                ->shouldReceive('extract')
+                ->with($caf)
+                ->andReturn([
+                    'caf_xml_fragment' =>
+                        $this->cafXml(
+                            $dteType->value
+                        ),
+
+                    'private_key_pem' =>
+                        '-----BEGIN PRIVATE KEY-----'
+                        . PHP_EOL
+                        . 'TEST'
+                        . PHP_EOL
+                        . '-----END PRIVATE KEY-----',
+                ]);
+
+            $tedSignature =
+                Mockery::mock(
+                    TedSignatureService::class
+                );
+
+            $tedSignature
+                ->shouldReceive('singDdXml')
+                ->andReturn(
+                    'RlJNVF9URVNU'
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * BUILD TED REAL
+             * --------------------------------------------------------------
+             */
+
+            $buildTedUseCase =
+                new BuildTedUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    companyRepository:
+                        $companyRepository,
+
+                    cafRepository:
+                        $cafRepository,
+
+                    logRepository:
+                        $logRepository,
+
+                    tedBuildDomainService:
+                        new DteTedBuildDomainService(),
+
+                    tedDataAssemblerService:
+                        new TedDataAssemblerService(),
+
+                    cafTedMaterialExtractorService:
+                        $cafExtractor,
+
+                    tedXmlBuilderService:
+                        new TedXmlBuilderService(),
+
+                    tedSignatureService:
+                        $tedSignature,
+
+                    dteTedEmbedderService:
+                        new DteTedEmbedderService(),
+
+                    storageService:
+                        $storageService,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * Certificado de emision
+             * --------------------------------------------------------------
+             */
+
+            $certificate =
+                new SiiCertificate(
+                    id: 3,
+                    companyId: 1,
+                    alias: 'cert-test',
+                    pfxPath: 'certificates/test.pfx',
+                    pfxPasswordEncrypted:
+                        'PASSWORD_ENCRYPTED',
+
+                    serialNumber:
+                        'SERIAL-TEST',
+
+                    subjectName:
+                        'CN=TEST',
+
+                    issuerName:
+                        'CN=TEST-CA',
+
+                    validFrom:
+                        '2020-01-01 00:00:00',
+
+                    validTo:
+                        '2035-01-01 00:00:00',
+
+                    isDefault:
+                        true,
+
+                    isActive:
+                        true,
+                );
+
+            $certificateRepository =
+                Mockery::mock(
+                    SiiCertificateRepositoryInterface::class
+                );
+
+            $certificateRepository
+                ->shouldReceive(
+                    'findDefaultValidByCompanyId'
+                )
+                ->with(1)
+                ->andReturn($certificate);
+
+            $resolveCertificate =
+                new ResolveCertificateForEmisionService(
+                    siiCertificateRepository:
+                        $certificateRepository,
+
+                    emitCertificateNoticeService:
+                        $this->withoutConstructor(
+                            EmitCertificateNoticeService::class
+                        ),
+                );
+
+            $certificateStorage =
+                Mockery::mock(
+                    DtePrivateStorageService::class
+                );
+
+            $certificateStorage
+                ->shouldReceive('getContents')
+                ->with(
+                    'certificates/test.pfx'
+                )
+                ->andReturn(
+                    'PFX_BYTES_TEST'
+                );
+
+            $secretEncryption =
+                Mockery::mock(
+                    SecretEncryptionService::class
+                );
+
+            $secretEncryption
+                ->shouldReceive('decrypt')
+                ->with(
+                    'PASSWORD_ENCRYPTED'
+                )
+                ->andReturn(
+                    'password-test'
+                );
+
+            $loadCertificate =
+                new LoadCertificateForEmisionService(
+                    resolveCertificateForEmisionService:
+                        $resolveCertificate,
+
+                    storageService:
+                        $certificateStorage,
+
+                    secretEncryptionService:
+                        $secretEncryption,
+
+                    logRepository:
+                        $logRepository,
+                );
+
+            $certificateExtractor =
+                Mockery::mock(
+                    CertificateMaterialExtractorService::class
+                );
+
+            $certificateExtractor
+                ->shouldReceive(
+                    'extractFromRawMaterial'
+                )
+                ->with(
+                    'PFX_BYTES_TEST',
+                    'password-test'
+                )
+                ->andReturn([
+                    'private_key_pem' =>
+                        'PRIVATE_KEY_TEST',
+
+                    'certificate_pem' =>
+                        'CERTIFICATE_PEM_TEST',
+
+                    'certificate_base64' =>
+                        'CERTIFICATE_BASE64_TEST',
+
+                    'modulus_base64' =>
+                        'MODULUS_TEST',
+
+                    'exponent_base64' =>
+                        'Aw==',
+                ]);
+
+            $loadCertificateMaterial =
+                new LoadCertificateMaterialForEmisionService(
+                    loadCertificateForEmisionService:
+                        $loadCertificate,
+
+                    certificateMaterialExtractorService:
+                        $certificateExtractor,
+
+                    logRepository:
+                        $logRepository,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * SIGN XML REAL como caso de uso.
+             * Solo se simula la primitiva criptografica.
+             * --------------------------------------------------------------
+             */
+
+            $xmlSignature =
+                Mockery::mock(
+                    DteXmlSignatureService::class
+                );
+
+            $xmlSignature
+                ->shouldReceive('signDte')
+                ->andReturnUsing(
+                    function (
+                        string $xmlWithTed
+                    ): array {
+                        return [
+                            'signed_xml' =>
+                                $xmlWithTed
+                                . PHP_EOL
+                                . '<!-- SIGNED TEST -->',
+
+                            'document_xml_id' =>
+                                'DTE_F77_TEST',
+
+                            'tmst_firma' =>
+                                '2026-10-04T10:00:00',
+                        ];
+                    }
+                );
+
+            $signUseCase =
+                new SignDteXmlUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    companyRepository:
+                        $companyRepository,
+
+                    logRepository:
+                        $logRepository,
+
+                    dteXmlSignatureService:
+                        $xmlSignature,
+
+                    storageService:
+                        $storageService,
+
+                    xmlSignDomainService:
+                        new DteXmlSignDomainService(),
+
+                    loadCertificateMaterialForEmisionService:
+                        $loadCertificateMaterial,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * Dispatch repository STATEFUL
+             * --------------------------------------------------------------
+             */
+
+            $dispatchRepository =
+                Mockery::mock(
+                    SiiDispatchRepositoryInterface::class
+                );
+
+            $dispatchRepository
+                ->shouldReceive(
+                    'findLatestByDocumentId'
+                )
+                ->with(1)
+                ->andReturnUsing(
+                    function () use (&$dispatch) {
+                        return $dispatch;
+                    }
+                );
+
+            $dispatchRepository
+                ->shouldReceive('create')
+                ->andReturnUsing(
+                    function (
+                        SiiDispatch $created
+                    ) use (&$dispatch): SiiDispatch {
+                        $dispatch =
+                            $this->withDispatchId(
+                                $created,
+                                501
+                            );
+
+                        return $dispatch;
+                    }
+                );
+
+            $dispatchRepository
+                ->shouldReceive('update')
+                ->andReturnUsing(
+                    function (
+                        SiiDispatch $updated
+                    ) use (&$dispatch): SiiDispatch {
+                        $dispatch = $updated;
+
+                        return $dispatch;
+                    }
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * Sobre / firma de sobre
+             * --------------------------------------------------------------
+             */
+
+            $facturaEnvelope =
+                Mockery::mock(
+                    EnvioDteEnvelopeBuilderService::class
+                );
+
+            $facturaEnvelope
+                ->shouldReceive('build')
+                ->andReturn([
+                    'envelope_xml' =>
+                        '<EnvioDTE>TEST</EnvioDTE>',
+
+                    'set_dte_id' =>
+                        'SetDoc_1',
+                ]);
+
+            $boletaEnvelope =
+                Mockery::mock(
+                    EnvioBoletaEnvelopeBuilderService::class
+                );
+
+            $boletaEnvelope
+                ->shouldReceive('build')
+                ->andReturn([
+                    'payload_xml' =>
+                        '<EnvioBOLETA>TEST</EnvioBOLETA>',
+
+                    'request_identifier' =>
+                        'SetBoleta_1',
+                ]);
+
+            $envelopeSignature =
+                Mockery::mock(
+                    EnvioDteSignatureService::class
+                );
+
+            $envelopeSignature
+                ->shouldReceive('SignSetDte')
+                ->andReturn(
+                    '<EnvioFirmado>TEST</EnvioFirmado>'
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * TOKEN PROVIDERS REALES
+             * --------------------------------------------------------------
+             *
+             * Estas clases son final y por eso NO se mockean con Mockery.
+             * Se resuelven desde el container y se precarga su cache real.
+             * --------------------------------------------------------------
+             */
+
+            /** @var SiiTokenProviderService $facturaToken */
+            $facturaToken =
+                app(
+                    SiiTokenProviderService::class
+                );
+
+            /** @var SiiBoletaTokenProviderService $boletaToken */
+            $boletaToken =
+                app(
+                    SiiBoletaTokenProviderService::class
+                );
+
+            $this->seedTokenProviderCache(
+                provider: $facturaToken,
+                environment: 'cert',
+                companyId: 1,
+                certificateId: 3,
+                token: 'TOKEN_FACTURA_TEST',
+            );
+
+            $this->seedTokenProviderCache(
+                provider: $boletaToken,
+                environment: 'cert',
+                companyId: 1,
+                certificateId: 3,
+                token: 'TOKEN_BOLETA_TEST',
+            );
+
+            /*
+             * --------------------------------------------------------------
+             * Uploads SII simulados
+             * --------------------------------------------------------------
+             */
+
+            $facturaUpload =
+                Mockery::mock(
+                    SiiFacturaUploadService::class
+                );
+
+            $facturaUpload
+                ->shouldReceive('upload')
+                ->andReturn([
+                    'track_id' =>
+                        $expectedTrackId,
+
+                    'http_status' =>
+                        200,
+
+                    'raw_body' =>
+                        '<RECEPCIONDTE><STATUS>0</STATUS></RECEPCIONDTE>',
+
+                    'status_code' =>
+                        '0',
+
+                    'status_message' =>
+                        'Upload OK',
+                ]);
+
+            $boletaUpload =
+                Mockery::mock(
+                    SiiBoletaApiUploadService::class
+                );
+
+            $boletaUpload
+                ->shouldReceive('upload')
+                ->andReturn([
+                    'track_id' =>
+                        $expectedTrackId,
+
+                    'http_status' =>
+                        200,
+
+                    'raw_body' =>
+                        '{"estado":"REC"}',
+
+                    'status_code' =>
+                        'REC',
+
+                    'status_message' =>
+                        null,
+                ]);
+
+            /*
+             * --------------------------------------------------------------
+             * SEND FACTURA REAL
+             * --------------------------------------------------------------
+             */
+
+            $sendFactura =
+                new SendSignedDteToSiiUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    companyRepository:
+                        $companyRepository,
+
+                    dispatchRepository:
+                        $dispatchRepository,
+
+                    logRepository:
+                        $logRepository,
+
+                    sendDomainService:
+                        new DteSiiSendDomainService(),
+
+                    envioDteEnvelopeBuilderService:
+                        $facturaEnvelope,
+
+                    envioDteSignatureService:
+                        $envelopeSignature,
+
+                    siiTokenProviderService:
+                        $facturaToken,
+
+                    siiFacturaUploadService:
+                        $facturaUpload,
+
+                    storageService:
+                        $storageService,
+
+                    loadCertificateMaterialForEmisionService:
+                        $loadCertificateMaterial,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * SEND BOLETA REAL
+             * --------------------------------------------------------------
+             */
+
+            $sendBoleta =
+                new SendSignedBoletaToSiiUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    companyRepository:
+                        $companyRepository,
+
+                    dispatchRepository:
+                        $dispatchRepository,
+
+                    logRepository:
+                        $logRepository,
+
+                    boletaSendDomainService:
+                        new DteBoletaSendDomainService(),
+
+                    siiBoletaTokenProviderService:
+                        $boletaToken,
+
+                    envioBoletaEnvelopeBuilderService:
+                        $boletaEnvelope,
+
+                    siiBoletaApiUploadService:
+                        $boletaUpload,
+
+                    storageService:
+                        $storageService,
+
+                    loadCertificateMaterialForEmisionService:
+                        $loadCertificateMaterial,
+
+                    envioDteSignatureService:
+                        $envelopeSignature,
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * Handler de retry real
+             * --------------------------------------------------------------
+             */
+
+            $failureHandler =
+                new HandleDocumentAutomationFailureService(
+                    documentRepository:
+                        $documentRepository,
+
+                    scheduleRetryService:
+                        new ScheduleDocumentAutomationRetryService(),
+                );
+
+            /*
+             * --------------------------------------------------------------
+             * ORQUESTADOR REAL
+             * --------------------------------------------------------------
+             */
+
+            $automation =
+                new AdvanceDteAutomationUseCase(
+                    documentRepository:
+                        $documentRepository,
+
+                    automationPlannerService:
+                        new DteAutomationPlannerService(),
+
+                    prepareDteDocumentForXmlUseCase:
+                        $this->withoutConstructor(
+                            PrepareDteDocumentForXmlUseCase::class
+                        ),
+
+                    buildDteXmlUseCase:
+                        $buildXmlUseCase,
+
+                    buildTedUseCase:
+                        $buildTedUseCase,
+
+                    signDteXmlUseCase:
+                        $signUseCase,
+
+                    sendSignedDteToSiiUseCase:
+                        $sendFactura,
+
+                    sendSignedBoletaToSiiUseCase:
+                        $sendBoleta,
+
+                    handleDocumentAutomationFailureService:
+                        $failureHandler,
+                );
+
+            /*
+             * ==============================================================
+             * PASO 1 - BUILD XML
+             * ==============================================================
+             */
+
+            $step1 =
+                $automation->execute(
+                    new AdvanceDteAutomationInputDto(
+                        documentId: 1
+                    )
+                );
+
+            $this->assertSame(
+                'build_xml',
+                $step1->executeAction
+            );
+
+            $this->assertSame(
+                DteStatus::XML_BUILT->value,
+                $document->status()
+            );
+
+            $this->assertTrue(
+                $step1->shouldRequeueImmediately
+            );
+
+            $this->assertNotNull(
+                $document->unsignedXmlPath()
+            );
+
+            $this->assertBusinessReferences(
+                $document
+            );
+
+            $baseXml =
+                File::get(
+                    storage_path(
+                        $document->unsignedXmlPath()
+                    )
+                );
+
+            $this->assertStringContainsString(
+                '<TipoDTE>'
+                    . $dteType->value
+                    . '</TipoDTE>',
+                $baseXml
+            );
+
+            $this->assertStringContainsString(
+                '<Folio>77</Folio>',
+                $baseXml
+            );
+
+            if (
+                $dteType->value === 39
+            ) {
+                $this->assertStringContainsString(
+                    '<IndServicio>3</IndServicio>',
+                    $baseXml
+                );
+            } else {
+                $this->assertStringNotContainsString(
+                    '<IndServicio>',
+                    $baseXml
+                );
+            }
+
+            /*
+             * ==============================================================
+             * PASO 2 - BUILD TED
+             * ==============================================================
+             */
+
+            $step2 =
+                $automation->execute(
+                    new AdvanceDteAutomationInputDto(
+                        documentId: 1
+                    )
+                );
+
+            $this->assertSame(
+                'build_ted',
+                $step2->executeAction
+            );
+
+            $this->assertSame(
+                DteStatus::TED_BUILT->value,
+                $document->status()
+            );
+
+            $this->assertTrue(
+                $step2->shouldRequeueImmediately
+            );
+
+            $this->assertNotNull(
+                $document->tedXml()
+            );
+
+            $this->assertStringContainsString(
+                '<TD>'
+                    . $dteType->value
+                    . '</TD>',
+                (string) $document->tedXml()
+            );
+
+            $this->assertStringContainsString(
+                '<F>77</F>',
+                (string) $document->tedXml()
+            );
+
+            $this->assertStringContainsString(
+                '<MNT>47600</MNT>',
+                (string) $document->tedXml()
+            );
+
+            $this->assertBusinessReferences(
+                $document
+            );
+
+            /*
+             * ==============================================================
+             * PASO 3 - SIGN
+             * ==============================================================
+             */
+
+            $step3 =
+                $automation->execute(
+                    new AdvanceDteAutomationInputDto(
+                        documentId: 1
+                    )
+                );
+
+            $this->assertSame(
+                'sign_xml',
+                $step3->executeAction
+            );
+
+            $this->assertSame(
+                DteStatus::SIGNED->value,
+                $document->status()
+            );
+
+            $this->assertTrue(
+                $step3->shouldRequeueImmediately
+            );
+
+            $this->assertNotNull(
+                $document->signedXmlPath()
+            );
+
+            $this->assertFileExists(
+                storage_path(
+                    $document->signedXmlPath()
+                )
+            );
+
+            $this->assertBusinessReferences(
+                $document
+            );
+
+            /*
+             * ==============================================================
+             * PASO 4 - SEND
+             * ==============================================================
+             */
+
+            $step4 =
+                $automation->execute(
+                    new AdvanceDteAutomationInputDto(
+                        documentId: 1
+                    )
+                );
+
+            $this->assertSame(
+                $expectedSendAction,
+                $step4->executeAction
+            );
+
+            $this->assertSame(
+                DteStatus::SENT->value,
+                $document->status()
+            );
+
+            $this->assertFalse(
+                $step4->shouldRequeueImmediately
+            );
+
+            $this->assertBusinessReferences(
+                $document
+            );
+
+            /*
+             * --------------------------------------------------------------
+             * Dispatch final
+             * --------------------------------------------------------------
+             */
+
+            $this->assertInstanceOf(
+                SiiDispatch::class,
+                $dispatch
+            );
+
+            $this->assertSame(
+                501,
+                $dispatch->id()
+            );
+
+            $this->assertSame(
+                1,
+                $dispatch->dteDocumentId()
+            );
+
+            $this->assertSame(
+                $expectedTransport,
+                $dispatch->transportType()
+            );
+
+            $this->assertSame(
+                $expectedDispatchStatus,
+                $dispatch->status()
+            );
+
+            $this->assertSame(
+                $expectedTrackId,
+                $dispatch->trackId()
+            );
+
+            $this->assertSame(
+                $expectedUploadCode,
+                $dispatch->uploadStatusCode()
+            );
+
+            $this->assertSame(
+                0,
+                $dispatch->retryCount()
+            );
+
+            $this->assertNull(
+                $dispatch->nextRetryAt()
+            );
+
+            $this->assertNotNull(
+                $dispatch->requestBodyPath()
+            );
+
+            $this->assertFileExists(
+                storage_path(
+                    $dispatch->requestBodyPath()
+                )
+            );
+
+            /*
+             * --------------------------------------------------------------
+             * SENT ya no debe tener una nueva accion del planner
+             * --------------------------------------------------------------
+             */
+
+            $final =
+                $automation->execute(
+                    new AdvanceDteAutomationInputDto(
+                        documentId: 1
+                    )
+                );
+
+            $this->assertNull(
+                $final->executeAction
+            );
+
+            $this->assertFalse(
+                $final->shouldRequeueImmediately
+            );
+
+            $this->assertSame(
+                DteStatus::SENT->value,
+                $final->currentStatus
+            );
+        } finally {
+            Cache::purge('file');
+            config()->set('cache.stores.file', $originalFileStore);
+            config()->set('dte.sii.transport.cache_store', $originalTokenStore);
+
+            File::deleteDirectory(
+                $storageRoot
+            );
+        }
+    }
+
+    private function document(
+        DteType $dteType,
+        ?array $headerPayload
+    ): DteDocument {
+        return new DteDocument(
+            id: 1,
+
+            externalId:
+                'e2e-automation-'
+                . $dteType->value,
+
+            companyId:
+                1,
+
+            dteType:
+                $dteType,
+
+            issueDate:
+                '2026-10-04',
+
+            status:
+                DteStatus::FOLIO_ASSIGNED->value,
+
+            receiver:
+                new ReceiverData(
+                    document:
+                        '11111111-1',
+
+                    name:
+                        'Cliente prueba',
+
+                    giro:
+                        'Servicios',
+
+                    address:
+                        'Av. Alemania 123',
+
+                    cityId:
+                        211,
+
+                    email:
+                        'cliente@example.cl',
+                ),
+
+            netAmount:
+                40000,
+
+            exemptAmount:
+                0,
+
+            taxAmount:
+                7600,
+
+            totalAmount:
+                47600,
+
+            items: [
+                new DteLineItem(
+                    lineNumber:
+                        1,
+
+                    itemCodeType:
+                        null,
+
+                    itemCode:
+                        null,
+
+                    name:
+                        'Producto A',
+
+                    description:
+                        null,
+
+                    quantity:
+                        2,
+
+                    unitPrice:
+                        10000,
+
+                    discountPercent:
+                        0,
+
+                    discountAmount:
+                        0,
+
+                    taxExempt:
+                        false,
+
+                    lineAmount:
+                        20000,
+                ),
+
+                new DteLineItem(
+                    lineNumber:
+                        2,
+
+                    itemCodeType:
+                        null,
+
+                    itemCode:
+                        null,
+
+                    name:
+                        'Producto B',
+
+                    description:
+                        null,
+
+                    quantity:
+                        2,
+
+                    unitPrice:
+                        10000,
+
+                    discountPercent:
+                        0,
+
+                    discountAmount:
+                        0,
+
+                    taxExempt:
+                        false,
+
+                    lineAmount:
+                        20000,
+                ),
+            ],
+
+            headerPayload:
+                $headerPayload,
+
+            folio:
+                77,
+
+            siiEnvironment:
+                'cert',
+
+            externalSystemId:
+                1,
+
+            cafId:
+                15,
+
+            folioReservationId:
+                21,
+
+            branchOfficeNumber:
+                1,
+
+            facilityNumber:
+                1,
+
+            externalBranchCode:
+                'TEMUCO-CENTRO',
+        );
+    }
+
+    private function assertBusinessReferences(
+        DteDocument $document
+    ): void {
+        $this->assertSame(
+            77,
+            $document->folio()
+        );
+
+        $this->assertSame(
+            15,
+            $document->cafId()
+        );
+
+        $this->assertSame(
+            21,
+            $document->folioReservationId()
+        );
+
+        $this->assertSame(
+            1,
+            $document->externalSystemId()
+        );
+    }
+
+    private function cafXml(
+        int $dteType
+    ): string {
+        return sprintf(
+            '<CAF version="1.0">'
+            . '<DA>'
+            . '<RE>77760724-3</RE>'
+            . '<RS>EMPRESA AUTOMATION TEST SPA</RS>'
+            . '<TD>%d</TD>'
+            . '<RNG><D>1</D><H>100</H></RNG>'
+            . '<FA>2026-01-01</FA>'
+            . '<RSAPK><M>VEVTVA==</M><E>Aw==</E></RSAPK>'
+            . '<IDK>100</IDK>'
+            . '</DA>'
+            . '<FRMA algoritmo="SHA1withRSA">VEVTVA==</FRMA>'
+            . '</CAF>',
+            $dteType
+        );
+    }
+
+    private function seedTokenProviderCache(
+        object $provider,
+        string $environment,
+        int $companyId,
+        int $certificateId,
+        string $token,
+    ): void {
+        $cacheKeyMethod = (new ReflectionClass($provider))->getMethod('cacheKey');
+        $cacheKeyMethod->setAccessible(true);
+
+        $cacheKey = $cacheKeyMethod->invoke(
+            $provider,
+            $environment,
+            $companyId,
+            $certificateId,
+        );
+
+        if ($provider instanceof SiiTokenProviderService) {
+            $storeName = (string) config('dte.sii.transport.cache_store', 'file');
+            $cachedValue = Crypt::encryptString($token);
+        } elseif ($provider instanceof SiiBoletaTokenProviderService) {
+            $storeName = 'file';
+            $cachedValue = $token;
+        } else {
+            throw new RuntimeException('Proveedor de token no soportado: ' . $provider::class);
+        }
+
+        Cache::store($storeName)->put($cacheKey, $cachedValue, 600);
+    }
+
+    private function withDispatchId(
+        SiiDispatch $dispatch,
+        int $id
+    ): SiiDispatch {
+        return new SiiDispatch(
+            id:
+                $id,
+
+            batchUuid:
+                $dispatch->batchUuid(),
+
+            companyId:
+                $dispatch->companyId(),
+
+            dteDocumentId:
+                $dispatch->dteDocumentId(),
+
+            environment:
+                $dispatch->environment(),
+
+            transportType:
+                $dispatch->transportType(),
+
+            status:
+                $dispatch->status(),
+
+            trackId:
+                $dispatch->trackId(),
+
+            requestIdentifier:
+                $dispatch->requestIdentifier(),
+
+            requestPath:
+                $dispatch->requestPath(),
+
+            requestHeaders:
+                $dispatch->requestHeaders(),
+
+            requestBodyPath:
+                $dispatch->requestBodyPath(),
+
+            responseHttpStatus:
+                $dispatch->responseHttpStatus(),
+
+            responseBody:
+                $dispatch->responseBody(),
+
+            uploadStatusCode:
+                $dispatch->uploadStatusCode(),
+
+            uploadStatusMessage:
+                $dispatch->uploadStatusMessage(),
+
+            retryCount:
+                $dispatch->retryCount(),
+
+            nextRetryAt:
+                $dispatch->nextRetryAt(),
+
+            errorMessage:
+                $dispatch->errorMessage(),
+
+            sentAt:
+                $dispatch->sentAt(),
+
+            lastPolledAt:
+                $dispatch->lastPolledAt(),
+
+            processedAt:
+                $dispatch->processedAt(),
+        );
+    }
+
+    private function withoutConstructor(
+        string $class
+    ): object {
+        return (
+            new ReflectionClass(
+                $class
+            )
+        )->newInstanceWithoutConstructor();
+    }
+}

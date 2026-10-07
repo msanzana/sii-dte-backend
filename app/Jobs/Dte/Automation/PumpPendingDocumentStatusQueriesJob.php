@@ -2,7 +2,6 @@
 namespace App\Jobs\Dte\Automation;
 
 use App\Jobs\Dte\Automation\QuerySingleDocumentStatusJob;
-use App\Modules\Dte\Domain\Enums\DteStatus;
 use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -36,23 +35,47 @@ class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
     {
         Context::add('job','PumpPendingDocumentStatusQueriesJob');
 
-        $ids = $documentRepository->findIdsByStatuses(
-            statuses: [DteStatus::SENDING->value,
-                        DteStatus::SENT->value,],
-            limit:(int) config('dte.automation.limits.document_status_queries_per_pump',50)
+        $ids = $documentRepository->findIdsEligibleForDocumentStatusQuery(
+            limit: (int) config(
+                'dte.automation.limits.document_status_queries_per_pump',
+                50
+            )
         );
 
-        foreach ($ids as $documentId)
-        {
-            QuerySingleDocumentStatusJob::dispatch($documentId)
-                ->delay(now()->addSeconds(
-                    (int) config(
-                        'dte.automation.delays.document_status_query_seconds',
-                        60
+        foreach ($ids as $documentId) {
+            $document = $documentRepository->findById(
+                $documentId
+            );
+
+            if ($document === null) {
+                continue;
+            }
+
+            $pendingDispatch =
+                QuerySingleDocumentStatusJob::dispatch(
+                    $documentId
+                )
+                ->onConnection(
+                    (string) config(
+                        'dte.automation.queue_connection'
                     )
-                ))
-                ->onConnection((string) config('dte.automation.queue_connection'))
-                ->onQueue((string) config('dte.automation.queues.document_status'));
+                )
+                ->onQueue(
+                    (string) config(
+                        'dte.automation.queues.document_status'
+                    )
+                );
+
+            if ($document->statusQueryRetryCount() === 0) {
+                $pendingDispatch->delay(
+                    now()->addSeconds(
+                        (int) config(
+                            'dte.automation.delays.document_status_query_seconds',
+                            60
+                        )
+                    )
+                );
+            }
         }
     }
 }

@@ -19,6 +19,11 @@ interface DteDocumentRepositoryInterface
     /**
      * @return DteDocument[]
      */
+    public function existsByExternalIdInScope(
+        int $companyId,
+        ?int $externalSystemId,
+        string $externalId
+    ): bool;
     public function findPendingForDispatch(int $limit = 100): array;
 
         /**
@@ -33,5 +38,8 @@ interface DteDocumentRepositoryInterface
     public function findIdsEligibleForAutomation(
         array $statuses,
         int $limit = 100
+    ): array;
+    public function findIdsEligibleForDocumentStatusQuery(
+        int $limit
     ): array;
 }

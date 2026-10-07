@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Auth\Application\DTOs\CreateAuthRoleInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateAuthRoleInputDto;
 use App\Modules\Auth\Application\Services\ManageAuthRolesService;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Presentation\Http\Requests\CreateAuthRoleRequest;
 use App\Modules\Auth\Presentation\Http\Requests\SyncRolePermissionsRequest;
 use App\Modules\Auth\Presentation\Http\Requests\UpdateAuthRoleRequest;

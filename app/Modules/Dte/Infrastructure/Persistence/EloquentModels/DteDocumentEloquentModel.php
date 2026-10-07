@@ -65,6 +65,8 @@ class DteDocumentEloquentModel extends Model
         'sent_at',
         'accepted_at',
         'rejected_at',
+        'status_query_retry_count',
+        'status_query_next_at',
     ];
     protected $casts = [
         'company_id' => 'integer',
@@ -92,6 +94,8 @@ class DteDocumentEloquentModel extends Model
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'status_query_retry_count' => 'integer',
+        'status_query_next_at' => 'datetime',
     ];
     public function company()
     {

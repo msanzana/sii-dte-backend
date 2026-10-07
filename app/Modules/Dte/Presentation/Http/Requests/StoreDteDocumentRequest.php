@@ -3,7 +3,6 @@ namespace App\Modules\Dte\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-
 class StoreDteDocumentRequest extends FormRequest
 {
     public function authorize(): bool
@@ -17,11 +16,17 @@ class StoreDteDocumentRequest extends FormRequest
             'external_id' => ['nullable', 'uuid'],
             'external_system_id' => ['nullable','integer',],
             'proposed_folio' => ['nullable','integer','min:1','required_with:external_system_id',],
-            'proposed_sii_document_type' => ['nullable','integer', Rule::in([33,34,39,41,46,52,56,61])],
+            'proposed_sii_document_type' => [
+                'nullable',
+                'integer',
+            ],
             'branch_office_number' => ['nullable', 'integer','min:1',],
             'facility_number' => ['nullable','integer','min:1',],
             'external_branch_code' => ['nullable','string','max:100',],
-            'dte_type' => ['required','integer', Rule::in([33,34,39,41,46,52,56,61,]),],
+            'dte_type' => [
+                'required',
+                'integer',
+            ],
             'issue_date' => ['required', 'date'],
             
             'receiver.document' => ['required','string','max:20'],

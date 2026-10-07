@@ -5,7 +5,7 @@ namespace App\Modules\Auth\Application\UseCases;
 use App\Modules\Auth\Application\DTOs\RefreshAccessTokenInputDto;
 use App\Modules\Auth\Application\DTOs\RefreshAccessTokenResultDto;
 use App\Modules\Auth\Application\Services\AccessProfileBuilderService;
-use App\Modules\Auth\Domain\Exceptions\InvalidRefreshTokenException;
+use App\Modules\Auth\Domain\Exception\InvalidRefreshTokenException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthCompanyStateRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRefreshTokenRepositoryInterface;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;

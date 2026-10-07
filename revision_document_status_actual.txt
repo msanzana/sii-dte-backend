@@ -1,0 +1,8 @@
+===== PumpPendingDocumentStatusQueriesJob =====
+RUTA: C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Jobs\Dte\Automation\PumpPendingDocumentStatusQueriesJob.php
+
+===== QuerySingleDocumentStatusJob =====
+RUTA: C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Jobs\Dte\Automation\QuerySingleDocumentStatusJob.php
+
+===== QuerySiiDocumentStatusUseCase =====
+RUTA: C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Document\QuerySiiDocumentStatusUseCase.php

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Auth\Infrastructure\Security;
 
-use App\Modules\Auth\Domain\Exceptions\PasswordResetException;
+use App\Modules\Auth\Domain\Exception\PasswordResetException;
 
 final class PasswordResetTokenService
 {

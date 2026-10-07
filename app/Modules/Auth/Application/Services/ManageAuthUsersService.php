@@ -4,8 +4,9 @@ namespace App\Modules\Auth\Application\Services;
 
 use App\Modules\Auth\Application\DTOs\CreateAuthUserInputDto;
 use App\Modules\Auth\Application\DTOs\UpdateAuthUserInputDto;
-use App\Modules\Auth\Domain\Exceptions\AuthAdministrationException;
-use App\Modules\Auth\Domain\Exceptions\AuthEntityNotFoundException;
+use App\Modules\Auth\Domain\Entities\AuthUser;
+use App\Modules\Auth\Domain\Exception\AuthAdministrationException;
+use App\Modules\Auth\Domain\Exception\AuthEntityNotFoundException;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthUserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 
@@ -32,11 +33,7 @@ final class ManageAuthUsersService
 
     public function show(int $userId): array
     {
-        $user = $this->authUserRepository->findById($userId);
-
-        if (!$user) {
-            throw AuthEntityNotFoundException::for('usuario', $userId);
-        }
+        $user = $this->findVisibleUserOrFail($userId);
 
         return [
             'id' => $user->id(),
@@ -67,11 +64,9 @@ final class ManageAuthUsersService
 
     public function update(UpdateAuthUserInputDto $input): array
     {
-        $existing = $this->authUserRepository->findById($input->userId);
-
-        if (!$existing) {
-            throw AuthEntityNotFoundException::for('usuario', $input->userId);
-        }
+        $this->findVisibleUserOrFail(
+            $input->userId
+        );
 
         $user = $this->authUserRepository->update(
             userId: $input->userId,
@@ -89,16 +84,40 @@ final class ManageAuthUsersService
         return $this->show($user->id());
     }
 
-    public function setActive(int $userId, bool $isActive): array
-    {
-        $existing = $this->authUserRepository->findById($userId);
+    public function setActive(
+        int $userId,
+        bool $isActive
+    ): array {
+        $this->findVisibleUserOrFail(
+            $userId
+        );
 
-        if (!$existing) {
-            throw AuthEntityNotFoundException::for('usuario', $userId);
+        $this->authUserRepository->setActive(
+            $userId,
+            $isActive
+        );
+
+        return $this->show(
+            $userId
+        );
+    }
+    private function findVisibleUserOrFail(
+        int $userId
+    ): AuthUser {
+        $user = $this->authUserRepository
+            ->findById($userId);
+
+        if (
+            $user === null
+            || !$user->isHuman()
+            || !$user->isVisible()
+        ) {
+            throw AuthEntityNotFoundException::for(
+                'usuario',
+                $userId
+            );
         }
 
-        $this->authUserRepository->setActive($userId, $isActive);
-
-        return $this->show($userId);
+        return $user;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Auth\Domain\Exceptions;
+namespace App\Modules\Auth\Domain\Exception;
 
 use RuntimeException;
 

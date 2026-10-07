@@ -21,7 +21,8 @@ use App\Modules\Dte\Domain\RepositoryContracts\IntegrationLogRepositoryInterface
 use App\Modules\Dte\Domain\RepositoryContracts\SystemSettingRepositoryInterface;
 use App\Modules\Dte\Domain\Services\DteDocumentValidationDomainService;
 use Illuminate\Support\Facades\DB;
-
+use App\Modules\Dte\Domain\Exceptions\DuplicateExternalIdException;
+use App\Modules\Dte\Application\Services\ValidateDteTypeAuthorizationService;
 
 
 final class CreateDteDocumentUseCase
@@ -40,6 +41,7 @@ final class CreateDteDocumentUseCase
         private readonly FolioDetailEventRepositoryInterface $folioDetailEventRepository,
         private readonly FolioReservationRepositoryInterface $folioReservationRepository,
         private readonly RecalculateCafCountersService $recalculateCafCountersService,
+        private readonly ValidateDteTypeAuthorizationService $validateDteTypeAuthorizationService,
     )
     {}
     public function execute(
@@ -62,6 +64,11 @@ final class CreateDteDocumentUseCase
         ) {
             throw CompanyNotFoundException::withId($input->companyId);
         }
+        $this->validateDteTypeAuthorizationService->execute(
+            companyId: $input->companyId,
+            externalSystemId: $input->externalSystemId,
+            dteType: $input->dteType,
+        );
         if ($input->receiver->cityId !== null && !$this->cityRepository->existsActiveById(
                 $input->receiver->cityId
             )
@@ -71,6 +78,45 @@ final class CreateDteDocumentUseCase
 
         return DB::transaction(function () use ($input)
         {
+            /*
+            |--------------------------------------------------------------------------
+            | Idempotencia por external_id
+            |--------------------------------------------------------------------------
+            |
+            | Un external_id entregado explícitamente por el consumidor debe ser
+            | único dentro del ámbito empresa + sistema externo.
+            |
+            | Esta validación ocurre antes de bloquear/reservar/asignar folios para
+            | que una petición duplicada no consuma recursos del flujo DTE.
+            |
+            */
+
+            if (
+                $input->externalId !== null
+                && $this->documentRepository
+                    ->existsByExternalIdInScope(
+                        companyId:
+                            $input->companyId,
+
+                        externalSystemId:
+                            $input->externalSystemId,
+
+                        externalId:
+                            $input->externalId
+                    )
+            ) {
+                throw DuplicateExternalIdException::inScope(
+                    externalId:
+                        $input->externalId,
+
+                    companyId:
+                        $input->companyId,
+
+                    externalSystemId:
+                        $input->externalSystemId
+                );
+            }
+
             /*
             * Si existe sistema externo:
             * busca y bloquea el folio reservado.

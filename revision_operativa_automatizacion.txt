@@ -1,0 +1,382 @@
+﻿
+===== .\composer.json =====
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": ["laravel", "framework"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.0",
+        "laravel/tinker": "^3.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel-lang/lang": "^15.31",
+        "laravel/pail": "^1.2.5",
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^12.5.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --queue=dte-pipeline,dte-dispatch-polling,dte-document-status,dte-maintenance,default --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan schedule:work\" --names=server,queue,logs,vite,scheduler --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+
+
+===== .\routes\console.php =====
+<?php
+
+
+use App\Jobs\Dte\Automation\PumpPendingDispatchPollingJob;
+use App\Jobs\Dte\Automation\PumpPendingDocumentsJob;
+use App\Jobs\Dte\Automation\PumpPendingDocumentStatusQueriesJob;
+use App\Jobs\Dte\Automation\ReconcileCafCountersJob;
+use App\Jobs\Dte\Automation\SyncExpiredFolioReservationsJob;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+
+Artisan::command('inspire', function () {
+    $this->comment('DTE automation scheduler ready.');
+})->purpose('Display an automation-ready message');
+
+Schedule::job(
+    new PumpPendingDocumentsJob(),
+    (string) config('dte.automation.queues.pipeline'),
+    (string) config('dte.automation.queue_connection')
+)
+    ->name('dte-automation-pump')
+    ->everyTenSeconds()
+    ->withoutOverlapping(1)
+    ->onOneServer();
+
+Schedule::job(
+    new PumpPendingDispatchPollingJob(),
+    (string) config('dte.automation.queues.dispatch_polling'),
+    (string) config('dte.automation.queue_connection')
+)
+    ->name('dte-dispatch-polling-pump')
+    ->everyTenSeconds()
+    ->withoutOverlapping(1)
+    ->onOneServer();
+
+Schedule::job(
+    new PumpPendingDocumentStatusQueriesJob(),
+    (string) config('dte.automation.queues.document_status'),
+    (string) config('dte.automation.queue_connection')
+)
+    ->name('dte-document-status-pump')
+    ->everyTenSeconds()
+    ->withoutOverlapping(1)
+    ->onOneServer();
+Schedule::command('dte:refresh-company-certificate-defaults')->hourly();
+Schedule::job(
+    new SyncExpiredFolioReservationsJob(),
+    (string) config(
+        'dte.automation.queues.maintenance',
+        'dte-maintenance'
+    ),
+    (string) config(
+        'dte.automation.queue_connection'
+    )
+)
+    ->name('dte-expired-folio-reservations')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer();
+
+Schedule::job(
+    new ReconcileCafCountersJob(),
+    (string) config(
+        'dte.automation.queues.maintenance',
+        'dte-maintenance'
+    ),
+    (string) config(
+        'dte.automation.queue_connection'
+    )
+)
+    ->name('dte-caf-counter-reconciliation')
+    ->dailyAt('02:30')
+    ->withoutOverlapping(60)
+    ->onOneServer();
+
+===== .\app\Jobs\Dte\Automation\PumpPendingDocumentsJob.php =====
+<?php
+namespace App\Jobs\Dte\Automation;
+
+use App\Jobs\Dte\Automation\AdvanceDteDocumentPipelineJob;
+use App\Modules\Dte\Domain\Enums\DteStatus;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\Skip;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Context;
+
+class PumpPendingDocumentsJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    public function __construct()
+    {
+        $this->onConnection((string) config('dte.automation.queue_connection'));
+        $this->onQueue((string) config('dte.automation.queues.pipeline'));
+        $this->afterCommit();
+    }
+
+    public function middleware():array
+    {
+        return [
+            Skip::when(fn ():bool => !filter_var(config('dte.automation.enabled', true), FILTER_VALIDATE_BOOLEAN)),
+        ];
+    }
+
+    public function handle(
+        DteDocumentRepositoryInterface $documentRepository
+    ):void{
+        Context::add('job','PumpPendingDocumentsJob');
+
+        $ids = $documentRepository->findIdsEligibleForAutomation(
+            statuses:[
+                DteStatus::READY_FOR_XML->value,
+                DteStatus::FOLIO_ASSIGNED->value,
+                DteStatus::XML_BUILT->value,
+                DteStatus::TED_BUILT->value,
+                DteStatus::SIGNED->value,
+                DteStatus::NEEDS_RESEND->value,
+            ],
+            limit: (int) config('dte.automation.limits.documents_per_pump', 50)
+        );
+
+        foreach($ids as $documentId)
+        {
+            AdvanceDteDocumentPipelineJob::dispatch($documentId)
+                ->onConnection((string) config('dte.automation.queue_connection'))
+                ->onQueue((string) config('dte.automation.queues.pipeline'));
+        }
+    }
+
+
+}
+
+
+===== .\app\Jobs\Dte\Automation\PumpPendingDispatchPollingJob.php =====
+<?php
+namespace App\Jobs\Dte\Automation;
+
+use App\Jobs\Dte\Automation\PollSingleDispatchJob;
+use App\Modules\Dte\Domain\RepositoryContracts\SiiDispatchRepositoryInterface;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\Skip;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Context;
+
+class PumpPendingDispatchPollingJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    public function __construct()
+    {
+        $this->onConnection((string) config('dte.automation.queue_connection'));
+        $this->onQueue((string) config('dte.automation.queues.dispatch_polling'));
+        $this->afterCommit();
+    }
+
+    public function middleware():array
+    {
+        return [
+            Skip::when(fn ():bool => !filter_var(config('dte.automation.enabled', true), FILTER_VALIDATE_BOOLEAN))
+        ];
+    }
+
+    public function handle(
+        SiiDispatchRepositoryInterface $dispatchRepository
+    ):void
+    {
+        Context::add('job','pumpPendingDispatchPollingJob');
+
+        $ids = $dispatchRepository->findIdsByStatusesAndTransportTypes(
+            statuses: [
+                'upload_ok',
+                'sent',
+                'polling',
+            ],
+            transportTypes: [
+                'soap_upload_factura',
+                'rest_upload_boleta',
+            ],
+            limit: (int) config('dte.automation.limits.dispatches_per_pump', 50)
+        );
+
+        foreach($ids as $dispatchId)
+        {
+            PollSingleDispatchJob::dispatch($dispatchId)
+                ->onConnection((string) config('dte.automation.queue_connection'))
+                ->onQueue((string) config('dte.automation.queues.dispatch_polling'));
+        }
+    }
+
+}
+
+
+===== .\app\Jobs\Dte\Automation\PumpPendingDocumentStatusQueriesJob.php =====
+<?php
+namespace App\Jobs\Dte\Automation;
+
+use App\Jobs\Dte\Automation\QuerySingleDocumentStatusJob;
+use App\Modules\Dte\Domain\RepositoryContracts\DteDocumentRepositoryInterface;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\Skip;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Context;
+
+class PumpPendingDocumentStatusQueriesJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public function __construct()
+    {
+        $this->onConnection((string) config('dte.automation.queue_connection'));
+        $this->onQueue((string) config('dte.automation.queues.document_status'));
+        $this->afterCommit();
+    }
+
+    public function middleware(): array
+    {
+        return [
+            Skip::when(fn (): bool => !filter_var(config('dte.automation.enabled', true), FILTER_VALIDATE_BOOLEAN)),
+        ];
+    }
+
+    public function handle(
+        DteDocumentRepositoryInterface $documentRepository
+    ):void
+    {
+        Context::add('job','PumpPendingDocumentStatusQueriesJob');
+
+        $ids = $documentRepository->findIdsEligibleForDocumentStatusQuery(
+            limit: (int) config(
+                'dte.automation.limits.document_status_queries_per_pump',
+                50
+            )
+        );
+
+        foreach ($ids as $documentId) {
+            $document = $documentRepository->findById(
+                $documentId
+            );
+
+            if ($document === null) {
+                continue;
+            }
+
+            $pendingDispatch =
+                QuerySingleDocumentStatusJob::dispatch(
+                    $documentId
+                )
+                ->onConnection(
+                    (string) config(
+                        'dte.automation.queue_connection'
+                    )
+                )
+                ->onQueue(
+                    (string) config(
+                        'dte.automation.queues.document_status'
+                    )
+                );
+
+            if ($document->statusQueryRetryCount() === 0) {
+                $pendingDispatch->delay(
+                    now()->addSeconds(
+                        (int) config(
+                            'dte.automation.delays.document_status_query_seconds',
+                            60
+                        )
+                    )
+                );
+            }
+        }
+    }
+}
+
+
+===== SCHEDULE LIST =====
+
+  *    * * * * 10s  dte-automation-pump ................................................................... Next Due: en 1 segundo
+  *    * * * * 10s  dte-dispatch-polling-pump ............................................................. Next Due: en 1 segundo
+  *    * * * * 10s  dte-document-status-pump ............................................................. Next Due: en 0 segundos
+  0    * * * *      php artisan dte:refresh-company-certificate-defaults ................................. Next Due: en 26 minutos
+  */15 * * * *      dte-expired-folio-reservations ....................................................... Next Due: en 11 minutos
+  30   2 * * *      dte-caf-counter-reconciliation .......................................................... Next Due: en 6 horas
+

@@ -69,6 +69,8 @@ final class DteDocument
         // para la automatización.
         //
         private readonly ?string $automationNextRetryAt = null,
+        private readonly int $statusQueryRetryCount = 0,
+        private readonly ?string $statusQueryNextAt = null,
 
     ) {
     }
@@ -228,6 +230,16 @@ final class DteDocument
     {
         return $this->rejectedAt;
     }
+
+    public function statusQueryRetryCount(): int
+    {
+        return $this->statusQueryRetryCount;
+    }
+
+    public function statusQueryNextAt(): ?string
+    {
+        return $this->statusQueryNextAt;
+    }
     public function withNeedsResend(
     array $headerPayloadPatch,
     ?string $code = null,
@@ -368,6 +380,8 @@ final class DteDocument
             sentAt: $this->sentAt,
             acceptedAt: $this->acceptedAt,
             rejectedAt: $this->rejectedAt,
+            statusQueryRetryCount: 0,
+            statusQueryNextAt: null,
         );
     }
 
@@ -523,6 +537,8 @@ final class DteDocument
             sentAt: $this->sentAt ?? new DateTimeImmutable(),
             acceptedAt: $this->acceptedAt,
             rejectedAt: $this->rejectedAt,
+            statusQueryRetryCount: 0,
+            statusQueryNextAt: null,
         );
     }
     public function withAcceptedStatus(): self
@@ -561,6 +577,8 @@ final class DteDocument
             sentAt: $this->sentAt,
             acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
             rejectedAt: $this->rejectedAt,
+            statusQueryRetryCount: 0,
+            statusQueryNextAt: null,
         );
     }
 
@@ -602,6 +620,8 @@ final class DteDocument
             sentAt: $this->sentAt,
             acceptedAt: $this->acceptedAt ?? new DateTimeImmutable(),
             rejectedAt: $this->rejectedAt,
+            statusQueryRetryCount: 0,
+            statusQueryNextAt: null,
         );
     }
 
@@ -643,6 +663,8 @@ final class DteDocument
             sentAt: $this->sentAt,
             acceptedAt: $this->acceptedAt,
             rejectedAt: $this->rejectedAt ?? new DateTimeImmutable(),
+            statusQueryRetryCount: 0,
+            statusQueryNextAt: null,
         );
     }
         // 🟩 NUEVO
@@ -997,6 +1019,174 @@ final class DteDocument
         );
     }
 
+    public function withStatusQueryRetryScheduled(
+        string $nextRetryAt,
+        ?string $code = null,
+        ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+
+            status: DteStatus::SENT->value,
+
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+
+            items: $this->items,
+            references: $this->references,
+
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+
+            unsignedXmlPath: $this->unsignedXmlPath,
+            signedXmlPath: $this->signedXmlPath,
+            tedXml: $this->tedXml,
+
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+
+            queuedAt: $this->queuedAt,
+            sentAt: $this->sentAt,
+            acceptedAt: $this->acceptedAt,
+            rejectedAt: $this->rejectedAt,
+
+            automationRetryAction:
+                $this->automationRetryAction,
+
+            automationRetryCount:
+                $this->automationRetryCount,
+
+            automationNextRetryAt:
+                $this->automationNextRetryAt,
+
+            statusQueryRetryCount:
+                $this->statusQueryRetryCount + 1,
+
+            statusQueryNextAt:
+                $nextRetryAt,
+        );
+    }
+    public function withStatusQueryRetryExhausted(
+        ?string $code = null,
+        ?string $message = null
+    ): self {
+        return new self(
+            id: $this->id,
+            externalId: $this->externalId,
+            companyId: $this->companyId,
+            dteType: $this->dteType,
+            issueDate: $this->issueDate,
+
+            status: DteStatus::NEEDS_RESEND->value,
+
+            receiver: $this->receiver,
+            netAmount: $this->netAmount,
+            exemptAmount: $this->exemptAmount,
+            taxAmount: $this->taxAmount,
+            totalAmount: $this->totalAmount,
+
+            items: $this->items,
+            references: $this->references,
+
+            headerPayload: $this->headerPayload,
+            totalsPayload: $this->totalsPayload,
+            rawInput: $this->rawInput,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Identidad fiscal
+            |--------------------------------------------------------------------------
+            |
+            | El documento NO recibe un folio nuevo.
+            |
+            */
+            folio: $this->folio,
+            siiEnvironment: $this->siiEnvironment,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Artefactos técnicos
+            |--------------------------------------------------------------------------
+            |
+            | Al entrar en NEEDS_RESEND el pipeline volverá por build_xml.
+            | No dejamos XML/TED/firma antiguos disponibles como artefactos válidos.
+            |
+            */
+            unsignedXmlPath: null,
+            signedXmlPath: null,
+            tedXml: null,
+
+            lastErrorCode: $code,
+            lastErrorMessage: $message,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Referencias de negocio
+            |--------------------------------------------------------------------------
+            |
+            | CRÍTICO: CAF y reserva de folio permanecen intactos.
+            |
+            */
+            externalSystemId: $this->externalSystemId,
+            cafId: $this->cafId,
+            folioReservationId: $this->folioReservationId,
+
+            branchOfficeNumber: $this->branchOfficeNumber,
+            facilityNumber: $this->facilityNumber,
+            externalBranchCode: $this->externalBranchCode,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Ciclo técnico del envío
+            |--------------------------------------------------------------------------
+            |
+            | El siguiente envío debe generar sus propios timestamps.
+            |
+            */
+            queuedAt: null,
+            sentAt: null,
+            acceptedAt: null,
+            rejectedAt: null,
+
+            automationRetryAction: null,
+            automationRetryCount: 0,
+            automationNextRetryAt: null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retry de consulta agotado
+            |--------------------------------------------------------------------------
+            |
+            | Conservamos el contador alcanzado para diagnóstico, pero ya no existe
+            | una próxima consulta programada.
+            |
+            */
+            statusQueryRetryCount:
+                $this->statusQueryRetryCount,
+
+            statusQueryNextAt:
+                null,
+        );
+    }
     public function externalSystemId(): ?int
     {
         return $this->externalSystemId;

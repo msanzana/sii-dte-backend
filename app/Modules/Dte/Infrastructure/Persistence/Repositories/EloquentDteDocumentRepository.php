@@ -56,6 +56,11 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             'automation_retry_action' => $document->automationRetryAction(),
             'automation_retry_count' => $document->automationRetryCount(),
             'automation_next_retry_at' => $document->automationNextRetryAt(),
+            'status_query_retry_count' =>
+                $document->statusQueryRetryCount(),
+
+            'status_query_next_at' =>
+                $document->statusQueryNextAt(),
 
             'external_system_id' => $document->externalSystemId(),
             'caf_id' => $document->cafId(),
@@ -133,6 +138,12 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             // NUEVO
             'automation_next_retry_at' =>
                 $document->automationNextRetryAt(),
+            
+            'status_query_retry_count' =>
+                $document->statusQueryRetryCount(),
+
+            'status_query_next_at' =>
+                $document->statusQueryNextAt(),
 
             'queued_at' => $document->queuedAt(),
             'sent_at' => $document->sentAt(),
@@ -186,7 +197,35 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
 
         return $this->mapper->toDomain($model);
     }
+    public function existsByExternalIdInScope(
+        int $companyId,
+        ?int $externalSystemId,
+        string $externalId
+    ): bool {
+        $query =
+            DteDocumentEloquentModel::query()
+                ->where(
+                    'company_id',
+                    $companyId
+                )
+                ->where(
+                    'external_id',
+                    $externalId
+                );
 
+        if ($externalSystemId === null) {
+            $query->whereNull(
+                'external_system_id'
+            );
+        } else {
+            $query->where(
+                'external_system_id',
+                $externalSystemId
+            );
+        }
+
+        return $query->exists();
+    }
     public function findPendingForDispatch(int $limit = 100): array
     {
         return DteDocumentEloquentModel::query()
@@ -423,6 +462,7 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
                             ->whereNull(
                                 "{$documentsTable}.automation_next_retry_at"
                             );
+                            
                     })
 
                     /*
@@ -547,6 +587,92 @@ final class EloquentDteDocumentRepository implements DteDocumentRepositoryInterf
             )
             ->map(
                 fn ($id) => (int) $id
+            )
+            ->all();
+    }
+    public function findIdsEligibleForDocumentStatusQuery(
+        int $limit
+    ): array {
+        $maxAttempts =
+            (int) config(
+                'dte.automation.document_status_retry.max_attempts',
+                3
+            );
+
+        return DteDocumentEloquentModel::query()
+            ->whereIn(
+                'status',
+                [
+                    DteStatus::SENDING->value,
+                    DteStatus::SENT->value,
+                ]
+            )
+            ->where(function ($query) use ($maxAttempts): void {
+                /*
+                |--------------------------------------------------------------------------
+                | Consulta inicial
+                |--------------------------------------------------------------------------
+                |
+                | Nunca ha habido retry:
+                |
+                | count   = 0
+                | next_at = NULL
+                |
+                */
+
+                $query
+                    ->where(function ($initialQuery): void {
+                        $initialQuery
+                            ->where(
+                                'status_query_retry_count',
+                                0
+                            )
+                            ->whereNull(
+                                'status_query_next_at'
+                            );
+                    })
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Retry programado
+                    |--------------------------------------------------------------------------
+                    |
+                    | Debe existir un contador >= 1 y una fecha vencida.
+                    |
+                    | El retry cuyo count == maxAttempts todavía es ejecutable.
+                    |
+                    */
+
+                    ->orWhere(
+                        function ($retryQuery) use ($maxAttempts): void {
+                            $retryQuery
+                                ->where(
+                                    'status_query_retry_count',
+                                    '>=',
+                                    1
+                                )
+                                ->where(
+                                    'status_query_retry_count',
+                                    '<=',
+                                    $maxAttempts
+                                )
+                                ->whereNotNull(
+                                    'status_query_next_at'
+                                )
+                                ->where(
+                                    'status_query_next_at',
+                                    '<=',
+                                    now()
+                                );
+                        }
+                    );
+            })
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(
+                static fn ($id): int =>
+                    (int) $id
             )
             ->all();
     }

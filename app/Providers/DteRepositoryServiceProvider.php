@@ -33,6 +33,8 @@ use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiCertifica
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSiiDispatchRepository;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettingRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Modules\Dte\Domain\RepositoryContracts\DteTypeAuthorizationRepositoryInterface;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteTypeAuthorizationRepository;
 
 class DteRepositoryServiceProvider extends ServiceProvider
 {
@@ -109,6 +111,10 @@ class DteRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             FolioDetailEventRepositoryInterface::class,
             EloquentFolioDetailEventRepository::class
+        );
+        $this->app->bind(
+            DteTypeAuthorizationRepositoryInterface::class,
+            EloquentDteTypeAuthorizationRepository::class
         );
     }
 
