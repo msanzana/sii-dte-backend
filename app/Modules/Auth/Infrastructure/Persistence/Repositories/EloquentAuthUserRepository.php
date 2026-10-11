@@ -147,6 +147,25 @@ final class EloquentAuthUserRepository implements AuthUserRepositoryInterface
         return $this->toDomain($model);
     }
 
+    public function createTechnical(
+        string $loginUuid,
+        string $passwordHash
+    ): AuthUser {
+        $uuid = $this->normalizeLoginUuid($loginUuid);
+
+        $model = AuthUserEloquentModel::query()->create([
+            'full_name' => $uuid,
+            'email' => $uuid . '@technical.invalid',
+            'account_type' => AuthUser::ACCOUNT_TYPE_TECHNICAL,
+            'login_uuid' => $uuid,
+            'password_hash' => $passwordHash,
+            'is_active' => true,
+            'is_visible' => false,
+        ]);
+
+        return $this->toDomain($model);
+    }
+
     public function update(
         int $userId,
         string $fullName,

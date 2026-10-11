@@ -3,6 +3,7 @@
 namespace App\Modules\Dte\Infrastructure\Xml;
 
 use App\Modules\Dte\Domain\Exceptions\InvalidTedDataException;
+use App\Modules\Dte\Domain\Services\TedEncodingService;
 
 class TedSignatureService
 {
@@ -50,11 +51,11 @@ class TedSignatureService
         |--------------------------------------------------------------------------
         */
 
-        $ddXmlLatin1 = iconv(
-            'UTF-8',
-            'ISO-8859-1//TRANSLIT//IGNORE',
-            $normalizedDdXmlUtf8
-        );
+        $ddXmlLatin1 =
+            TedEncodingService::utf8ToLatin1Strict(
+                $normalizedDdXmlUtf8,
+                'bloque DD normalizado del TED'
+            );
 
         if (
             $ddXmlLatin1 === false

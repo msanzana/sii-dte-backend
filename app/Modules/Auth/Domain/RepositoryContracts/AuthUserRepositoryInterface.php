@@ -33,6 +33,15 @@ interface AuthUserRepositoryInterface
         bool $isActive = true
     ): AuthUser;
 
+    /**
+     * Crea exclusivamente una cuenta tecnica.
+     * Nunca devuelve ni almacena credenciales en texto plano.
+     */
+    public function createTechnical(
+        string $loginUuid,
+        string $passwordHash
+    ): AuthUser;
+
     public function update(
         int $userId,
         string $fullName,

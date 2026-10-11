@@ -1,0 +1,83 @@
+
+   FAIL  Tests\Feature\CreateTechnicalUserServiceTest
+  ⨯ crea usuario tecnico oculto y asignado al ambito correcto                               0.39s  
+  ⨯ rechaza empresa inactiva sin crear usuario                                              0.04s  
+  ⨯ rechaza sistema de otra empresa sin crear usuario                                       0.04s  
+  ⨯ rechaza sistema inactivo sin crear usuario                                              0.04s  
+  ✓ si falla asignacion del sistema retrocede usuario y acceso empresa                      0.11s  
+  ───────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CreateTechnicalUserServiceTest > crea usua…  BindingResolutionException   
+  Target [App\Modules\Auth\Domain\RepositoryContracts\TechnicalUserSystemAccessRepositoryInterface] is not instantiable while building [App\Modules\Auth\Application\Services\CreateTechnicalUserService].
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+    1412▕         } else {
+    1413▕             $message = "Target [$concrete] is not instantiable.";
+    1414▕         }
+    1415▕ 
+  ➜ 1416▕         throw new BindingResolutionException($message);
+    1417▕     }
+    1418▕ 
+    1419▕     /**
+    1420▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1134
+
+  ───────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CreateTechnicalUserServiceTest > rechaza e…  BindingResolutionException   
+  Target [App\Modules\Auth\Domain\RepositoryContracts\TechnicalUserSystemAccessRepositoryInterface] is not instantiable while building [App\Modules\Auth\Application\Services\CreateTechnicalUserService].
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+    1412▕         } else {
+    1413▕             $message = "Target [$concrete] is not instantiable.";
+    1414▕         }
+    1415▕ 
+  ➜ 1416▕         throw new BindingResolutionException($message);
+    1417▕     }
+    1418▕ 
+    1419▕     /**
+    1420▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1134
+
+  ───────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CreateTechnicalUserServiceTest > rechaza s…  BindingResolutionException   
+  Target [App\Modules\Auth\Domain\RepositoryContracts\TechnicalUserSystemAccessRepositoryInterface] is not instantiable while building [App\Modules\Auth\Application\Services\CreateTechnicalUserService].
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+    1412▕         } else {
+    1413▕             $message = "Target [$concrete] is not instantiable.";
+    1414▕         }
+    1415▕ 
+  ➜ 1416▕         throw new BindingResolutionException($message);
+    1417▕     }
+    1418▕ 
+    1419▕     /**
+    1420▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1134
+
+  ───────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CreateTechnicalUserServiceTest > rechaza s…  BindingResolutionException   
+  Target [App\Modules\Auth\Domain\RepositoryContracts\TechnicalUserSystemAccessRepositoryInterface] is not instantiable while building [App\Modules\Auth\Application\Services\CreateTechnicalUserService].
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+    1412▕         } else {
+    1413▕             $message = "Target [$concrete] is not instantiable.";
+    1414▕         }
+    1415▕ 
+  ➜ 1416▕         throw new BindingResolutionException($message);
+    1417▕     }
+    1418▕ 
+    1419▕     /**
+    1420▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1416
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1134
+
+
+  Tests:    4 failed, 1 passed (10 assertions)
+  Duration: 1.59s
+

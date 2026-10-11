@@ -31,6 +31,10 @@ final class EloquentCompanyRepository implements CompanyRepositoryInterface
             'resolution_date' => $company->resolutioNDate(),
             'sii_environment' => $company->siiEnvironment(),
             'is_active' => $company->isActive(),
+            'sii_office_name' => $company->siiOfficeName(),
+            'logo_path' => $company->logoPath(),
+            'logo_mime_type' => $company->logoMimeType(),
+            'logo_sha256' => $company->logoSha256(),
         ]);
         $model->save();
 
@@ -50,6 +54,10 @@ final class EloquentCompanyRepository implements CompanyRepositoryInterface
             'resolution_date' => $company->resolutioNDate(),
             'sii_environment' => $company->siiEnvironment(),
             'is_active' => $company->isActive(),
+            'sii_office_name' => $company->siiOfficeName(),
+            'logo_path' => $company->logoPath(),
+            'logo_mime_type' => $company->logoMimeType(),
+            'logo_sha256' => $company->logoSha256(),
         ]);
         $model->save();
 

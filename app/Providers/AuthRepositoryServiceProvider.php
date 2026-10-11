@@ -17,6 +17,8 @@ use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthRolesRe
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentAuthUserRepository;
 use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentUserCompanyAccessRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Modules\Auth\Domain\RepositoryContracts\TechnicalUserSystemAccessRepositoryInterface;
+use App\Modules\Auth\Infrastructure\Persistence\Repositories\EloquentTechnicalUserSystemAccessRepository;
 
 class AuthRepositoryServiceProvider extends ServiceProvider
 {
@@ -30,6 +32,11 @@ class AuthRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             UserCompanyAccessRepositoryInterface::class,
             EloquentUserCompanyAccessRepository::class
+        );
+
+        $this->app->bind(
+            TechnicalUserSystemAccessRepositoryInterface::class,
+            EloquentTechnicalUserSystemAccessRepository::class
         );
 
         $this->app->bind(

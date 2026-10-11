@@ -27,6 +27,7 @@ class StoreCompanyRequest extends FormRequest
             'resolution_date' => ['required','string'],
             'sii_environment' => ['required',Rule::in(['cert', 'prod'])],
             'is_active' => ['nullable','boolean'],
+            'sii_office_name' => ['required', 'string', 'max:120'],
         ];
     }
 }

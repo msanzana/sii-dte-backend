@@ -38,6 +38,7 @@ class CompanyController extends Controller
                     resolutionDate: $data['resolution_date'] ?? null,
                     siiEnvironment: $data['sii_environment'],
                     isActive: (bool) ($data['is_active'] ?? true),
+                    siiOfficeName: $data['sii_office_name'],
                 )
             );
 

@@ -24,7 +24,7 @@ final class RefreshAccessTokenUseCase
         private readonly JwtHs256Service $jwtHs256Service,
         private readonly RefreshTokenService $refreshTokenService,
         private readonly AccessProfileBuilderService $accessProfileBuilderService,
-        ) {
+    ) {
     }
 
     public function execute(RefreshAccessTokenInputDto $input): RefreshAccessTokenResultDto
@@ -50,9 +50,16 @@ final class RefreshAccessTokenUseCase
                 throw InvalidRefreshTokenException::because('El refresh token expiró.');
             }
 
+            // La ruta humana nunca puede consumir un refresh técnico.
+            if ($refreshToken->externalSystemId() !== null) {
+                throw InvalidRefreshTokenException::because(
+                    'El refresh token no corresponde a una sesión humana.'
+                );
+            }
+
             $user = $this->authUserRepository->findById($refreshToken->userId());
 
-            if (!$user || !$user->isActive()) {
+            if (!$user || !$user->isActive() || !$user->isHuman()) {
                 throw InvalidRefreshTokenException::because(
                     'El usuario del refresh token no es válido o está inactivo.'
                 );
@@ -77,7 +84,7 @@ final class RefreshAccessTokenUseCase
                 );
             }
 
-             $accessProfile = $this->accessProfileBuilderService->build(
+            $accessProfile = $this->accessProfileBuilderService->build(
                 $access->roleCodes(),
                 $access->permissionCodes(),
                 $access->permissionItems()
@@ -107,7 +114,8 @@ final class RefreshAccessTokenUseCase
                     tokenHash: $this->refreshTokenService->hashSecret($newSecret),
                     expiresAt: now()->addSeconds($refreshExpiresInSeconds)->format('Y-m-d H:i:s'),
                     userAgent: $input->userAgent,
-                    ipAddress: $input->ipAddress
+                    ipAddress: $input->ipAddress,
+                    externalSystemId: null,
                 );
 
                 $this->authRefreshTokenRepository->revoke($refreshToken->id());

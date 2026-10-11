@@ -4,6 +4,7 @@ namespace App\Modules\Dte\Domain\Services;
 use App\Modules\Dte\Domain\Entities\Company;
 use App\Modules\Dte\Domain\Entities\DteDocument;
 use App\Modules\Dte\Domain\Exceptions\InvalidTedDataException;
+use App\Modules\Dte\Domain\Services\TedEncodingService;
 
 final class TedDataAssemblerService
 {
@@ -40,32 +41,11 @@ final class TedDataAssemblerService
         return (string) round($value,0);
     }
 
-    public function normalizeTedText(string $value): string
-    {
-        $collapsed = preg_replace('/\s+/u',' ',trim($value));
-
-        if($collapsed === null || $collapsed === '') {
-            throw InvalidTedDataException::because(
-                'Uno de los textos del TED quedó vacío después de normalizar espacios.'
-            );
-        }
-
-        $latin1 = iconv('UTF-8','ISO-8859-1//TRANSLIT//IGNORE', $collapsed);
-
-        if($latin1 === false || $latin1 === "") {
-            throw InvalidTedDataException::because(
-                'No fue posible representar un texto del TED en ISO-8859-1.'
-            );
-        }
-
-        $utf8 = iconv('ISO-8859-1', 'UTF-8', $latin1);
-
-        if($utf8 === false || $utf8 === '') {
-            throw InvalidTedDataException::because(
-                'No fue posible normalizar de vuelta a UTF8 un texto del TED.'
-            );
-        }
-
-        return $utf8;
+    public function normalizeTedText(
+        string $value
+    ): string {
+        return TedEncodingService::normalizeUtf8Text(
+            $value
+        );
     }
 }

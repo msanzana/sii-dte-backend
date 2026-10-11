@@ -17,5 +17,6 @@ final class CreateCompanyInputDto
         public readonly ?string $resolutionDate,
         public readonly string $siiEnvironment,
         public readonly bool $isActive = true,
+        public readonly ?string $siiOfficeName = null,
     ){}
 }

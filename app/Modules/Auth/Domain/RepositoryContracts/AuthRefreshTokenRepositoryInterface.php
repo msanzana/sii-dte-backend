@@ -4,10 +4,6 @@ namespace App\Modules\Auth\Domain\RepositoryContracts;
 
 use App\Modules\Auth\Domain\Entities\AuthRefreshToken;
 
-
-
-
-
 interface AuthRefreshTokenRepositoryInterface
 {
     public function create(
@@ -16,7 +12,8 @@ interface AuthRefreshTokenRepositoryInterface
         string $tokenHash,
         string $expiresAt,
         ?string $userAgent = null,
-        ?string $ipAddress = null
+        ?string $ipAddress = null,
+        ?int $externalSystemId = null,
     ): AuthRefreshToken;
 
     public function findById(int $refreshTokenId): ?AuthRefreshToken;

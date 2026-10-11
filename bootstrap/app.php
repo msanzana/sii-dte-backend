@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureDteTechnicalScope;
+use App\Http\Middleware\EnsureHumanAccount;
 use App\Http\Middleware\EnsureJwtAccessToken;
 use App\Http\Middleware\EnsureJwtPermission;
 use App\Http\Middleware\EnsureJwtPreCompanyToken;
@@ -18,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'jwt.precompany' => EnsureJwtPreCompanyToken::class,
             'jwt.access' => EnsureJwtAccessToken::class,
+            'jwt.human' => EnsureHumanAccount::class,
+            'jwt.dte.scope' => EnsureDteTechnicalScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

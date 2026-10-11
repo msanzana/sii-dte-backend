@@ -35,7 +35,14 @@ use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentSystemSettin
 use Illuminate\Support\ServiceProvider;
 use App\Modules\Dte\Domain\RepositoryContracts\DteTypeAuthorizationRepositoryInterface;
 use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteTypeAuthorizationRepository;
-
+use App\Modules\Dte\Domain\RepositoryContracts\DtePrintConfigurationRepositoryInterface;
+use App\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDtePrintConfigurationRepository;
+use App\Modules\Dte\Domain\RendererContracts\DtePdf417RendererInterface;
+use App\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer;
+use App\Modules\Dte\Domain\RendererContracts\DtePdfDocumentRendererInterface;
+use App\Modules\Dte\Infrastructure\Pdf\DtePdfDocumentRendererRouter;
+use App\Modules\Dte\Domain\StorageContracts\CompanyLogoStorageInterface;
+use App\Modules\Dte\Infrastructure\Storage\LocalCompanyLogoStorage;
 class DteRepositoryServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -115,6 +122,22 @@ class DteRepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             DteTypeAuthorizationRepositoryInterface::class,
             EloquentDteTypeAuthorizationRepository::class
+        );
+        $this->app->bind(
+            DtePrintConfigurationRepositoryInterface::class,
+            EloquentDtePrintConfigurationRepository::class
+        );
+        $this->app->bind(
+            DtePdf417RendererInterface::class,
+            LePdf417Renderer::class
+        );
+        $this->app->bind(
+            DtePdfDocumentRendererInterface::class,
+            DtePdfDocumentRendererRouter::class
+        );
+        $this->app->bind(
+            CompanyLogoStorageInterface::class,
+            LocalCompanyLogoStorage::class
         );
     }
 

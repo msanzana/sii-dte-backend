@@ -1,0 +1,620 @@
+﻿==================== DtePrintableLineItem.php ====================
+<?php
+
+namespace App\Modules\Dte\Domain\ValueObjects;
+
+final class DtePrintableLineItem
+{
+    public function __construct(
+        private readonly int $lineNumber,
+        private readonly ?string $itemCodeType,
+        private readonly ?string $itemCode,
+        private readonly string $name,
+        private readonly ?string $description,
+        private readonly float $quantity,
+        private readonly float $unitPrice,
+        private readonly float $discountPercent,
+        private readonly float $discountAmount,
+        private readonly bool $taxExempt,
+        private readonly float $lineAmount,
+    ) {}
+
+    public function lineNumber(): int { return $this->lineNumber; }
+    public function itemCodeType(): ?string { return $this->itemCodeType; }
+    public function itemCode(): ?string { return $this->itemCode; }
+    public function name(): string { return $this->name; }
+    public function description(): ?string { return $this->description; }
+    public function quantity(): float { return $this->quantity; }
+    public function unitPrice(): float { return $this->unitPrice; }
+    public function discountPercent(): float { return $this->discountPercent; }
+    public function discountAmount(): float { return $this->discountAmount; }
+    public function taxExempt(): bool { return $this->taxExempt; }
+    public function lineAmount(): float { return $this->lineAmount; }
+}
+
+==================== DtePrintableTotals.php ======================
+<?php
+
+namespace App\Modules\Dte\Domain\ValueObjects;
+
+final class DtePrintableTotals
+{
+    public function __construct(
+        private readonly float $net,
+        private readonly float $exempt,
+        private readonly float $tax,
+        private readonly float $total,
+        private readonly ?string $totalInWords = null,
+    ) {}
+
+    public function net(): float { return $this->net; }
+    public function exempt(): float { return $this->exempt; }
+    public function tax(): float { return $this->tax; }
+    public function total(): float { return $this->total; }
+    public function totalInWords(): ?string
+    {
+        return $this->totalInWords;
+    }
+}
+
+==================== DtePrintableDocument.php ====================
+<?php
+
+namespace App\Modules\Dte\Domain\ValueObjects;
+
+final class DtePrintableDocument
+{
+    /**
+     * @param DtePrintableLineItem[] $items
+     * @param DtePrintableReference[] $references
+     */
+    public function __construct(
+        private readonly int $documentId,
+        private readonly string $externalId,
+        private readonly int $dteType,
+        private readonly int $folio,
+        private readonly string $issueDate,
+        private readonly DtePrintableIssuer $issuer,
+        private readonly DtePrintableReceiver $receiver,
+        private readonly DtePrintableTotals $totals,
+        private readonly array $items,
+        private readonly array $references,
+    ) {
+        if ($this->folio < 1) {
+            throw new \InvalidArgumentException(
+                'El documento imprimible requiere un folio vÃ¡lido.'
+            );
+        }
+
+        if ($this->items === []) {
+            throw new \InvalidArgumentException(
+                'El documento imprimible requiere al menos un Ã­tem.'
+            );
+        }
+    }
+
+    public function documentId(): int { return $this->documentId; }
+    public function externalId(): string { return $this->externalId; }
+    public function dteType(): int { return $this->dteType; }
+    public function folio(): int { return $this->folio; }
+    public function issueDate(): string { return $this->issueDate; }
+    public function issuer(): DtePrintableIssuer { return $this->issuer; }
+    public function receiver(): DtePrintableReceiver { return $this->receiver; }
+    public function totals(): DtePrintableTotals { return $this->totals; }
+
+    /** @return DtePrintableLineItem[] */
+    public function items(): array { return $this->items; }
+
+    /** @return DtePrintableReference[] */
+    public function references(): array { return $this->references; }
+}
+
+==================== DteLineItem.php ==============================
+<?php
+namespace App\Modules\Dte\Domain\Entities;
+final class DteLineItem
+{
+    public function __construct(
+        private readonly int $lineNumber,
+        private readonly ?string $itemCodeType,
+        private readonly ?string $itemCode,
+        private readonly string $name,
+        private readonly ?string $description,
+        private readonly float $quantity,
+        private readonly float $unitPrice,
+        private readonly float $discountPercent,
+        private readonly float $discountAmount,
+        private readonly bool $taxExempt,
+        private readonly float $lineAmount,
+        private readonly ?array $extraPayload = null,
+    )
+    {}
+    public function lineNumber(): int
+    {
+        return $this->lineNumber;
+    }
+    public function itemCodeType(): ?string
+    {
+        return $this->itemCodeType;
+    }
+    public function itemCode(): ?string
+    {
+        return $this->itemCode;
+    }
+    public function name(): string
+    {
+        return $this->name;
+    }
+    public function description(): ?string
+    {
+        return $this->description;
+    }
+    public function quantity(): float
+    {
+        return $this->quantity;
+    }
+    public function unitPrice(): float
+    {
+        return $this->unitPrice;
+    }
+    public function discountPercent(): float
+    {
+        return $this->discountPercent;
+    }
+    public function discountAmount(): float
+    {
+        return $this->discountAmount;
+    }
+    public function taxExempt(): bool
+    {
+        return $this->taxExempt;
+    }
+    public function lineAmount(): float
+    {
+        return $this->lineAmount;
+    }
+    public function extraPayload(): ?array
+    {
+        return $this->extraPayload;
+    }
+
+}
+
+==================== BuildDtePrintableDocumentService.php =========
+<?php
+
+namespace App\Modules\Dte\Application\Services;
+
+use App\Modules\Dte\Domain\Entities\DteDocument;
+use App\Modules\Dte\Domain\Exceptions\CityNotFoundException;
+use App\Modules\Dte\Domain\Exceptions\CompanyNotFoundException;
+use App\Modules\Dte\Domain\RepositoryContracts\CompanyRepositoryInterface;
+use App\Modules\Dte\Domain\RepositoryContracts\LocationRepositoryInterface;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableDocument;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableIssuer;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableReceiver;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableReference;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableTotals;
+use App\Modules\Dte\Domain\Entities\Company;
+use App\Modules\Dte\Domain\StorageContracts\CompanyLogoStorageInterface;
+
+final class BuildDtePrintableDocumentService
+{
+    public function __construct(
+        private readonly CompanyRepositoryInterface $companyRepository,
+        private readonly LocationRepositoryInterface $locationRepository,
+        private readonly ?DteAmountInWordsService $amountInWordsService = null,
+        private readonly ?CompanyLogoStorageInterface $companyLogoStorage = null,
+    )
+    {}
+
+    public function build(
+        DteDocument $document
+    ): DtePrintableDocument {
+        if ($document->id() === null) {
+            throw new \DomainException(
+                'El documento debe estar persistido antes de generar su representaciÃ³n imprimible.'
+            );
+        }
+
+        if ($document->folio() === null) {
+            throw new \DomainException(
+                'El documento debe tener folio antes de generar su representaciÃ³n imprimible.'
+            );
+        }
+
+        $company =
+            $this->companyRepository
+                ->findById(
+                    $document->companyId()
+                );
+
+        if ($company === null) {
+            throw CompanyNotFoundException::withId(
+                $document->companyId()
+            );
+        }
+
+        $issuerLocation =
+            $this->locationRepository
+                ->findSummaryByCityId(
+                    $company->cityId()
+                );
+
+        if ($issuerLocation === null) {
+            throw CityNotFoundException::withId(
+                $company->cityId()
+            );
+        }
+
+        $receiver =
+            $document->receiver();
+
+        $receiverLocation = null;
+
+        if ($receiver->cityId() !== null) {
+            $receiverLocation =
+                $this->locationRepository
+                    ->findSummaryByCityId(
+                        $receiver->cityId()
+                    );
+
+            if ($receiverLocation === null) {
+                throw CityNotFoundException::withId(
+                    $receiver->cityId()
+                );
+            }
+        }
+
+        $items =
+            array_map(
+                static fn ($item) =>
+                    new DtePrintableLineItem(
+                        lineNumber:
+                            $item->lineNumber(),
+                        itemCodeType:
+                            $item->itemCodeType(),
+                        itemCode:
+                            $item->itemCode(),
+                        name:
+                            $item->name(),
+                        description:
+                            $item->description(),
+                        quantity:
+                            (float) $item->quantity(),
+                        unitPrice:
+                            $item->unitPrice(),
+                        discountPercent:
+                            $item->discountPercent(),
+                        discountAmount:
+                            $item->discountAmount(),
+                        taxExempt:
+                            $item->taxExempt(),
+                        lineAmount:
+                            $item->lineAmount(),
+                    ),
+                $document->items()
+            );
+
+        $references =
+            array_map(
+                static fn ($reference) =>
+                    new DtePrintableReference(
+                        lineNumber:
+                            $reference->lineNumber(),
+                        referencedDteType:
+                            $reference->referencedDteType(),
+                        referencedFolio:
+                            $reference->referencedFolio(),
+                        referencedIssueDate:
+                            $reference->referencedIssueDate(),
+                        referenceCode:
+                            $reference->referenceCode(),
+                        reason:
+                            $reference->reason(),
+                    ),
+                $document->references()
+            );
+        $amountInWordsService =
+            $this->amountInWordsService
+            ?? new DteAmountInWordsService();
+
+        $totalInWords =
+            $amountInWordsService->toPesos(
+                $document->totalAmount()
+            );
+        $issuerLogoDataUri =
+            $this->buildCompanyLogoDataUri(
+                $company
+            );
+        return new DtePrintableDocument(
+            documentId:
+                $document->id(),
+            externalId:
+                $document->externalId(),
+            dteType:
+                $document->dteType()->value,
+            folio:
+                $document->folio(),
+            issueDate:
+                $document->issueDate(),
+
+            issuer:
+                new DtePrintableIssuer(
+                    rut:
+                        $company->rut(),
+                    legalName:
+                        $company->legalName(),
+                    tradeName:
+                        $company->tradeName(),
+                    giro:
+                        $company->giro(),
+                    activityCode:
+                        $company->siiActivityCode(),
+                    address:
+                        $company->address(),
+                    city:
+                        $issuerLocation->cityName(),
+                    comune:
+                        $issuerLocation->comuneName(),
+                    email:
+                        $company->dteEmail(),
+                    resolutionNumber:
+                        $company->resolutionNumber(),
+                    resolutionDate:
+                        $company->resolutionDate(),
+                    siiOfficeName:
+                        $company->siiOfficeName(),
+                    logoDataUri:
+                        $issuerLogoDataUri,
+                ),
+
+            receiver:
+                new DtePrintableReceiver(
+                    document:
+                        $receiver->document(),
+                    name:
+                        $receiver->name(),
+                    giro:
+                        $receiver->giro(),
+                    address:
+                        $receiver->address(),
+                    city:
+                        $receiverLocation?->cityName(),
+                    comune:
+                        $receiverLocation?->comuneName(),
+                    email:
+                        $receiver->email(),
+                ),
+
+            totals:
+                new DtePrintableTotals(
+                    net:
+                        $document->netAmount(),
+                    exempt:
+                        $document->exemptAmount(),
+                    tax:
+                        $document->taxAmount(),
+                    total:
+                        $document->totalAmount(),
+                    totalInWords:
+                        $totalInWords,
+                ),
+
+            items:
+                $items,
+
+            references:
+                $references,
+        );
+    }
+    private function buildCompanyLogoDataUri(
+        Company $company
+    ): ?string {
+        if (
+            !$company->hasLogo()
+            || $this->companyLogoStorage === null
+        ) {
+            return null;
+        }
+
+        $path =
+            $company->logoPath();
+
+        $mimeType =
+            $company->logoMimeType();
+
+        $expectedSha256 =
+            $company->logoSha256();
+
+        if (
+            $path === null
+            || $mimeType === null
+            || $expectedSha256 === null
+        ) {
+            return null;
+        }
+
+        if (
+            !in_array(
+                $mimeType,
+                [
+                    'image/png',
+                    'image/jpeg',
+                ],
+                true
+            )
+        ) {
+            return null;
+        }
+
+        $contents =
+            $this->companyLogoStorage
+                ->getContents(
+                    $path
+                );
+
+        /*
+        * Un logo eliminado o ausente no debe impedir imprimir
+        * fiscalmente el documento.
+        */
+        if (
+            $contents === null
+            || $contents === ''
+        ) {
+            return null;
+        }
+
+        /*
+        * La metadata ya contiene el hash del archivo validado.
+        * Evitamos imprimir un archivo que haya sido alterado
+        * fÃ­sicamente despuÃ©s de su carga.
+        */
+        if (
+            !hash_equals(
+                $expectedSha256,
+                hash(
+                    'sha256',
+                    $contents
+                )
+            )
+        ) {
+            return null;
+        }
+
+        return
+            'data:'
+            . $mimeType
+            . ';base64,'
+            . base64_encode(
+                $contents
+            );
+    }
+}
+
+==================== BUSQUEDA CODIGOS / BARCODE ==================
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:6:        public readonly ?string $itemCodeType,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\DTOs\DteLineItemInputDto.php:7:        public readonly ?string $itemCode,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:31:                itemCodeType: $itemDto->itemCodeType,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Mappers\DteDocumentDtoMapper.php:32:                itemCode: $itemDto->itemCode,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\BuildDtePrintableDocumentService.php:93:                        itemCodeType:
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\BuildDtePrintableDocumentService.php:94:                            $item->itemCodeType(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\BuildDtePrintableDocumentService.php:95:                        itemCode:
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\BuildDtePrintableDocumentService.php:96:                            $item->itemCode(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:34:                itemCodeType: $itemDto->itemCodeType,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\DteDocumentApplicationService.php:35:                itemCode: $itemDto->itemCode,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:30:                'item_code_type' => $item->itemCodeType(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\Services\DteXmlDataAssemblerService.php:31:                'item_code' => $item->itemCode(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\DeleteCompanyLogoUseCase.php:71:            } catch (Throwable $cleanupException) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\DeleteCompanyLogoUseCase.php:72:                report($cleanupException);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\UploadCompanyLogoUseCase.php:88:                } catch (Throwable $cleanupException) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\UploadCompanyLogoUseCase.php:89:                    report($cleanupException);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\UploadCompanyLogoUseCase.php:113:            } catch (Throwable $cleanupException) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Company\UploadCompanyLogoUseCase.php:114:                report($cleanupException);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:1123:        | Un dispatch REJECTED sigue siendo bloqueante por defecto.
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:1180:        | Estados bloqueantes
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\Dispatch\SendSignedBoletaToSiiUseCase.php:1221:        | Dispatch histórico no bloqueante
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Application\UseCases\ServiceState\ResumeDteServiceUseCase.php:31:            message:'Servicio DTE reanudado manualmente.',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:7:        private readonly ?string $itemCodeType,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:8:        private readonly ?string $itemCode,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:24:    public function itemCodeType(): ?string
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:26:        return $this->itemCodeType;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:28:    public function itemCode(): ?string
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\Entities\DteLineItem.php:30:        return $this->itemCode;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem.php:9:        private readonly ?string $itemCodeType,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem.php:10:        private readonly ?string $itemCode,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem.php:22:    public function itemCodeType(): ?string { return $this->itemCodeType; }
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem.php:23:    public function itemCode(): ?string { return $this->itemCode; }
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:3:namespace App\Modules\Dte\Infrastructure\Barcode;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:141:        $barcodeData =
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:147:            $barcodeData->securityLevel
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:156:            $barcodeData->columns
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:165:            $barcodeData->rows
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:190:        foreach ($barcodeData->codes as $row) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:223:                $barcodeData
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:235:            columns: $barcodeData->columns,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:236:            rows: $barcodeData->rows,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Barcode\LePdf417Renderer.php:238:                $barcodeData->securityLevel,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService.php:210:        $clean = preg_replace('/-----BEGIN CERTIFICATE-----/', '', $pem);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService.php:211:        $clean = preg_replace('/-----END CERTIFICATE-----/', '', (string) $clean);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService.php:212:        $clean = preg_replace('/\s+/', '', (string) $clean);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService.php:213:        if ($clean === null || $clean === '') {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Crypto\CertificateMaterialExtractorService.php:218:        return $clean;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:490:                $item->itemCode() !== null
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:491:                && trim($item->itemCode()) !== ''
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:494:                    $item->itemCode();
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:497:                    $item->itemCodeType() !== null
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:499:                        $item->itemCodeType()
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:503:                        $item->itemCodeType()
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:746:            . '<div class="barcode-wrapper" style="'
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteLetterRenderer.php:1157:.barcode-wrapper {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket58Renderer.php:409:                $item->itemCode() !== null
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket58Renderer.php:410:                && trim($item->itemCode()) !== ''
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket58Renderer.php:416:                        $item->itemCode()
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket58Renderer.php:746:            . '<div class="barcode" style="'
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket58Renderer.php:1070:.barcode {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket80Renderer.php:360:                $item->itemCode() !== null
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket80Renderer.php:361:                && trim($item->itemCode()) !== ''
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket80Renderer.php:366:                        $item->itemCode()
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket80Renderer.php:627:            . '<div class="barcode" style="'
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Pdf\DompdfDteTicket80Renderer.php:946:.barcode {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\CityEloquentModel.php:18:        'is_active'=> 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyCertificateNoticeEloquentModel.php:29:        'is_read' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyCertificateNoticeEloquentModel.php:30:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\CompanyEloquentModel.php:33:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\ComuneEloquentModel.php:20:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\CountryEloquentModel.php:19:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:12:        'item_code_type',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:13:        'item_code',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\DteLineItemEloquentModel.php:25:        'tax_exempt'    => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\ExternalSystemEloquentModel.php:20:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioDetailEloquentModel.php:45:        'reserved' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioReservationEloquentModel.php:51:        'is_currently_valid' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioReservationEloquentModel.php:52:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\FolioStatusEloquentModel.php:17:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\ProvinceEloquentModel.php:19:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\RegionEloquentModel.php:19:        'is_active' => 'boolean'
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCafEloquentModel.php:44:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:31:        'has_private_key' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:32:        'is_active' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\EloquentModels\SiiCertificateEloquentModel.php:33:        'is_default' => 'boolean',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:40:                    itemCodeType: $item->item_code_type,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\Mappers\DteDocumentPersistenceMapper.php:41:                    itemCode: $item->item_code,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:79:                'item_code_type' => $item->itemCodeType(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Persistence\Repositories\EloquentDteDocumentRepository.php:80:                'item_code' => $item->itemCode(),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:79:        $clean = trim($material);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:81:        if ($clean === '') {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:87:        if (str_starts_with($clean, '<RSASK')) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:89:            $loaded = @$dom->loadXML($clean);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:118:            str_contains($clean, 'BEGIN RSA PRIVATE KEY')
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:119:            || str_contains($clean, 'BEGIN PRIVATE KEY')
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafTedMaterialExtractorService.php:121:            return $clean;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafXmlParserService.php:174:        $clean = trim($value);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafXmlParserService.php:176:        if (preg_match('/^\d{8}$/', $clean) === 1) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafXmlParserService.php:177:            return substr($clean, 0, 4) . '-' . substr($clean, 4, 2) . '-' . substr($clean, 6, 2);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\CafXmlParserService.php:180:        return $clean;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:297:        if (!empty($detail['item_code_type']) && !empty($detail['item_code'])) {
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:299:            $this->appendElement($dom, $cdgItem, 'TpoCodigo', (string) $detail['item_code_type']);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\DteXmlBuilderService.php:300:            $this->appendElement($dom, $cdgItem, 'VlrCodigo', (string) $detail['item_code']);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Infrastructure\Xml\EnvioBoletaEnvelopeBuilderService.php:27:        $wrap = filter_var(config('dte.sii.boleta.wrap_in_envio', true), FILTER_VALIDATE_BOOLEAN);
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:31:                itemCodeType: $item['item_code_type'] ?? null,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\DteDocumentController.php:32:                itemCode: $item['item_code'] ?? null,
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\DteServiceController.php:63:            'message' => 'Servicio reanudado.',
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\FolioReservationController.php:49:            isActive:$this->nullableBoolean(
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\FolioReservationController.php:52:            isCurrentlyValid:$this->nullableBoolean(
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\FolioReservationController.php:105:                reserved: $this->nullableBoolean($request->validated('reserved')),
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\FolioReservationController.php:219:    private function nullableBoolean(mixed $value): ?bool
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Controllers\FolioReservationController.php:221:        return $value !== null ? filter_var($value, FILTER_VALIDATE_BOOLEAN) : null;
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\ImportCertificateRequest.php:21:            'is_active' => ['sometimes', 'boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\ListFolioReservationDetailsRequest.php:16:            'reserved' => ['nullable','boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\ListFolioReservationsRequest.php:19:            'is_active' => ['nullable','boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\ListFolioReservationsRequest.php:20:            'is_currently_valid' => ['nullable', 'boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\StoreCompanyRequest.php:29:            'is_active' => ['nullable','boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:40:            'items.*.item_code_type' => ['nullable', 'string', 'max:20'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:41:            'items.*.item_code' =>  ['nullable', 'string', 'max:50'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\StoreDteDocumentRequest.php:48:            'items.*.tax_exempt' => ['nullable','boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\StoreExternalSystemRequest.php:19:            'is_active' => ['nullable','boolean'],
+C:\Users\msanz\OneDrive\Escritorio\Sistema DTE PHP\sii-dte-backend\app\Modules\Dte\Presentation\Http\Requests\UpdateManualCertificateNoticeRequest.php:17:            'is_active' => ['required','boolean']
+
+==================== BUSQUEDA IMPUESTOS ADICIONALES ==============

@@ -1,0 +1,13 @@
+
+   PASS  Tests\Unit\TechnicalLoginUseCaseTest
+  ✓ login tecnico emite jwt con ambito resuelto por servidor                                0.36s  
+  ✓ login tecnico rechaza uuid inexistente o inactivo                                       0.03s  
+  ✓ login tecnico rechaza password incorrecto                                               0.03s  
+  ✓ login tecnico rechaza si no tiene ambito activo                                         0.04s  
+  ✓ login tecnico rechaza si tiene mas de un ambito activo                                  0.04s  
+  ✓ login tecnico rechaza empresa inactiva                                                  0.04s  
+  ✓ login tecnico rechaza sistema inactivo                                                  0.03s  
+
+  Tests:    7 passed (18 assertions)
+  Duration: 1.55s
+

@@ -25,6 +25,10 @@ final class CompanyPersistenceMapper
             resolutionDate: $model->resolution_date?->format('Y-m-d'),
             siiEnvironment: $model->sii_environment,
             isActive: (bool) $model->is_active,
+            siiOfficeName: $model->sii_office_name,
+            logoPath: $model->logo_path,
+            logoMimeType: $model->logo_mime_type,
+            logoSha256: $model->logo_sha256,
         );
     }
 }

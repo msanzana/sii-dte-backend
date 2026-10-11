@@ -19,15 +19,20 @@ use App\Modules\Dte\Presentation\Http\Controllers\SiiBoletaDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDispatchController;
 use App\Modules\Dte\Presentation\Http\Controllers\SiiDocumentStatusController;
 use Illuminate\Support\Facades\Route;
+use App\Modules\Dte\Presentation\Http\Controllers\CompanyLogoController;
 
-
-//Route::prefix('internal/dte')->group(function() {
-    Route::get('/service',[DteServiceController::class, 'show']);
-    Route::post('/service/pause',[DteServiceController::class, 'pause']);
+/*
+ * Administración/configuración DTE: sólo cuentas humanas.
+ * Las credenciales técnicas representan una integración empresa+sistema y no
+ * pueden crear empresas/sistemas, administrar certificados/CAF ni pausar el servicio.
+ */
+Route::middleware(['jwt.human'])->group(function () {
+    Route::get('/service', [DteServiceController::class, 'show']);
+    Route::post('/service/pause', [DteServiceController::class, 'pause']);
     Route::post('/service/resume', [DteServiceController::class, 'resume']);
 
-    Route::post('/companies',[CompanyController::class,'create']);
-    Route::post('/certificates',[CertificateController::class,'store']);
+    Route::post('/companies', [CompanyController::class, 'create']);
+    Route::post('/certificates', [CertificateController::class, 'store']);
     Route::post('/cafs', [CafController::class, 'store']);
 
     Route::get('/notices', [CompanyCertificateNoticeController::class, 'index']);
@@ -36,33 +41,50 @@ use Illuminate\Support\Facades\Route;
     Route::post('/notices/{noticeId}/mark-read', [CompanyCertificateNoticeController::class, 'markRead']);
     Route::delete('/notices/{noticeId}', [CompanyCertificateNoticeController::class, 'destroy']);
 
-    Route::post('/document',[DteDocumentController::class, 'store']);
-    Route::post('/documents/{documentId}/prepare-for-xml', [DteDocumentPreparationController::class, 'prepareForXml']);
-    Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
-    Route::post('/documents/{documentId}/build-ted', [DteTedBuildController::class, 'build']);
-    Route::post('/documents/{documentId}/sign-xml', [DteXmlSignController::class, 'sign']);
+    Route::get('/external-systems', [ExternalSystemController::class, 'index']);
+    Route::post('/external-systems', [ExternalSystemController::class, 'store']);
 
-    Route::post('/documents/{documentId}/send-to-sii', [SiiDispatchController::class, 'send']);
-    Route::post('/documents/{documentId}/send-boleta-to-sii', [SiiBoletaDispatchController::class, 'send']);
+    Route::post(
+        '/cafs/{cafId}/range-allocations',
+        [CafRangeAllocationController::class, 'store']
+    )->whereNumber('cafId');
+    Route::post(
+    '/company/logo',
+    [CompanyLogoController::class, 'store']
+    );
 
-    Route::post('/documents/{documentId}/query-sii-document-status', [SiiDocumentStatusController::class, 'query']);
+    Route::delete(
+        '/company/logo',
+        [CompanyLogoController::class, 'destroy']
+    );
+});
 
-    Route::post('/dispatches/{dispatchId}/poll-upload-status', [SiiDispatchController::class, 'poll']);
-    Route::post('/dispatches/{dispatchId}/poll-boleta-send-status', [SiiBoletaDispatchController::class, 'poll']);
+/*
+ * Operación DTE: cuentas humanas y técnicas.
+ * jwt.dte.scope, aplicado por routes/api.php, fija y revalida el ámbito técnico.
+ */
+Route::post('/document', [DteDocumentController::class, 'store']);
+Route::post('/documents/{documentId}/prepare-for-xml', [DteDocumentPreparationController::class, 'prepareForXml']);
+Route::post('/documents/{documentId}/build-xml', [DteXmlBuildController::class, 'build']);
+Route::post('/documents/{documentId}/build-ted', [DteTedBuildController::class, 'build']);
+Route::post('/documents/{documentId}/sign-xml', [DteXmlSignController::class, 'sign']);
 
-    Route::get('/external-systems',[ExternalSystemController::class, 'index']);
-    Route::post('/external-systems',[ExternalSystemController::class, 'store']);
+Route::post('/documents/{documentId}/send-to-sii', [SiiDispatchController::class, 'send']);
+Route::post('/documents/{documentId}/send-boleta-to-sii', [SiiBoletaDispatchController::class, 'send']);
+Route::post('/documents/{documentId}/query-sii-document-status', [SiiDocumentStatusController::class, 'query']);
 
-    Route::get('/folio-statuses',[FolioStatusController::class, 'index']);
-    Route::get('/folios/available',[FolioController::class, 'available']);
-    Route::post('/folios/reserve',[FolioController::class, 'reserve']);
-    Route::post('/folios/release',[FolioController::class, 'release']);
-    
-    Route::post('/cafs/{cafId}/range-allocations',[CafRangeAllocationController::class, 'store'])->whereNumber('cafId');
+Route::post('/dispatches/{dispatchId}/poll-upload-status', [SiiDispatchController::class, 'poll']);
+Route::post('/dispatches/{dispatchId}/poll-boleta-send-status', [SiiBoletaDispatchController::class, 'poll']);
 
-    Route::get('/folio-reservations',[FolioReservationController::class, 'index']);
-    Route::get('/folio-reservations/{reservationId}',[FolioReservationController::class, 'show'])->whereNumber('reservationId');
-    Route::get('/folio-reservations/{reservationId}/details',[FolioReservationController::class, 'details'])->whereNumber('reservationId');
-    Route::post('/folio-reservations/{reservationId}/deactivate',[FolioReservationController::class, 'deactivate'])->whereNumber('reservationId');
+Route::get('/folio-statuses', [FolioStatusController::class, 'index']);
+Route::get('/folios/available', [FolioController::class, 'available']);
+Route::post('/folios/reserve', [FolioController::class, 'reserve']);
+Route::post('/folios/release', [FolioController::class, 'release']);
 
- //});
+Route::get('/folio-reservations', [FolioReservationController::class, 'index']);
+Route::get('/folio-reservations/{reservationId}', [FolioReservationController::class, 'show'])
+    ->whereNumber('reservationId');
+Route::get('/folio-reservations/{reservationId}/details', [FolioReservationController::class, 'details'])
+    ->whereNumber('reservationId');
+Route::post('/folio-reservations/{reservationId}/deactivate', [FolioReservationController::class, 'deactivate'])
+    ->whereNumber('reservationId');

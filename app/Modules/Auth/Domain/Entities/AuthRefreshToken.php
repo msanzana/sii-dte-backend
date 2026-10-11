@@ -13,6 +13,7 @@ final class AuthRefreshToken
         private readonly ?string $ipAddress,
         private readonly string $expiresAt,
         private readonly ?string $revokedAt,
+        private readonly ?int $externalSystemId = null,
     ) {
     }
 
@@ -29,6 +30,11 @@ final class AuthRefreshToken
     public function companyId(): int
     {
         return $this->companyId;
+    }
+
+    public function externalSystemId(): ?int
+    {
+        return $this->externalSystemId;
     }
 
     public function tokenHash(): string

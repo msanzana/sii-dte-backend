@@ -11,6 +11,7 @@ class AuthRefreshTokenEloquentModel extends Model
     protected $fillable = [
         'user_id',
         'company_id',
+        'external_system_id',
         'token_hash',
         'user_agent',
         'ip_address',

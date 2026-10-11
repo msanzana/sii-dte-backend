@@ -1,0 +1,11 @@
+
+   PASS  Tests\Feature\CreateTechnicalUserServiceTest
+  ✓ crea usuario tecnico oculto y asignado al ambito correcto                               0.50s  
+  ✓ rechaza empresa inactiva sin crear usuario                                              0.04s  
+  ✓ rechaza sistema de otra empresa sin crear usuario                                       0.04s  
+  ✓ rechaza sistema inactivo sin crear usuario                                              0.04s  
+  ✓ si falla asignacion del sistema retrocede usuario y acceso empresa                      0.07s  
+
+  Tests:    5 passed (37 assertions)
+  Duration: 1.72s
+

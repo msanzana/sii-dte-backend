@@ -1,0 +1,1259 @@
+<?php
+
+namespace App\Modules\Dte\Infrastructure\Pdf;
+
+use App\Modules\Dte\Domain\Enums\PrintFormat;
+use App\Modules\Dte\Domain\RendererContracts\DtePdfDocumentRendererInterface;
+use App\Modules\Dte\Domain\ValueObjects\DtePdfDocumentRenderResult;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableCopy;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableLineItem;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintablePackage;
+use App\Modules\Dte\Domain\ValueObjects\DtePrintableReference;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use App\Modules\Dte\Infrastructure\Pdf\Components\DteFiscalPrintHtmlBuilder;
+use App\Modules\Dte\Domain\Enums\PrintCopyType;
+final class DompdfDteLetterRenderer implements DtePdfDocumentRendererInterface
+{
+    private const DETAIL_ROWS_PER_PAGE = 30;
+    public function render(
+        DtePrintablePackage $package
+    ): DtePdfDocumentRenderResult {
+        if ($package->format() !== PrintFormat::LETTER) {
+            throw new \DomainException(
+                'DompdfDteLetterRenderer solo admite formato Carta.'
+            );
+        }
+
+        $options = new Options();
+
+        $options->set(
+            'defaultFont',
+            'DejaVu Sans'
+        );
+
+        $options->set(
+            'isRemoteEnabled',
+            false
+        );
+
+        $options->set(
+            'isPhpEnabled',
+            false
+        );
+
+        $options->set(
+            'isJavascriptEnabled',
+            false
+        );
+
+        /*
+         * Se crea una instancia nueva para cada render.
+         * Dompdf no debe reutilizarse para documentos distintos.
+         */
+        $dompdf = new Dompdf(
+            $options
+        );
+
+        $dompdf->setPaper(
+            'letter',
+            'portrait'
+        );
+
+        $dompdf->loadHtml(
+            $this->buildHtml(
+                $package
+            ),
+            'UTF-8'
+        );
+
+        $dompdf->render();
+
+        $pdfBytes =
+            $dompdf->output();
+
+        $pageCount =
+            $dompdf
+                ->getCanvas()
+                ->get_page_count();
+
+        return new DtePdfDocumentRenderResult(
+            pdfBytes:
+                $pdfBytes,
+            format:
+                $package->format(),
+            pageCount:
+                $pageCount,
+        );
+    }
+
+    private function buildHtml(
+        DtePrintablePackage $package
+    ): string {
+        $physicalCopies = [];
+
+        foreach ($package->copies() as $copy) {
+            for (
+                $copyNumber = 1;
+                $copyNumber <= $copy->quantity();
+                $copyNumber++
+            ) {
+                $physicalCopies[] =
+                    $this->buildPhysicalCopy(
+                        package:
+                            $package,
+                        copy:
+                            $copy,
+                    );
+            }
+        }
+
+        $pages = [];
+
+        $lastIndex =
+            count($physicalCopies) - 1;
+
+        foreach (
+            $physicalCopies as
+            $index => $physicalCopy
+        ) {
+            $pages[] =
+                '<section class="dte-page">'
+                . $physicalCopy
+                . '</section>';
+
+            if ($index !== $lastIndex) {
+                $pages[] =
+                    '<div class="page-break"></div>';
+            }
+        }
+
+        return
+            '<!DOCTYPE html>'
+            . '<html lang="es">'
+            . '<head>'
+            . '<meta charset="UTF-8">'
+            . '<style>'
+            . $this->css()
+            . '</style>'
+            . '</head>'
+            . '<body>'
+            . implode(
+                '',
+                $pages
+            )
+            . '</body>'
+            . '</html>';
+    }
+
+    private function buildPhysicalCopy(
+        DtePrintablePackage $package,
+        DtePrintableCopy $copy
+    ): string {
+        $document =
+            $package->document();
+
+        $issuer =
+            $document->issuer();
+
+        $receiver =
+            $document->receiver();
+
+        $totals =
+            $document->totals();
+        $fiscalBuilder =
+            new DteFiscalPrintHtmlBuilder();
+
+        $copyLegend =
+            $copy->legend()
+            ?? mb_strtoupper(
+                $copy->name(),
+                'UTF-8'
+            );
+
+        $tradeName =
+            $issuer->tradeName();
+
+        $issuerDisplayName =
+            $tradeName !== null
+            && trim($tradeName) !== ''
+                ? $tradeName
+                : $issuer->legalName();
+
+        $html =
+            '<table class="header-table">'
+            . '<tr>'
+            . '<td class="issuer-cell">'
+            . $this->buildIssuerLogoHtml(
+                $issuer->logoDataUri()
+            )
+            . '<div class="issuer-name">'
+            . $this->escape(
+                $issuerDisplayName
+            )
+            . '</div>'
+            . '<div class="issuer-legal">'
+            . $this->escape(
+                $issuer->legalName()
+            )
+            . '</div>'
+            . $this->optionalLine(
+                'Giro',
+                $issuer->giro()
+            )
+            . $this->optionalLine(
+                'Actividad',
+                $issuer->activityCode()
+            )
+            . '<div><strong>Dirección:</strong> '
+            . $this->escape(
+                $issuer->address()
+            )
+            . '</div>'
+            . '<div><strong>Comuna:</strong> '
+            . $this->escape(
+                $issuer->comune()
+            )
+            . ' &nbsp;&nbsp; <strong>Ciudad:</strong> '
+            . $this->escape(
+                $issuer->city()
+            )
+            . '</div>'
+            . $this->optionalLine(
+                'Email',
+                $issuer->email()
+            )
+            . '</td>'
+            . '<td class="stamp-cell">'
+            . '<div class="tax-stamp">'
+            . '<div>R.U.T.: '
+            . $this->escape(
+                $issuer->rut()
+            )
+            . '</div>'
+            . '<div class="dte-type">'
+            . $this->escape(
+                $this->dteTypeName(
+                    $document->dteType()
+                )
+            )
+            . '</div>'
+            . '<div>N° '
+            . $this->escape(
+                (string) $document->folio()
+            )
+            . '</div>'
+            . '</div>'
+            . '<div class="sii-label">'
+            . $this->escape(
+                $this->siiOfficeLabel(
+                    $issuer->siiOfficeName()
+                )
+            )
+            . '</div>'
+            . '</td>'
+            . '</tr>'
+            . '</table>';
+
+        $html .=
+            '<div class="copy-legend">'
+            . $this->escape(
+                $copyLegend
+            )
+            . '</div>';
+
+        $html .=
+            '<table class="receiver-table">'
+            . '<tr>'
+            . '<td><strong>Fecha emisión:</strong> '
+            . $this->escape(
+                $this->formatDate(
+                    $document->issueDate()
+                )
+            )
+            . '</td>'
+            . '<td><strong>RUT receptor:</strong> '
+            . $this->escape(
+                $receiver->document()
+            )
+            . '</td>'
+            . '</tr>'
+            . '<tr>'
+            . '<td colspan="2"><strong>Señor(es):</strong> '
+            . $this->escape(
+                $receiver->name()
+            )
+            . '</td>'
+            . '</tr>';
+
+        if (
+            $receiver->giro() !== null
+            && trim($receiver->giro()) !== ''
+        ) {
+            $html .=
+                '<tr><td colspan="2"><strong>Giro:</strong> '
+                . $this->escape(
+                    $receiver->giro()
+                )
+                . '</td></tr>';
+        }
+
+        if (
+            $receiver->address() !== null
+            && trim($receiver->address()) !== ''
+        ) {
+            $html .=
+                '<tr><td colspan="2"><strong>Dirección:</strong> '
+                . $this->escape(
+                    $receiver->address()
+                )
+                . '</td></tr>';
+        }
+
+        if (
+            $receiver->comune() !== null
+            || $receiver->city() !== null
+        ) {
+            $html .=
+                '<tr><td><strong>Comuna:</strong> '
+                . $this->escape(
+                    $receiver->comune()
+                )
+                . '</td>'
+                . '<td><strong>Ciudad:</strong> '
+                . $this->escape(
+                    $receiver->city()
+                )
+                . '</td></tr>';
+        }
+
+        if (
+            $receiver->email() !== null
+            && trim($receiver->email()) !== ''
+        ) {
+            $html .=
+                '<tr><td colspan="2"><strong>Email:</strong> '
+                . $this->escape(
+                    $receiver->email()
+                )
+                . '</td></tr>';
+        }
+
+        $html .=
+            '</table>';
+
+        $html .=
+            $this->buildItemsTable(
+                $document->items()
+            );
+
+        if ($document->references() !== []) {
+            $html .=
+                $this->buildReferencesTable(
+                    $document->references()
+                );
+        }
+
+        $html .=
+            '<table class="totals-table">'
+            . '<tr>'
+            . '<td>Neto</td>'
+            . '<td>$ '
+            . $this->money(
+                $totals->net()
+            )
+            . '</td>'
+            . '</tr>';
+
+        if ($totals->exempt() != 0.0) {
+            $html .=
+                '<tr>'
+                . '<td>Exento</td>'
+                . '<td>$ '
+                . $this->money(
+                    $totals->exempt()
+                )
+                . '</td>'
+                . '</tr>';
+        }
+
+        $html .=
+            '<tr>'
+            . '<td>IVA</td>'
+            . '<td>$ '
+            . $this->money(
+                $totals->tax()
+            )
+            . '</td>'
+            . '</tr>'
+            . '<tr class="grand-total">'
+            . '<td>Total</td>'
+            . '<td>$ '
+            . $this->money(
+                $totals->total()
+            )
+            . '</td>'
+            . '</tr>'
+            . '</table>';
+        $html .=
+            $fiscalBuilder->renderTotalInWords(
+                $totals->totalInWords()
+            );
+
+        if (
+            $copy->type()
+            === PrintCopyType::CEDIBLE
+        ) {
+            $html .=
+                '<table class="fiscal-footer-layout">'
+                . '<tr>'
+
+                . '<td class="fiscal-footer-ack">'
+                . $fiscalBuilder->renderAcknowledgement(
+                    $copy
+                )
+                . '</td>'
+
+                . '<td class="fiscal-footer-ted">'
+                . $this->buildPdf417(
+                    $package
+                )
+                . '</td>'
+
+                . '</tr>'
+                . '</table>';
+        } else {
+            $html .=
+                $this->buildPdf417(
+                    $package
+                );
+        }
+
+        if (
+            $issuer->resolutionNumber() !== null
+            || $issuer->resolutionDate() !== null
+        ) {
+            $html .=
+                '<div class="resolution">'
+                . 'Resolución SII N° '
+                . $this->escape(
+                    $issuer->resolutionNumber()
+                    ?? '-'
+                )
+                . ' de '
+                . $this->escape(
+                    $this->formatDate(
+                        $issuer->resolutionDate()
+                    )
+                )
+                . '</div>';
+        }
+
+        $html .=
+            '<div class="document-footer">'
+            . 'Tipo DTE '
+            . $this->escape(
+                (string) $document->dteType()
+            )
+            . ' · Folio '
+            . $this->escape(
+                (string) $document->folio()
+            )
+            . '</div>';
+
+        return $html;
+    }
+
+    /**
+     * @param DtePrintableLineItem[] $items
+     */
+    private function buildItemsTable(
+        array $items
+    ): string {
+        $html =
+            '<div class="items-section-title">'
+            . 'DETALLE'
+            . '</div>'
+            . '<table class="items-table">'
+            . '<thead>'
+            . '<tr>'
+            . '<th class="col-code">Código</th>'
+            . '<th>Descripción</th>'
+            . '<th class="col-qty">Cant.</th>'
+            . '<th class="col-money">P. Unit.</th>'
+            . '<th class="col-discount">Desc.</th>'
+            . '<th class="col-money">Total</th>'
+            . '</tr>'
+            . '</thead>'
+            . '<tbody>';
+
+        foreach ($items as $item) {
+            $code = '';
+
+            if (
+                $item->itemCode() !== null
+                && trim($item->itemCode()) !== ''
+            ) {
+                $code = $item->itemCode();
+
+                if (
+                    $item->itemCodeType() !== null
+                    && trim($item->itemCodeType()) !== ''
+                ) {
+                    $code =
+                        $item->itemCodeType()
+                        . ': '
+                        . $code;
+                }
+            }
+
+            $discount = '-';
+
+            if (
+                $item->discountPercent() != 0.0
+                || $item->discountAmount() != 0.0
+            ) {
+                $parts = [];
+
+                if ($item->discountPercent() != 0.0) {
+                    $parts[] =
+                        $this->decimal(
+                            $item->discountPercent()
+                        )
+                        . '%';
+                }
+
+                if ($item->discountAmount() != 0.0) {
+                    $parts[] =
+                        '$ '
+                        . $this->money(
+                            $item->discountAmount()
+                        );
+                }
+
+                $discount =
+                    implode(
+                        '<br>',
+                        $parts
+                    );
+            }
+
+            $html .=
+                '<tr class="detail-row">'
+                . '<td>'
+                . $this->escape($code)
+                . '</td>'
+                . '<td>'
+                . '<span class="item-name">'
+                . $this->escape(
+                    $item->name()
+                )
+                . '</span>';
+
+            if (
+                $item->description() !== null
+                && trim($item->description()) !== ''
+            ) {
+                $html .=
+                    '<br><span class="item-description">'
+                    . $this->escape(
+                        $item->description()
+                    )
+                    . '</span>';
+            }
+
+            if ($item->taxExempt()) {
+                $html .=
+                    '<br><span class="exempt-label">'
+                    . 'EXENTO'
+                    . '</span>';
+            }
+
+            $html .=
+                '</td>'
+                . '<td class="number">'
+                . $this->decimal(
+                    $item->quantity()
+                )
+                . '</td>'
+                . '<td class="number">$ '
+                . $this->money(
+                    $item->unitPrice()
+                )
+                . '</td>'
+                . '<td class="number">'
+                . $discount
+                . '</td>'
+                . '<td class="number">$ '
+                . $this->money(
+                    $item->lineAmount()
+                )
+                . '</td>'
+                . '</tr>';
+        }
+
+        $emptyRows =
+            max(
+                0,
+                self::DETAIL_ROWS_PER_PAGE
+                - count($items)
+            );
+
+        for (
+            $index = 0;
+            $index < $emptyRows;
+            $index++
+        ) {
+            $html .=
+                '<tr class="detail-row empty-detail-row">'
+                . '<td>&nbsp;</td>'
+                . '<td>&nbsp;</td>'
+                . '<td>&nbsp;</td>'
+                . '<td>&nbsp;</td>'
+                . '<td>&nbsp;</td>'
+                . '<td>&nbsp;</td>'
+                . '</tr>';
+        }
+
+        return
+            $html
+            . '</tbody>'
+            . '</table>';
+    }
+
+    /**
+     * @param DtePrintableReference[] $references
+     */
+    private function buildReferencesTable(
+        array $references
+    ): string {
+        $html =
+            '<div class="section-title">'
+            . 'Referencias'
+            . '</div>'
+            . '<table class="references-table">'
+            . '<thead>'
+            . '<tr>'
+            . '<th>#</th>'
+            . '<th>Tipo</th>'
+            . '<th>Folio</th>'
+            . '<th>Fecha</th>'
+            . '<th>Código</th>'
+            . '<th>Razón</th>'
+            . '</tr>'
+            . '</thead>'
+            . '<tbody>';
+
+        foreach (
+            $references as $reference
+        ) {
+            $html .=
+                '<tr>'
+                . '<td>'
+                . $this->escape(
+                    (string)
+                    $reference->lineNumber()
+                )
+                . '</td>'
+                . '<td>'
+                . $this->escape(
+                    $reference->referencedDteType()
+                        !== null
+                            ? (string)
+                                $reference
+                                    ->referencedDteType()
+                            : ''
+                )
+                . '</td>'
+                . '<td>'
+                . $this->escape(
+                    $reference->referencedFolio()
+                        !== null
+                            ? (string)
+                                $reference
+                                    ->referencedFolio()
+                            : ''
+                )
+                . '</td>'
+                . '<td>'
+                . $this->escape(
+                    $this->formatDate(
+                        $reference
+                            ->referencedIssueDate()
+                    )
+                )
+                . '</td>'
+                . '<td>'
+                . $this->escape(
+                    $reference->referenceCode()
+                )
+                . '</td>'
+                . '<td>'
+                . $this->escape(
+                    $reference->reason()
+                )
+                . '</td>'
+                . '</tr>';
+        }
+
+        return
+            $html
+            . '</tbody>'
+            . '</table>';
+    }
+
+    private function buildPdf417(
+        DtePrintablePackage $package
+    ): string {
+        $selection =
+            $package->pdf417();
+
+        $renderResult =
+            $selection->renderResult();
+
+        $metrics =
+            $selection->physicalMetrics();
+
+        $svgDataUri =
+            'data:'
+            . $renderResult->mimeType()
+            . ';base64,'
+            . base64_encode(
+                $renderResult->svg()
+            );
+
+        $symbolWidth =
+            $this->cssNumber(
+                $metrics->symbolWidthMm()
+            );
+
+        $symbolHeight =
+            $this->cssNumber(
+                $metrics->symbolHeightMm()
+            );
+
+        $quietZone =
+            $this->cssNumber(
+                $metrics->quietZoneMm()
+            );
+
+        return
+            '<div class="ted-section">'
+            . '<div class="barcode-wrapper" style="'
+            . 'padding:'
+            . $quietZone
+            . 'mm;'
+            . '">'
+            . '<img'
+            . ' alt="PDF417 TED"'
+            . ' src="'
+            . $svgDataUri
+            . '"'
+            . ' style="display:block;'
+            . 'width:'
+            . $symbolWidth
+            . 'mm;'
+            . 'height:'
+            . $symbolHeight
+            . 'mm;"'
+            . '>'
+            . '</div>'
+            . '<div class="ted-caption">'
+            . 'Timbre Electrónico SII'
+            . '</div>'
+            . '</div>';
+    }
+    private function buildIssuerLogoHtml(
+        ?string $logoDataUri
+    ): string {
+        if (!$this->isSupportedLogoDataUri($logoDataUri)) {
+            return '';
+        }
+
+        return
+            '<div style="margin:0 0 3mm 0;">'
+            . '<img src="'
+            . $this->escape($logoDataUri)
+            . '" alt="" style="display:block;max-width:45mm;max-height:18mm;width:auto;height:auto;">'
+            . '</div>';
+    }
+
+    private function isSupportedLogoDataUri(
+        ?string $logoDataUri
+    ): bool {
+        if (
+            $logoDataUri === null
+            || trim($logoDataUri) === ''
+        ) {
+            return false;
+        }
+
+        return
+            str_starts_with(
+                $logoDataUri,
+                'data:image/png;base64,'
+            )
+            || str_starts_with(
+                $logoDataUri,
+                'data:image/jpeg;base64,'
+            );
+    }
+    private function optionalLine(
+        string $label,
+        ?string $value
+    ): string {
+        if (
+            $value === null
+            || trim($value) === ''
+        ) {
+            return '';
+        }
+
+        return
+            '<div><strong>'
+            . $this->escape(
+                $label
+            )
+            . ':</strong> '
+            . $this->escape(
+                $value
+            )
+            . '</div>';
+    }
+
+    private function dteTypeName(
+        int $dteType
+    ): string {
+        return match ($dteType) {
+            33 =>
+                'FACTURA ELECTRÓNICA',
+
+            34 =>
+                'FACTURA NO AFECTA O EXENTA ELECTRÓNICA',
+
+            39 =>
+                'BOLETA ELECTRÓNICA',
+
+            41 =>
+                'BOLETA NO AFECTA O EXENTA ELECTRÓNICA',
+
+            46 =>
+                'FACTURA DE COMPRA ELECTRÓNICA',
+
+            52 =>
+                'GUÍA DE DESPACHO ELECTRÓNICA',
+
+            56 =>
+                'NOTA DE DÉBITO ELECTRÓNICA',
+
+            61 =>
+                'NOTA DE CRÉDITO ELECTRÓNICA',
+
+            default =>
+                'DOCUMENTO TRIBUTARIO ELECTRÓNICO',
+        };
+    }
+    private function siiOfficeLabel(
+        ?string $officeName
+    ): string {
+        if (
+            $officeName === null
+            || trim($officeName) === ''
+        ) {
+            return 'S.I.I.';
+        }
+
+        return
+            'S.I.I. - '
+            . mb_strtoupper(
+                trim($officeName),
+                'UTF-8'
+            );
+    }
+    private function formatDate(
+        ?string $date
+    ): string {
+        if (
+            $date === null
+            || trim($date) === ''
+        ) {
+            return '';
+        }
+
+        $parsed =
+            \DateTimeImmutable::createFromFormat(
+                'Y-m-d',
+                $date
+            );
+
+        if ($parsed === false) {
+            return $date;
+        }
+
+        return
+            $parsed->format(
+                'd-m-Y'
+            );
+    }
+
+    private function money(
+        float $value
+    ): string {
+        return number_format(
+            $value,
+            0,
+            ',',
+            '.'
+        );
+    }
+
+    private function decimal(
+        float $value
+    ): string {
+        $formatted =
+            number_format(
+                $value,
+                6,
+                ',',
+                '.'
+            );
+
+        return rtrim(
+            rtrim(
+                $formatted,
+                '0'
+            ),
+            ','
+        );
+    }
+
+    private function cssNumber(
+        float $value
+    ): string {
+        return rtrim(
+            rtrim(
+                number_format(
+                    $value,
+                    5,
+                    '.',
+                    ''
+                ),
+                '0'
+            ),
+            '.'
+        );
+    }
+
+    private function escape(
+        ?string $value
+    ): string {
+        return htmlspecialchars(
+            $value ?? '',
+            ENT_QUOTES
+            | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+    }
+
+    private function css(): string
+    {
+        return <<<'CSS'
+@page {
+    margin: 12mm;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "DejaVu Sans", sans-serif;
+    font-size: 8.5pt;
+    color: #111;
+}
+
+.dte-page {
+    width: 100%;
+}
+
+.page-break {
+    page-break-after: always;
+}
+
+.header-table,
+.receiver-table,
+.items-table,
+.references-table,
+.totals-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.header-table {
+    margin-bottom: 3mm;
+}
+
+.issuer-cell {
+    width: 62%;
+    vertical-align: top;
+    line-height: 1.35;
+    padding-right: 5mm;
+}
+
+.stamp-cell {
+    width: 38%;
+    vertical-align: top;
+    text-align: center;
+}
+
+.issuer-name {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 1mm;
+}
+
+.issuer-legal {
+    font-size: 8pt;
+    margin-bottom: 2mm;
+}
+
+.tax-stamp {
+    border: 1.5pt solid #cc0000;
+    color: #cc0000;
+    font-weight: bold;
+    font-size: 12pt;
+    line-height: 1.35;
+    padding: 3mm 2mm;
+}
+
+.tax-stamp .dte-type {
+    font-size: 11pt;
+    margin: 1.5mm 0;
+}
+
+.sii-label {
+    color: #cc0000;
+    font-weight: bold;
+    font-size: 9pt;
+    margin-top: 1mm;
+}
+
+.copy-legend {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 10pt;
+    margin: 2mm 0 3mm 0;
+}
+
+.receiver-table {
+    border: 0.5pt solid #444;
+    margin-bottom: 4mm;
+}
+
+.receiver-table td {
+    border: 0.5pt solid #aaa;
+    padding: 1.5mm 2mm;
+    vertical-align: top;
+}
+
+.items-table {
+    margin-bottom: 4mm;
+}
+
+.items-table th {
+    border: 0.5pt solid #555;
+    background: #eeeeee;
+    padding: 1.5mm 1mm;
+    text-align: center;
+    font-size: 7.5pt;
+}
+
+.items-table td {
+    border: 0.5pt solid #aaa;
+    padding: 1.5mm 1mm;
+    vertical-align: top;
+    font-size: 7.5pt;
+}
+
+.col-code {
+    width: 16%;
+}
+
+.col-qty {
+    width: 8%;
+}
+
+.col-money {
+    width: 14%;
+}
+
+.col-discount {
+    width: 12%;
+}
+
+.number {
+    text-align: right;
+}
+
+.item-description {
+    font-size: 7pt;
+}
+
+.exempt-label {
+    font-size: 6.5pt;
+    font-weight: bold;
+}
+
+.section-title {
+    margin-top: 2mm;
+    margin-bottom: 1mm;
+    font-weight: bold;
+}
+
+.references-table {
+    margin-bottom: 4mm;
+}
+
+.references-table th,
+.references-table td {
+    border: 0.5pt solid #aaa;
+    padding: 1mm;
+    font-size: 7pt;
+}
+
+.references-table th {
+    background: #eeeeee;
+}
+
+.totals-table {
+    width: 72mm;
+    margin-left: auto;
+    margin-bottom: 4mm;
+}
+
+.totals-table td {
+    border: 0.5pt solid #777;
+    padding: 1.5mm 2mm;
+}
+
+.totals-table td:last-child {
+    text-align: right;
+}
+
+.grand-total td {
+    font-weight: bold;
+    font-size: 10pt;
+}
+
+.ted-section {
+    text-align: center;
+    margin-top: 3mm;
+}
+
+.barcode-wrapper {
+    display: inline-block;
+    line-height: 0;
+    background: #ffffff;
+}
+
+.ted-caption {
+    margin-top: 1mm;
+    font-weight: bold;
+    font-size: 8pt;
+}
+
+.resolution {
+    text-align: center;
+    font-size: 7pt;
+    margin-top: 1mm;
+}
+
+.document-footer {
+    text-align: center;
+    font-size: 6.5pt;
+    margin-top: 2mm;
+}
+.fiscal-total-in-words {
+    margin-top: 3mm;
+    margin-bottom: 3mm;
+    font-size: 8.5pt;
+    line-height: 1.35;
+    page-break-inside: avoid;
+}
+
+.fiscal-footer-layout {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 3mm;
+    page-break-inside: avoid;
+}
+
+.fiscal-footer-layout td {
+    vertical-align: top;
+}
+
+.fiscal-footer-ack {
+    width: 46%;
+    padding-right: 4mm;
+}
+
+.fiscal-footer-ted {
+    width: 54%;
+    text-align: center;
+}
+
+.fiscal-acknowledgement {
+    border: 0.8pt solid #111;
+    padding: 2mm;
+    margin: 0;
+    page-break-inside: avoid;
+}
+
+.fiscal-ack-title {
+    text-align: center;
+    font-size: 8pt;
+    font-weight: bold;
+    margin-bottom: 1.2mm;
+}
+
+.fiscal-ack-fields {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fiscal-ack-fields td {
+    vertical-align: bottom;
+    padding: 0.8mm 1mm;
+    font-size: 7pt;
+}
+
+.fiscal-ack-half {
+    width: 50%;
+}
+
+.fiscal-ack-fill {
+    display: block;
+    min-height: 2.8mm;
+    border-bottom: 0.6pt solid #111;
+    margin-top: 0.6mm;
+}
+
+.fiscal-ack-signature .fiscal-ack-fill {
+    min-height: 5mm;
+}
+
+.fiscal-ack-legal {
+    font-size: 5.5pt;
+    line-height: 1.15;
+    text-align: justify;
+    margin-top: 1.2mm;
+}
+
+.fiscal-footer-ted .ted {
+    margin-top: 0;
+    page-break-inside: avoid;
+}
+
+CSS;
+    }
+}

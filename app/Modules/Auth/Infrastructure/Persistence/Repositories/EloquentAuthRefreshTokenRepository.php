@@ -2,7 +2,6 @@
 
 namespace App\Modules\Auth\Infrastructure\Persistence\Repositories;
 
-
 use App\Modules\Auth\Domain\Entities\AuthRefreshToken;
 use App\Modules\Auth\Domain\RepositoryContracts\AuthRefreshTokenRepositoryInterface;
 use App\Modules\Auth\Infrastructure\Persistence\EloquentModels\AuthRefreshTokenEloquentModel;
@@ -15,13 +14,15 @@ final class EloquentAuthRefreshTokenRepository implements AuthRefreshTokenReposi
         string $tokenHash,
         string $expiresAt,
         ?string $userAgent = null,
-        ?string $ipAddress = null
+        ?string $ipAddress = null,
+        ?int $externalSystemId = null,
     ): AuthRefreshToken {
         $model = new AuthRefreshTokenEloquentModel();
 
         $model->fill([
             'user_id' => $userId,
             'company_id' => $companyId,
+            'external_system_id' => $externalSystemId,
             'token_hash' => $tokenHash,
             'user_agent' => $userAgent,
             'ip_address' => $ipAddress,
@@ -85,6 +86,9 @@ final class EloquentAuthRefreshTokenRepository implements AuthRefreshTokenReposi
             ipAddress: $model->ip_address,
             expiresAt: $model->expires_at->format('Y-m-d H:i:s'),
             revokedAt: $model->revoked_at?->format('Y-m-d H:i:s'),
+            externalSystemId: $model->external_system_id !== null
+                ? (int) $model->external_system_id
+                : null,
         );
     }
 }

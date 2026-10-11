@@ -37,7 +37,7 @@ final class DteLineItem
     {
         return $this->description;
     }
-    public function quantity(): int
+    public function quantity(): float
     {
         return $this->quantity;
     }

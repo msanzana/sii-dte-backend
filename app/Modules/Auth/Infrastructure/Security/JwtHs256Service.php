@@ -50,7 +50,7 @@ final class JwtHs256Service
 
         [$encodedHeader,$encodedPayload,$encodedSignature] = $parts;
 
-        $espectedSignature = $this->base64UrlEncode(
+        $expectedSignature = $this->base64UrlEncode(
             hash_hmac(
                 'sha256',
                 "{$encodedHeader}.{$encodedPayload}",
@@ -59,6 +59,11 @@ final class JwtHs256Service
             )
         );
 
+        if (!hash_equals($expectedSignature, $encodedSignature)) {
+            throw InvalidJwtTokenException::because(
+                'La firma del JWT no es válida.'
+            );
+        }
         $headerJson = $this->base64UrlDecode($encodedHeader);
         $payloadJson = $this->base64UrlDecode($encodedPayload);
 

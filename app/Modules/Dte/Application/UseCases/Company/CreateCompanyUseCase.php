@@ -49,6 +49,7 @@ final class CreateCompanyUseCase
                 resolutionDate: $input->resolutionDate,
                 siiEnvironment: $input->siiEnvironment,
                 isActive: $input->isActive,
+                siiOfficeName: $input->siiOfficeName,
             );
             $saved = $this->companyRepository->create($company);
 

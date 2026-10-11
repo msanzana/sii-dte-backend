@@ -97,7 +97,47 @@ class DtePrivateStorageService
 
         return Storage::disk('local')->path($normalizedRelativePath);
     }
+    public function exists(string $relativePath): bool
+    {
+        $normalizedRelativePath =
+            $this->normalizeRelativePath(
+                $relativePath
+            );
 
+        return Storage::disk('local')
+            ->exists(
+                $normalizedRelativePath
+            );
+    }
+
+    public function delete(string $relativePath): void
+    {
+        $normalizedRelativePath =
+            $this->normalizeRelativePath(
+                $relativePath
+            );
+
+        if (
+            !Storage::disk('local')
+                ->exists(
+                    $normalizedRelativePath
+                )
+        ) {
+            return;
+        }
+
+        $deleted =
+            Storage::disk('local')
+                ->delete(
+                    $normalizedRelativePath
+                );
+
+        if (!$deleted) {
+            throw new RuntimeException(
+                'No fue posible eliminar el archivo del storage privado.'
+            );
+        }
+    }
     private function normalizeRelativePath(string $relativePath): string
     {
         $path = trim($relativePath);

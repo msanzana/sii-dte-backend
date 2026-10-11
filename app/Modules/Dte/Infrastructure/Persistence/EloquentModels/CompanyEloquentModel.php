@@ -23,6 +23,10 @@ class CompanyEloquentModel extends Model
         'resolution_date',
         'sii_environment',
         'is_active',
+        'sii_office_name',
+        'logo_path',
+        'logo_mime_type',
+        'logo_sha256',
     ];
     protected $casts = [
         'resolution_date'   => 'date',
